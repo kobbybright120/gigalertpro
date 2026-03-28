@@ -297,17 +297,22 @@ const IS_PROD = import.meta.env.PROD;
  * Returns all posts from all subreddits in one request.
  */
 async function fetchAllPostsFromProxy() {
-  const resp = await fetch("/api/scan-reddit", {
-    headers: { Accept: "application/json" },
-  });
-  if (!resp.ok) return [];
   try {
+    const resp = await fetch("/api/scan-reddit", {
+      headers: { Accept: "application/json" },
+    });
+    if (!resp.ok) {
+      console.error(`[GigAlertPro] API returned ${resp.status}: ${resp.statusText}`);
+      return [];
+    }
     const json = await resp.json();
+    console.log(`[GigAlertPro] API returned ${json.post_count || 0} posts`, json.errors || "no errors");
     return (json.posts || []).map((p) => ({
       ...p,
       _weight: SUBREDDITS.find((s) => s.name === p._sub)?.weight || 1.0,
     }));
-  } catch {
+  } catch (err) {
+    console.error("[GigAlertPro] API fetch failed:", err.message);
     return [];
   }
 }
