@@ -79,10 +79,6 @@ async function getAccessToken() {
   return data.access_token;
 }
 
-function delay(ms) {
-  return new Promise((r) => setTimeout(r, ms));
-}
-
 /**
  * Fetch a single subreddit using OAuth token.
  * Returns { posts, sub, status, error } for diagnostics.
@@ -200,6 +196,15 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
+  // Check env vars first — return clear error instead of crashing
+  if (!process.env.REDDIT_CLIENT_ID || !process.env.REDDIT_CLIENT_SECRET) {
+    console.error("[scan-reddit] Missing REDDIT_CLIENT_ID or REDDIT_CLIENT_SECRET");
+    return res.status(500).json({
+      error: "Server misconfigured: missing Reddit API credentials. Set REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET in Vercel env vars.",
+      posts: [],
+    });
+  }
+
   try {
     const token = await getAccessToken();
     const { allPosts, diagnostics } = await fetchAllSubreddits(token);
@@ -222,8 +227,9 @@ export default async function handler(req, res) {
     });
   } catch (err) {
     console.error(`[scan-reddit] Fatal error:`, err);
-    return res
-      .status(502)
-      .json({ error: err.message || "Failed to fetch Reddit data", posts: [] });
+    return res.status(502).json({
+      error: err.message || "Failed to fetch Reddit data",
+      posts: [],
+    });
   }
 }
