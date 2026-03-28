@@ -30,7 +30,7 @@ function delay(ms) {
 
 /**
  * Fetch a single subreddit with exponential backoff on 429.
- * Returns an array of raw Reddit post objects.
+ * Returns { posts, sub, status, error } for diagnostics.
  */
 async function fetchSubreddit(sub) {
   let url;
@@ -45,7 +45,7 @@ async function fetchSubreddit(sub) {
     try {
       const resp = await fetch(url, {
         headers: {
-          Accept: "text/html,application/json",
+          Accept: "application/json",
           "User-Agent": USER_AGENT,
         },
         redirect: "follow",
@@ -53,39 +53,55 @@ async function fetchSubreddit(sub) {
 
       if (resp.status === 429) {
         const wait = Math.pow(2, attempt + 1) * 1000 + Math.random() * 1000;
-        console.warn(`[scan-reddit] 429 on r/${sub.name}, retry in ${Math.round(wait)}ms`);
+        console.warn(`[scan-reddit] 429 on r/${sub.name}, retry ${attempt + 1}`);
         await delay(wait);
         continue;
       }
 
       if (!resp.ok) {
-        console.warn(`[scan-reddit] r/${sub.name}: ${resp.status} ${resp.statusText}`);
-        return [];
+        const body = await resp.text().catch(() => "");
+        console.warn(`[scan-reddit] r/${sub.name}: ${resp.status} — ${body.slice(0, 200)}`);
+        return { posts: [], sub: sub.name, status: resp.status, error: resp.statusText };
       }
 
-      const json = await resp.json();
+      const text = await resp.text();
+      let json;
+      try {
+        json = JSON.parse(text);
+      } catch {
+        console.warn(`[scan-reddit] r/${sub.name}: not JSON — ${text.slice(0, 200)}`);
+        return { posts: [], sub: sub.name, status: resp.status, error: "Not JSON response" };
+      }
+
       const posts = json?.data?.children?.map((c) => c.data) || [];
-      return posts.map((p) => ({
-        id: p.id,
-        name: p.name,
-        title: p.title,
-        selftext: p.selftext,
-        author: p.author,
-        permalink: p.permalink,
-        subreddit: p.subreddit,
-        created_utc: p.created_utc,
-        num_comments: p.num_comments,
-        ups: p.ups,
-        link_flair_text: p.link_flair_text,
-        _sub: sub.name,
-      }));
+      return {
+        posts: posts.map((p) => ({
+          id: p.id,
+          name: p.name,
+          title: p.title,
+          selftext: p.selftext,
+          author: p.author,
+          permalink: p.permalink,
+          subreddit: p.subreddit,
+          created_utc: p.created_utc,
+          num_comments: p.num_comments,
+          ups: p.ups,
+          link_flair_text: p.link_flair_text,
+          _sub: sub.name,
+        })),
+        sub: sub.name,
+        status: resp.status,
+        count: posts.length,
+      };
     } catch (err) {
       console.error(`[scan-reddit] r/${sub.name} error:`, err.message);
-      if (attempt === MAX_RETRIES) return [];
+      if (attempt === MAX_RETRIES) {
+        return { posts: [], sub: sub.name, status: 0, error: err.message };
+      }
       await delay(1000 * (attempt + 1));
     }
   }
-  return [];
+  return { posts: [], sub: sub.name, status: 0, error: "Max retries exceeded" };
 }
 
 /**
@@ -93,21 +109,32 @@ async function fetchSubreddit(sub) {
  */
 async function fetchAllSubreddits() {
   const allPosts = [];
-  const errors = [];
+  const diagnostics = [];
   for (let i = 0; i < SUBREDDITS.length; i += BATCH_SIZE) {
     const batch = SUBREDDITS.slice(i, i + BATCH_SIZE);
     const results = await Promise.allSettled(batch.map(fetchSubreddit));
     for (let j = 0; j < results.length; j++) {
       const r = results[j];
       if (r.status === "fulfilled") {
-        allPosts.push(...r.value);
+        allPosts.push(...r.value.posts);
+        diagnostics.push({
+          sub: r.value.sub,
+          status: r.value.status,
+          count: r.value.posts.length,
+          error: r.value.error || null,
+        });
       } else {
-        errors.push(`r/${batch[j].name}: ${r.reason?.message || "unknown"}`);
+        diagnostics.push({
+          sub: batch[j].name,
+          status: 0,
+          count: 0,
+          error: r.reason?.message || "Promise rejected",
+        });
       }
     }
     if (i + BATCH_SIZE < SUBREDDITS.length) await delay(300);
   }
-  return { allPosts, errors };
+  return { allPosts, diagnostics };
 }
 
 export default async function handler(req, res) {
@@ -118,10 +145,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { allPosts, errors } = await fetchAllSubreddits();
+    const { allPosts, diagnostics } = await fetchAllSubreddits();
 
-    console.log(`[scan-reddit] Fetched ${allPosts.length} posts, ${errors.length} errors`);
-    if (errors.length > 0) console.warn(`[scan-reddit] Errors:`, errors);
+    console.log(`[scan-reddit] Fetched ${allPosts.length} posts`);
+    console.log(`[scan-reddit] Diagnostics:`, JSON.stringify(diagnostics));
 
     // CDN cache: serve cached for 90s, stale-while-revalidate for 3 more min
     res.setHeader(
@@ -134,7 +161,7 @@ export default async function handler(req, res) {
       posts: allPosts,
       cached_at: new Date().toISOString(),
       post_count: allPosts.length,
-      errors: errors.length > 0 ? errors : undefined,
+      diagnostics,
     });
   } catch (err) {
     console.error(`[scan-reddit] Fatal error:`, err);
