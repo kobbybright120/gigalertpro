@@ -1,0 +1,140 @@
+-- ============================================================
+-- GigAlertPro – Supabase Schema
+-- Run this in the Supabase SQL Editor (Dashboard → SQL)
+-- ============================================================
+
+-- 1. User profiles (extends Supabase auth.users)
+CREATE TABLE IF NOT EXISTS public.profiles (
+  id          UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  name        TEXT NOT NULL DEFAULT '',
+  bio         TEXT NOT NULL DEFAULT '',
+  skills      TEXT[] NOT NULL DEFAULT '{}',
+  testimonials TEXT[] NOT NULL DEFAULT '{}',
+  portfolio_links TEXT[] NOT NULL DEFAULT '{}',
+  plan        TEXT NOT NULL DEFAULT 'free' CHECK (plan IN ('free', 'pro')),
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Auto-create a profile row when a user signs up
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id) VALUES (NEW.id);
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- 2. Keywords tracked by each user
+CREATE TABLE IF NOT EXISTS public.keywords (
+  id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id     UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  keyword     TEXT NOT NULL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (user_id, keyword)
+);
+
+-- 3. Gig alerts (matches found by the Reddit scanner)
+CREATE TABLE IF NOT EXISTS public.gig_alerts (
+  id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  reddit_post_id  TEXT NOT NULL UNIQUE,                 -- dedup key
+  title           TEXT NOT NULL,
+  body_preview    TEXT NOT NULL DEFAULT '',
+  url             TEXT NOT NULL,
+  subreddit       TEXT NOT NULL,
+  budget          TEXT,
+  author          TEXT,
+  reddit_created  TIMESTAMPTZ NOT NULL,
+  matched_keywords TEXT[] NOT NULL DEFAULT '{}',
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- 4. Per-user alert state (read/unread, dismissed, etc.)
+CREATE TABLE IF NOT EXISTS public.user_alerts (
+  id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id     UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  alert_id    BIGINT NOT NULL REFERENCES public.gig_alerts(id) ON DELETE CASCADE,
+  is_read     BOOLEAN NOT NULL DEFAULT false,
+  dismissed   BOOLEAN NOT NULL DEFAULT false,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (user_id, alert_id)
+);
+
+-- 5. Saved proposals
+CREATE TABLE IF NOT EXISTS public.proposals (
+  id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id     UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  alert_id    BIGINT REFERENCES public.gig_alerts(id) ON DELETE SET NULL,
+  gig_title   TEXT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  text        TEXT NOT NULL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- 6. Scanner state (tracks last seen Reddit post per subreddit)
+CREATE TABLE IF NOT EXISTS public.scanner_state (
+  subreddit       TEXT PRIMARY KEY,
+  last_post_id    TEXT NOT NULL DEFAULT '',
+  last_scanned_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Seed the subreddits we scan
+INSERT INTO public.scanner_state (subreddit) VALUES
+  ('forhire'), ('slavelabour'), ('freelance'), ('hiring'),
+  ('jobbit'), ('remotework')
+ON CONFLICT DO NOTHING;
+
+-- ============================================================
+-- Row Level Security (RLS)
+-- ============================================================
+ALTER TABLE public.profiles     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.keywords     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_alerts  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.proposals    ENABLE ROW LEVEL SECURITY;
+-- gig_alerts and scanner_state are read-only for users, write by service_role
+
+-- Profiles: users can read/update their own
+CREATE POLICY "Users read own profile"  ON public.profiles FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Users update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+
+-- Keywords: users manage their own
+CREATE POLICY "Users read own keywords"  ON public.keywords FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users insert own keywords" ON public.keywords FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users delete own keywords" ON public.keywords FOR DELETE USING (auth.uid() = user_id);
+
+-- Gig alerts: all authenticated users can read
+ALTER TABLE public.gig_alerts ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Authenticated read alerts" ON public.gig_alerts FOR SELECT USING (auth.role() = 'authenticated');
+
+-- User alerts: users manage their own
+CREATE POLICY "Users read own user_alerts"  ON public.user_alerts FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users insert own user_alerts" ON public.user_alerts FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users update own user_alerts" ON public.user_alerts FOR UPDATE USING (auth.uid() = user_id);
+
+-- Proposals: users manage their own
+CREATE POLICY "Users read own proposals"  ON public.proposals FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users insert own proposals" ON public.proposals FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users delete own proposals" ON public.proposals FOR DELETE USING (auth.uid() = user_id);
+
+-- Scanner state: only service_role writes; authenticated can read
+ALTER TABLE public.scanner_state ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Authenticated read scanner_state" ON public.scanner_state FOR SELECT USING (auth.role() = 'authenticated');
+
+-- ============================================================
+-- Indexes for performance
+-- ============================================================
+CREATE INDEX IF NOT EXISTS idx_keywords_user ON public.keywords(user_id);
+CREATE INDEX IF NOT EXISTS idx_gig_alerts_created ON public.gig_alerts(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_gig_alerts_subreddit ON public.gig_alerts(subreddit);
+CREATE INDEX IF NOT EXISTS idx_user_alerts_user ON public.user_alerts(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_alerts_read ON public.user_alerts(user_id, is_read) WHERE NOT is_read;
+CREATE INDEX IF NOT EXISTS idx_proposals_user ON public.proposals(user_id);
+
+-- Enable Realtime on tables that the frontend subscribes to
+ALTER PUBLICATION supabase_realtime ADD TABLE public.user_alerts;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.gig_alerts;
