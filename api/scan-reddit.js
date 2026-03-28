@@ -36,13 +36,19 @@ function delay(ms) {
 function stripHtml(html) {
   if (!html) return "";
   return html
-    .replace(/<[^>]*>/g, " ")
+    // 1. Decode entities FIRST so encoded tags become real tags
     .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
+    .replace(/&#x200B;/g, "")
     .replace(/&nbsp;/g, " ")
+    // 2. Remove HTML comments (<!-- ... -->)
+    .replace(/<!--[\s\S]*?-->/g, "")
+    // 3. Now strip actual HTML tags
+    .replace(/<[^>]*>/g, " ")
+    // 4. Collapse whitespace
     .replace(/\s+/g, " ")
     .trim();
 }
