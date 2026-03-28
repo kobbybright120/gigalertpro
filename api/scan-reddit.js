@@ -1,8 +1,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Vercel Serverless Function — Reddit Proxy + CDN Cache
-// Fetches raw posts from all tracked subreddits server-side (no CORS).
-// Response is CDN-cached so thousands of users share one upstream fetch.
-// Uses old.reddit.com — much more reliable from datacenter IPs.
+// Vercel Serverless Function — Reddit OAuth Proxy + CDN Cache
+// Uses Reddit OAuth (client_credentials) for reliable server-side access.
+// Free tier: 60 requests/min — more than enough with CDN caching.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const SUBREDDITS = [
@@ -18,26 +17,82 @@ const SUBREDDITS = [
   { name: "WorkOnline", mode: "new" },
 ];
 
-// Use old.reddit.com — www.reddit.com blocks/throttles datacenter IPs
-const REDDIT_BASE = "https://old.reddit.com";
+const OAUTH_URL = "https://www.reddit.com/api/v1/access_token";
+const API_BASE = "https://oauth.reddit.com";
 const BATCH_SIZE = 5;
-const USER_AGENT =
-  "Mozilla/5.0 (compatible; GigAlertPro/1.0; +https://gigalertpro.vercel.app)";
+const USER_AGENT = "GigAlertPro/1.0 (by /u/gigalertpro)";
+
+// In-memory token cache (persists across warm invocations)
+let tokenCache = { token: null, expires: 0 };
 
 function delay(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
 /**
- * Fetch a single subreddit with exponential backoff on 429.
+ * Get a Reddit OAuth token using client_credentials grant.
+ * Tokens last ~1 hour; cached in memory across warm invocations.
+ */
+async function getAccessToken() {
+  // Return cached token if still valid (with 60s buffer)
+  if (tokenCache.token && Date.now() < tokenCache.expires - 60000) {
+    return tokenCache.token;
+  }
+
+  const clientId = process.env.REDDIT_CLIENT_ID;
+  const clientSecret = process.env.REDDIT_CLIENT_SECRET;
+
+  if (!clientId || !clientSecret) {
+    throw new Error(
+      "Missing REDDIT_CLIENT_ID or REDDIT_CLIENT_SECRET env vars",
+    );
+  }
+
+  const auth = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
+
+  const resp = await fetch(OAUTH_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${auth}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+      "User-Agent": USER_AGENT,
+    },
+    body: "grant_type=client_credentials",
+  });
+
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => "");
+    throw new Error(`OAuth token request failed: ${resp.status} — ${text.slice(0, 200)}`);
+  }
+
+  const data = await resp.json();
+  if (!data.access_token) {
+    throw new Error(`OAuth response missing access_token: ${JSON.stringify(data).slice(0, 200)}`);
+  }
+
+  tokenCache = {
+    token: data.access_token,
+    expires: Date.now() + data.expires_in * 1000,
+  };
+
+  console.log("[scan-reddit] OAuth token acquired");
+  return data.access_token;
+}
+
+function delay(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+/**
+ * Fetch a single subreddit using OAuth token.
  * Returns { posts, sub, status, error } for diagnostics.
  */
-async function fetchSubreddit(sub) {
+async function fetchSubreddit(sub, token) {
   let url;
   if (sub.mode === "search") {
-    url = `${REDDIT_BASE}/r/${sub.name}/search.json?q=${encodeURIComponent(sub.search)}&restrict_sr=1&sort=new&limit=30&raw_json=1`;
+    url = `${API_BASE}/r/${sub.name}/search?q=${encodeURIComponent(sub.search)}&restrict_sr=1&sort=new&limit=30&raw_json=1`;
   } else {
-    url = `${REDDIT_BASE}/r/${sub.name}/new.json?limit=30&raw_json=1`;
+    url = `${API_BASE}/r/${sub.name}/new?limit=30&raw_json=1`;
   }
 
   const MAX_RETRIES = 2;
@@ -45,10 +100,9 @@ async function fetchSubreddit(sub) {
     try {
       const resp = await fetch(url, {
         headers: {
-          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
           "User-Agent": USER_AGENT,
         },
-        redirect: "follow",
       });
 
       if (resp.status === 429) {
@@ -107,12 +161,14 @@ async function fetchSubreddit(sub) {
 /**
  * Fetch all subreddits in parallel batches with polite delays.
  */
-async function fetchAllSubreddits() {
+async function fetchAllSubreddits(token) {
   const allPosts = [];
   const diagnostics = [];
   for (let i = 0; i < SUBREDDITS.length; i += BATCH_SIZE) {
     const batch = SUBREDDITS.slice(i, i + BATCH_SIZE);
-    const results = await Promise.allSettled(batch.map(fetchSubreddit));
+    const results = await Promise.allSettled(
+      batch.map((sub) => fetchSubreddit(sub, token)),
+    );
     for (let j = 0; j < results.length; j++) {
       const r = results[j];
       if (r.status === "fulfilled") {
@@ -145,7 +201,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { allPosts, diagnostics } = await fetchAllSubreddits();
+    const token = await getAccessToken();
+    const { allPosts, diagnostics } = await fetchAllSubreddits(token);
 
     console.log(`[scan-reddit] Fetched ${allPosts.length} posts`);
     console.log(`[scan-reddit] Diagnostics:`, JSON.stringify(diagnostics));
