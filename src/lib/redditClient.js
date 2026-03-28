@@ -309,8 +309,8 @@ async function fetchAllPostsFromProxy() {
     }
     const json = await resp.json();
     console.log(
-      `[GigAlertPro] API returned ${json.post_count || 0} posts`,
-      json.errors || "no errors",
+      `[GigAlertPro] API returned ${json.post_count || 0} posts (${json.feed || "unknown"})`,
+      json.diagnostics || "no diagnostics",
     );
     return (json.posts || []).map((p) => ({
       ...p,
