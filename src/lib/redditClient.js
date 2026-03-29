@@ -481,7 +481,13 @@ function matchAndScore(posts, lowerKws) {
       id: postId,
       reddit_post_id: p.name || p.id,
       title: p.title || "Untitled",
-      body_preview: (p.selftext || "").replace(/<[^>]*>/g, " ").replace(/<!--[\s\S]*?-->/g, "").replace(/&\w+;/g, " ").replace(/\s+/g, " ").trim().slice(0, 400),
+      body_preview: (p.selftext || "")
+        .replace(/<[^>]*>/g, " ")
+        .replace(/<!--[\s\S]*?-->/g, "")
+        .replace(/&\w+;/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 400),
       url: `https://www.reddit.com${p.permalink}`,
       subreddit: p._sub || p.subreddit,
       budget,
