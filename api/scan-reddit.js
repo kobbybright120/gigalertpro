@@ -15,29 +15,21 @@ const REDIS_KEY = "gigalertpro:latest";
 // ── Upstash Redis REST read (zero dependencies) ─────────────────────────────
 
 async function redisGet(key) {
-  let url = (process.env.UPSTASH_REDIS_REST_URL || "").replace(/^["' ]+|["' ]+$/g, "");
-  let token = (process.env.UPSTASH_REDIS_REST_TOKEN || "").replace(/^["' ]+|["' ]+$/g, "");
-  if (!url || !token) return { data: null, debug: "missing-env" };
+  let url = (process.env.UPSTASH_REDIS_REST_URL || "").trim().replace(/^["']+|["']+$/g, "");
+  let token = (process.env.UPSTASH_REDIS_REST_TOKEN || "").trim().replace(/^["']+|["']+$/g, "");
+  if (!url || !token) return null;
 
-  // Remove trailing slash
   url = url.replace(/\/+$/, "");
 
-  const fetchUrl = `${url}/get/${encodeURIComponent(key)}`;
   try {
-    const resp = await fetch(fetchUrl, {
+    const resp = await fetch(`${url}/get/${encodeURIComponent(key)}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    if (!resp.ok) {
-      const body = await resp.text();
-      console.log(`[redisGet] HTTP ${resp.status}: ${body}`);
-      return { data: null, debug: `http-${resp.status}` };
-    }
+    if (!resp.ok) return null;
     const json = await resp.json();
-    const result = json.result || null;
-    return { data: result, debug: result ? `hit-${String(result).length}` : "null-result" };
-  } catch (err) {
-    console.log(`[redisGet] Error: ${err.message}`);
-    return { data: null, debug: `err-${err.message.slice(0, 50)}` };
+    return json.result || null;
+  } catch {
+    return null;
   }
 }
 
@@ -224,8 +216,7 @@ export default async function handler(req, res) {
 
   try {
     // ── 1) Try Upstash Redis first (production path — instant KV read) ──
-    const { data: cached, debug: redisDebug } = await redisGet(REDIS_KEY);
-    res.setHeader("X-Redis-Debug", redisDebug);
+    const cached = await redisGet(REDIS_KEY);
     if (cached) {
       console.log("[scan-reddit] Serving from Upstash Redis cache");
       // Aggressive CDN caching — data is pre-fetched by cron, safe to cache long
