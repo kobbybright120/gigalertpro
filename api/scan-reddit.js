@@ -15,24 +15,29 @@ const REDIS_KEY = "gigalertpro:latest";
 // ── Upstash Redis REST read (zero dependencies) ─────────────────────────────
 
 async function redisGet(key) {
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
-  if (!url || !token) return null;
+  let url = (process.env.UPSTASH_REDIS_REST_URL || "").replace(/^["' ]+|["' ]+$/g, "");
+  let token = (process.env.UPSTASH_REDIS_REST_TOKEN || "").replace(/^["' ]+|["' ]+$/g, "");
+  if (!url || !token) return { data: null, debug: "missing-env" };
 
+  // Remove trailing slash
+  url = url.replace(/\/+$/, "");
+
+  const fetchUrl = `${url}/get/${encodeURIComponent(key)}`;
   try {
-    const resp = await fetch(`${url}/get/${encodeURIComponent(key)}`, {
+    const resp = await fetch(fetchUrl, {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!resp.ok) {
-      console.log(`[redisGet] HTTP ${resp.status}: ${await resp.text()}`);
-      return null;
+      const body = await resp.text();
+      console.log(`[redisGet] HTTP ${resp.status}: ${body}`);
+      return { data: null, debug: `http-${resp.status}` };
     }
     const json = await resp.json();
-    console.log(`[redisGet] result type=${typeof json.result}, null=${json.result === null}, len=${json.result ? String(json.result).length : 0}`);
-    return json.result || null;
+    const result = json.result || null;
+    return { data: result, debug: result ? `hit-${String(result).length}` : "null-result" };
   } catch (err) {
     console.log(`[redisGet] Error: ${err.message}`);
-    return null;
+    return { data: null, debug: `err-${err.message.slice(0, 50)}` };
   }
 }
 
@@ -219,10 +224,8 @@ export default async function handler(req, res) {
 
   try {
     // ── 1) Try Upstash Redis first (production path — instant KV read) ──
-    const hasUrl = !!process.env.UPSTASH_REDIS_REST_URL;
-    const hasToken = !!process.env.UPSTASH_REDIS_REST_TOKEN;
-    const cached = await redisGet(REDIS_KEY);
-    res.setHeader("X-Redis-Debug", `url=${hasUrl},token=${hasToken},hit=${!!cached}`);
+    const { data: cached, debug: redisDebug } = await redisGet(REDIS_KEY);
+    res.setHeader("X-Redis-Debug", redisDebug);
     if (cached) {
       console.log("[scan-reddit] Serving from Upstash Redis cache");
       // Aggressive CDN caching — data is pre-fetched by cron, safe to cache long
