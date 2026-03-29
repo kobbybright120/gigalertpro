@@ -88,7 +88,9 @@ function parseAtomFeed(xml, defaultSub) {
     const id = xmlText(entry, "id");
     const postIdMatch = id.match(/t3_(\w+)/);
     const postId = postIdMatch ? postIdMatch[1] : id;
-    const createdUtc = updated ? Math.floor(new Date(updated).getTime() / 1000) : 0;
+    const createdUtc = updated
+      ? Math.floor(new Date(updated).getTime() / 1000)
+      : 0;
     const permalink = link ? link.replace("https://www.reddit.com", "") : "";
 
     entries.push({
@@ -118,7 +120,8 @@ async function fetchRSS(url, label) {
       const resp = await fetch(url, {
         headers: {
           "User-Agent": USER_AGENT,
-          Accept: "application/rss+xml, application/atom+xml, application/xml, text/xml",
+          Accept:
+            "application/rss+xml, application/atom+xml, application/xml, text/xml",
         },
         redirect: "follow",
       });
@@ -139,7 +142,8 @@ async function fetchRSS(url, label) {
       return { xml, status: resp.status, error: null };
     } catch (err) {
       console.error(`[fetcher] ${label} error:`, err.message);
-      if (attempt === MAX_RETRIES) return { xml: null, status: 0, error: err.message };
+      if (attempt === MAX_RETRIES)
+        return { xml: null, status: 0, error: err.message };
       await delay(1000 * (attempt + 1));
     }
   }
@@ -156,9 +160,19 @@ async function fetchAllPosts() {
   if (combined.xml) {
     const posts = parseAtomFeed(combined.xml, "combined");
     allPosts.push(...posts);
-    diagnostics.push({ source: `r/${COMBINED_SUBS.join("+")}`, status: combined.status, count: posts.length, error: null });
+    diagnostics.push({
+      source: `r/${COMBINED_SUBS.join("+")}`,
+      status: combined.status,
+      count: posts.length,
+      error: null,
+    });
   } else {
-    diagnostics.push({ source: `r/${COMBINED_SUBS.join("+")}`, status: combined.status, count: 0, error: combined.error });
+    diagnostics.push({
+      source: `r/${COMBINED_SUBS.join("+")}`,
+      status: combined.status,
+      count: 0,
+      error: combined.error,
+    });
   }
 
   await delay(500);
@@ -170,9 +184,19 @@ async function fetchAllPosts() {
     if (result.xml) {
       const posts = parseAtomFeed(result.xml, sub.name);
       allPosts.push(...posts);
-      diagnostics.push({ source: `r/${sub.name}/search?q=${sub.search}`, status: result.status, count: posts.length, error: null });
+      diagnostics.push({
+        source: `r/${sub.name}/search?q=${sub.search}`,
+        status: result.status,
+        count: posts.length,
+        error: null,
+      });
     } else {
-      diagnostics.push({ source: `r/${sub.name}/search?q=${sub.search}`, status: result.status, count: 0, error: result.error });
+      diagnostics.push({
+        source: `r/${sub.name}/search?q=${sub.search}`,
+        status: result.status,
+        count: 0,
+        error: result.error,
+      });
     }
     await delay(500);
   }
@@ -212,7 +236,9 @@ async function main() {
   console.log("[fetcher] Diagnostics:", JSON.stringify(diagnostics));
 
   if (allPosts.length === 0) {
-    console.warn("[fetcher] 0 posts — skipping Redis write to preserve last-good data");
+    console.warn(
+      "[fetcher] 0 posts — skipping Redis write to preserve last-good data",
+    );
     process.exit(0);
   }
 
@@ -225,11 +251,15 @@ async function main() {
     diagnostics,
   });
 
-  console.log(`[fetcher] Storing ${(payload.length / 1024).toFixed(0)} KB in Upstash Redis...`);
+  console.log(
+    `[fetcher] Storing ${(payload.length / 1024).toFixed(0)} KB in Upstash Redis...`,
+  );
 
   await redisSet(REDIS_KEY, payload, REDIS_TTL);
 
-  console.log(`[fetcher] ✅ Done. ${allPosts.length} posts stored (TTL ${REDIS_TTL}s).`);
+  console.log(
+    `[fetcher] ✅ Done. ${allPosts.length} posts stored (TTL ${REDIS_TTL}s).`,
+  );
 }
 
 main().catch((err) => {

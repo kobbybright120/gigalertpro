@@ -20,10 +20,9 @@ async function redisGet(key) {
   if (!url || !token) return null;
 
   try {
-    const resp = await fetch(
-      `${url}/get/${encodeURIComponent(key)}`,
-      { headers: { Authorization: `Bearer ${token}` } },
-    );
+    const resp = await fetch(`${url}/get/${encodeURIComponent(key)}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     if (!resp.ok) return null;
     const json = await resp.json();
     return json.result || null;
@@ -35,8 +34,14 @@ async function redisGet(key) {
 // ── RSS Fallback (kept for dev mode / when Redis not configured) ─────────────
 
 const COMBINED_SUBS = [
-  "hiring", "jobbit", "remotejs", "freelance_forhire",
-  "gameDevClassifieds", "DesignJobs", "Jobs4Bitcoins", "WorkOnline",
+  "hiring",
+  "jobbit",
+  "remotejs",
+  "freelance_forhire",
+  "gameDevClassifieds",
+  "DesignJobs",
+  "Jobs4Bitcoins",
+  "WorkOnline",
 ];
 const SEARCH_SUBS = [
   { name: "forhire", search: "flair:Hiring" },
@@ -45,15 +50,24 @@ const SEARCH_SUBS = [
 const USER_AGENT =
   "Mozilla/5.0 (compatible; GigAlertPro/1.0; +https://gigalertpro.vercel.app)";
 
-function delay(ms) { return new Promise((r) => setTimeout(r, ms)); }
+function delay(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
 
 function stripHtml(html) {
   if (!html) return "";
   return html
-    .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&#x200B;/g, "")
-    .replace(/&nbsp;/g, " ").replace(/<!--[\s\S]*?-->/g, "")
-    .replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&#x200B;/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function xmlText(xml, tag) {
@@ -83,13 +97,23 @@ function parseAtomFeed(xml, defaultSub) {
     const id = xmlText(entry, "id");
     const postIdMatch = id.match(/t3_(\w+)/);
     const postId = postIdMatch ? postIdMatch[1] : id;
-    const createdUtc = updated ? Math.floor(new Date(updated).getTime() / 1000) : 0;
+    const createdUtc = updated
+      ? Math.floor(new Date(updated).getTime() / 1000)
+      : 0;
     const permalink = link ? link.replace("https://www.reddit.com", "") : "";
     entries.push({
-      id: postId, name: `t3_${postId}`, title,
-      selftext: body.slice(0, 2000), author, permalink,
-      subreddit: category, created_utc: createdUtc,
-      num_comments: 0, ups: 0, link_flair_text: null, _sub: category,
+      id: postId,
+      name: `t3_${postId}`,
+      title,
+      selftext: body.slice(0, 2000),
+      author,
+      permalink,
+      subreddit: category,
+      created_utc: createdUtc,
+      num_comments: 0,
+      ups: 0,
+      link_flair_text: null,
+      _sub: category,
     });
   }
   return entries;
@@ -100,17 +124,23 @@ async function fetchRSS(url, label) {
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
       const resp = await fetch(url, {
-        headers: { "User-Agent": USER_AGENT, Accept: "application/rss+xml, application/atom+xml, application/xml, text/xml" },
+        headers: {
+          "User-Agent": USER_AGENT,
+          Accept:
+            "application/rss+xml, application/atom+xml, application/xml, text/xml",
+        },
         redirect: "follow",
       });
       if (resp.status === 429) {
         await delay(Math.pow(2, attempt + 1) * 1000 + Math.random() * 1000);
         continue;
       }
-      if (!resp.ok) return { xml: null, status: resp.status, error: resp.statusText };
+      if (!resp.ok)
+        return { xml: null, status: resp.status, error: resp.statusText };
       return { xml: await resp.text(), status: resp.status, error: null };
     } catch (err) {
-      if (attempt === MAX_RETRIES) return { xml: null, status: 0, error: err.message };
+      if (attempt === MAX_RETRIES)
+        return { xml: null, status: 0, error: err.message };
       await delay(1000 * (attempt + 1));
     }
   }
@@ -126,9 +156,19 @@ async function fetchAllPostsLive() {
   if (combined.xml) {
     const posts = parseAtomFeed(combined.xml, "combined");
     allPosts.push(...posts);
-    diagnostics.push({ source: `r/${COMBINED_SUBS.join("+")}`, status: combined.status, count: posts.length, error: null });
+    diagnostics.push({
+      source: `r/${COMBINED_SUBS.join("+")}`,
+      status: combined.status,
+      count: posts.length,
+      error: null,
+    });
   } else {
-    diagnostics.push({ source: `r/${COMBINED_SUBS.join("+")}`, status: combined.status, count: 0, error: combined.error });
+    diagnostics.push({
+      source: `r/${COMBINED_SUBS.join("+")}`,
+      status: combined.status,
+      count: 0,
+      error: combined.error,
+    });
   }
   await delay(500);
 
@@ -138,9 +178,19 @@ async function fetchAllPostsLive() {
     if (result.xml) {
       const posts = parseAtomFeed(result.xml, sub.name);
       allPosts.push(...posts);
-      diagnostics.push({ source: `r/${sub.name}/search?q=${sub.search}`, status: result.status, count: posts.length, error: null });
+      diagnostics.push({
+        source: `r/${sub.name}/search?q=${sub.search}`,
+        status: result.status,
+        count: posts.length,
+        error: null,
+      });
     } else {
-      diagnostics.push({ source: `r/${sub.name}/search?q=${sub.search}`, status: result.status, count: 0, error: result.error });
+      diagnostics.push({
+        source: `r/${sub.name}/search?q=${sub.search}`,
+        status: result.status,
+        count: 0,
+        error: result.error,
+      });
     }
     await delay(500);
   }
@@ -164,7 +214,10 @@ export default async function handler(req, res) {
 
   try {
     // ── 1) Try Upstash Redis first (production path — instant KV read) ──
+    const hasUrl = !!process.env.UPSTASH_REDIS_REST_URL;
+    const hasToken = !!process.env.UPSTASH_REDIS_REST_TOKEN;
     const cached = await redisGet(REDIS_KEY);
+    res.setHeader("X-Redis-Debug", `url=${hasUrl},token=${hasToken},hit=${!!cached}`);
     if (cached) {
       console.log("[scan-reddit] Serving from Upstash Redis cache");
       // Aggressive CDN caching — data is pre-fetched by cron, safe to cache long
