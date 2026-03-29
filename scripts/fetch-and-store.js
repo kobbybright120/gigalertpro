@@ -183,13 +183,13 @@ async function fetchAllPosts() {
 // ── Upstash Redis (REST API — zero dependencies) ────────────────────────────
 
 async function redisSet(key, value, ttlSeconds) {
-  const resp = await fetch(`${UPSTASH_REDIS_REST_URL}/set/${encodeURIComponent(key)}`, {
+  const resp = await fetch(`${UPSTASH_REDIS_REST_URL}`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${UPSTASH_REDIS_REST_TOKEN}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ EX: ttlSeconds, value }),
+    body: JSON.stringify(["SET", key, value, "EX", ttlSeconds]),
   });
 
   if (!resp.ok) {
