@@ -23,10 +23,15 @@ async function redisGet(key) {
     const resp = await fetch(`${url}/get/${encodeURIComponent(key)}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    if (!resp.ok) return null;
+    if (!resp.ok) {
+      console.log(`[redisGet] HTTP ${resp.status}: ${await resp.text()}`);
+      return null;
+    }
     const json = await resp.json();
+    console.log(`[redisGet] result type=${typeof json.result}, null=${json.result === null}, len=${json.result ? String(json.result).length : 0}`);
     return json.result || null;
-  } catch {
+  } catch (err) {
+    console.log(`[redisGet] Error: ${err.message}`);
     return null;
   }
 }
