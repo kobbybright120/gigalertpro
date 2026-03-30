@@ -123,7 +123,6 @@ export default function DashboardPage() {
 
       {/* Notification Toggle + Quick keyword add */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <NotificationToggle />
         <div className="bg-[#0B1120] border border-white/5 rounded-2xl p-5">
           <h2 className="font-bold text-white mb-3 flex items-center gap-2">
             <Zap className="w-5 h-5 text-[#00F0B5]" />
@@ -166,6 +165,7 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
+        <NotificationToggle />
       </div>
 
       {/* Top Gigs Preview */}

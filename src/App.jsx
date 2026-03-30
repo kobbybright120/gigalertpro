@@ -67,20 +67,20 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <NewGigCountProvider>
-        <Routes>
-          {/* Public routes */}
-          <Route path="/" element={<PublicLanding />} />
-          <Route path="/auth" element={<AuthGuard />} />
+          <Routes>
+            {/* Public routes */}
+            <Route path="/" element={<PublicLanding />} />
+            <Route path="/auth" element={<AuthGuard />} />
 
-          {/* Protected app routes */}
-          <Route element={<ProtectedLayout />}>
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/gig-alerts" element={<GigAlertsPage />} />
-            <Route path="/proposals" element={<ProposalsPage />} />
-            <Route path="/profile" element={<ProfilePage />} />
-          </Route>
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+            {/* Protected app routes */}
+            <Route element={<ProtectedLayout />}>
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/gig-alerts" element={<GigAlertsPage />} />
+              <Route path="/proposals" element={<ProposalsPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
+            </Route>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
         </NewGigCountProvider>
       </AuthProvider>
     </BrowserRouter>

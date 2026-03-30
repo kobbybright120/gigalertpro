@@ -2,8 +2,8 @@ name: Fetch Community Gigs (Craigslist)
 
 on:
   schedule:
-    # Run every 15 minutes for the freshest gigs
-    - cron: "*/15 * * * *"
+    # Run every 5 minutes for the freshest gigs
+    - cron: "*/5 * * * *"
   workflow_dispatch: # Allow manual trigger
 
 jobs:

@@ -199,7 +199,7 @@ export function useGigAlerts(keywordList) {
       fetchAlerts().finally(() => {
         pollingRef.current = false;
       });
-    }, 60 * 1000);
+    }, 30 * 1000);
 
     return () => clearInterval(id);
   }, [fetchAlerts, keywordList]);
