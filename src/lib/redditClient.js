@@ -11,17 +11,39 @@ const SUBREDDITS = [
   { name: "forhire", search: "flair:Hiring", mode: "search", weight: 1.3 },
   { name: "slavelabour", search: "flair:Task", mode: "search", weight: 1.2 },
   { name: "hiring", mode: "new", weight: 1.2 },
-  { name: "jobbit", mode: "new", weight: 1.0 },
-  { name: "remotejs", mode: "new", weight: 1.0 },
   { name: "freelance_forhire", mode: "new", weight: 1.0 },
   { name: "gameDevClassifieds", mode: "new", weight: 0.9 },
   { name: "DesignJobs", mode: "new", weight: 1.0 },
-  { name: "Jobs4Bitcoins", mode: "new", weight: 0.8 },
-  { name: "WorkOnline", mode: "new", weight: 0.8 },
+  { name: "ProgrammingJobs", mode: "new", weight: 1.1 },
+  { name: "CodingJobs", mode: "new", weight: 1.1 },
+  { name: "Programmers_forhire", mode: "new", weight: 1.0 },
+  { name: "SoftwareEngineerJobs", mode: "new", weight: 1.1 },
+  { name: "WebDeveloperJobs", mode: "new", weight: 1.1 },
+  { name: "techjobs", mode: "new", weight: 1.0 },
+  { name: "WebDevJobs", mode: "new", weight: 1.1 },
+  { name: "MachineLearningJobs", mode: "new", weight: 1.0 },
+  { name: "DeveloperJobs", mode: "new", weight: 1.1 },
+  { name: "GraphicDesignJobs", mode: "new", weight: 1.0 },
+  { name: "Designers_forhire", mode: "new", weight: 1.0 },
+  { name: "HireAnEditor", mode: "new", weight: 1.0 },
+  { name: "ContentWriter_forhire", mode: "new", weight: 1.0 },
+  { name: "IllustratorsForHire", mode: "new", weight: 1.0 },
+  { name: "artistforhire", mode: "new", weight: 1.0 },
+  { name: "forhire2", mode: "new", weight: 1.0 },
+  { name: "YouTubeEditorsForHire", mode: "new", weight: 1.0 },
+  { name: "VoiceWork", mode: "new", weight: 1.0 },
+  { name: "VideoEditors_forhire", mode: "new", weight: 1.0 },
+  { name: "VoiceActing", mode: "new", weight: 0.9 },
+  { name: "MarketingJobs", mode: "new", weight: 1.0 },
+  { name: "hireforgigs", mode: "new", weight: 1.1 },
+  { name: "ForHireFreelance", mode: "new", weight: 1.0 },
+  { name: "DevsForHire", mode: "new", weight: 1.1 },
+  { name: "Jobs4Bitcoins", mode: "new", weight: 0.9 },
+  { name: "WritingJobBoard", mode: "new", weight: 1.0 },
 ];
 
 // ── Cache (persisted in sessionStorage to survive HMR reloads) ───────────────
-const CACHE_TTL_MS = 2 * 60 * 1000; // 2 min
+const CACHE_TTL_MS = 45 * 1000; // 45 sec — keep data fresh for speed
 const CACHE_KEY = "gigalertpro_reddit_cache";
 function loadCache() {
   try {
@@ -89,7 +111,7 @@ const SELF_PROMO_PATTERNS = [
   /\bfor\s?hire\b/i,
   /\bhire\s?me\b/i,
   /\[offer\]/i,
-  /\bi\s?(?:am|'m)\s+a\b.{0,40}\b(designer|developer|writer|editor|freelanc|coder|artist|programmer|marketer|consultant|engineer|animator|videograph)/i,
+  /\bi\s?(?:am|'m)\s+(?:a|an)\b.{0,50}\b(designer|developer|writer|editor|freelanc|coder|artist|programmer|marketer|consultant|engineer|animator|videograph)/i,
   /\bi\s?(?:am|'m)\s+an?\s+experienced\b/i,
   /\boffering\s+my\b/i,
   /\boffering\b.{0,25}\bservices?\b/i,
@@ -102,6 +124,63 @@ const SELF_PROMO_PATTERNS = [
   /\byears?\s+(?:of\s+)?experience\b.{0,30}\b(?:in|with)\b/i,
   /\bportfolio\s*:/i,
   /\bhere\s+(?:is|are)\s+(?:my|some)\b.{0,20}\b(?:work|samples?|examples?)\b/i,
+  // ── Extended patterns for sneaky pitches ──
+  /\bi\s+help\b.{0,40}\b(freelancers?|marketers?|agencies|business|startups?)\b/i,
+  /\bhere'?s\s+how\s+you\s+can\b/i,
+  /\bincrease\s+(?:your|the)\b.{0,30}\b(?:value|revenue|income|earnings|sales)\b/i,
+  /\bi\s+work\s+with\b.{0,30}\b(?:clients?|teams?|agencies|businesses?)\b/i,
+  /\bisn'?t\s+an?\s+(?:agency|sales?)\s+pitch\b/i,
+  /\bthis\s+isn'?t\b.{0,20}\bpitch\b/i,
+  /\bnot\s+(?:a|an)\b.{0,15}\bpitch\b/i,
+  /\bI\s+(?:built|created|made|launched)\b.{0,40}\b(?:tool|app|platform|service|saas|product)\b/i,
+  /\bDM\s+(?:me|for)\b/i,
+  /\bmessage\s+me\b/i,
+  /\breach\s+out\s+to\s+me\b/i,
+  /\bbooking\s+(?:clients?|calls?|sessions?)\b/i,
+  /\bbook\s+a\s+(?:call|session|consultation)\b/i,
+  /\bget\s+(?:in\s+touch|started)\b.{0,15}$/im,
+  /\bhere'?s\s+(?:what|how)\s+(?:I|we)\b.{0,30}\b(?:do|offer|provide)\b/i,
+  // ── Job-board subreddit patterns (for-hire / portfolio posts) ──
+  /\[portfolio\]/i,
+  /\[seeking/i,
+  /\[available\]/i,
+  /\[looking\s+for\s+work\]/i,
+  /\bended\s+up\s+building\b/i,
+  /\bi\s+(?:recently\s+)?graduated\b/i,
+  /\bmy\s+(?:experience|skills?)\s+include/i,
+  /\bmy\s+(?:primary|main)\s+focus\s+is\b/i,
+  /\bgaining\s+(?:hands-on|industry|real-world)\s+experience\b/i,
+  /\bdecided\s+to\s+(?:throw|put)\s+it\s+out\s+there\b/i,
+  /\bcurious\s+if\b.{0,40}\buseful\s+to\s+other/i,
+  /\bi'?ve\s+been\s+(?:actively\s+)?(?:working|freelancing|building)\b/i,
+];
+
+// ── Pitch / Spam Score Penalties (reduce score instead of hard-reject) ────────
+const PENALTY_PATTERNS = [
+  { rx: /\bfollow\s+(?:me|us|my)\b/i, penalty: 25 },
+  { rx: /\bsubscribe\b/i, penalty: 20 },
+  {
+    rx: /\bjoin\s+(?:my|our)\b.{0,20}\b(?:discord|slack|newsletter|community|group)\b/i,
+    penalty: 25,
+  },
+  { rx: /\bupvote\b/i, penalty: 15 },
+  { rx: /\bshare\s+this\b/i, penalty: 10 },
+  {
+    rx: /\bfree\s+(?:tool|resource|template|guide|ebook|course|webinar)\b/i,
+    penalty: 20,
+  },
+  { rx: /\bcheck\s+(?:it|this)\s+out\b/i, penalty: 10 },
+  { rx: /\blink\s+(?:in|below)\b/i, penalty: 15 },
+  { rx: /\bswipe\s+up\b/i, penalty: 20 },
+  { rx: /\btip[s]?\s+(?:for|to|that)\b/i, penalty: 10 },
+  { rx: /\bhere'?s\s+(?:a|the)\s+(?:trick|secret|hack)\b/i, penalty: 15 },
+  { rx: /\bgame\s*changer\b/i, penalty: 10 },
+  { rx: /\binstantly\s+(?:increase|boost|grow|double|triple)\b/i, penalty: 20 },
+  {
+    rx: /\b(?:increase|boost|grow|double|triple)\s+your\b.{0,30}\b(?:income|revenue|sales|value|price|rates?)\b/i,
+    penalty: 20,
+  },
+  { rx: /\bhey\s+everyone\b/i, penalty: 5 },
 ];
 
 // ── Hiring Signals (clients seeking work — we WANT these) ────────────────────
@@ -214,10 +293,26 @@ function detectCategory(text) {
 }
 
 /** True if post is a freelancer self-promotion (not a job posting) */
-function isSelfPromotion(title, body) {
+function isSelfPromotion(title, body, flair) {
   // Explicit title tags are definitive — never override
   if (/\[for\s?hire\]/i.test(title) || /\[offer\]/i.test(title)) return true;
   if (/\bfor\s?hire\b/i.test(title) && !/\[hiring\]/i.test(title)) return true;
+  if (/\[portfolio\]/i.test(title)) return true;
+  if (/\[seeking/i.test(title)) return true;
+  if (/\[available\]/i.test(title)) return true;
+
+  // Flair-based detection (job-board subs often use these flairs)
+  if (flair) {
+    const f = flair.toLowerCase();
+    if (
+      f.includes("for hire") ||
+      f.includes("portfolio") ||
+      f.includes("seeking") ||
+      f.includes("available") ||
+      f.includes("looking for work")
+    )
+      return true;
+  }
 
   // Strong hiring signal in the TITLE (not body) overrides body self-promo
   if (HIRING_SIGNALS.some((s) => s.rx.test(title))) return false;
@@ -285,6 +380,11 @@ function computeScore(
   if (bodyLen > 200) score += 5;
   else if (bodyLen > 50) score += 2;
 
+  // ── Penalty deductions for spammy/pitchy signals ──
+  for (const p of PENALTY_PATTERNS) {
+    if (p.rx.test(text)) score -= p.penalty;
+  }
+
   return Math.min(100, Math.max(0, score));
 }
 
@@ -309,15 +409,45 @@ async function fetchAllPostsFromProxy() {
     }
     const json = await resp.json();
     console.log(
-      `[GigAlertPro] API returned ${json.post_count || 0} posts (${json.feed || "unknown"})`,
+      `[GigAlertPro] Reddit API returned ${json.post_count || 0} posts (${json.feed || "unknown"})`,
       json.diagnostics || "no diagnostics",
     );
     return (json.posts || []).map((p) => ({
       ...p,
       _weight: SUBREDDITS.find((s) => s.name === p._sub)?.weight || 1.0,
+      _source_platform: "Reddit",
     }));
   } catch (err) {
-    console.error("[GigAlertPro] API fetch failed:", err.message);
+    console.error("[GigAlertPro] Reddit API fetch failed:", err.message);
+    return [];
+  }
+}
+
+/**
+ * Fetch community posts (Craigslist) from the x-feed endpoint.
+ */
+async function fetchCommunityPostsFromProxy() {
+  try {
+    const resp = await fetch("/api/x-feed", {
+      headers: { Accept: "application/json" },
+    });
+    if (!resp.ok) {
+      console.error(
+        `[GigAlertPro] Community API returned ${resp.status}: ${resp.statusText}`,
+      );
+      return [];
+    }
+    const json = await resp.json();
+    console.log(
+      `[GigAlertPro] Community API returned ${json.post_count || 0} posts (${json.feed || "unknown"})`,
+    );
+    return (json.posts || []).map((p) => ({
+      ...p,
+      _weight: 1.0,
+      _source_platform: p._sub === "craigslist" ? "Craigslist" : "Community",
+    }));
+  } catch (err) {
+    console.error("[GigAlertPro] Community API fetch failed:", err.message);
     return [];
   }
 }
@@ -377,29 +507,13 @@ export async function fetchRedditGigs(keywords) {
     return matchAndScore(cache.data, lowerKws);
   }
 
-  let allPosts;
-  if (IS_PROD) {
-    // PRODUCTION — single CDN-cached fetch from Vercel proxy
-    allPosts = await fetchAllPostsFromProxy();
-  } else {
-    // DEV — per-subreddit via Vite proxy
-    allPosts = [];
-    const BATCH = 2;
-    for (let i = 0; i < SUBREDDITS.length; i += BATCH) {
-      const batch = SUBREDDITS.slice(i, i + BATCH);
-      const results = await Promise.allSettled(
-        batch.map((sub) =>
-          fetchSubreddit(sub).then((posts) =>
-            posts.map((p) => ({ ...p, _sub: sub.name, _weight: sub.weight })),
-          ),
-        ),
-      );
-      for (const r of results) {
-        if (r.status === "fulfilled") allPosts.push(...r.value);
-      }
-      if (i + BATCH < SUBREDDITS.length) await delay(600);
-    }
-  }
+  // Both dev and prod read from Upstash via proxy endpoints
+  // (dev uses Vite middleware, prod uses Vercel serverless)
+  const [redditPosts, xPosts] = await Promise.all([
+    fetchAllPostsFromProxy(),
+    fetchCommunityPostsFromProxy(),
+  ]);
+  const allPosts = [...redditPosts, ...xPosts];
 
   cache = { data: allPosts, ts: Date.now() };
   saveCache(cache);
@@ -435,7 +549,8 @@ function matchAndScore(posts, lowerKws) {
     if (p.author === "[deleted]" || p.author === "AutoModerator") continue;
 
     // ── Skip self-promotions (freelancer ads) ──
-    if (isSelfPromotion(p.title || "", p.selftext || "")) continue;
+    if (isSelfPromotion(p.title || "", p.selftext || "", p.link_flair_text))
+      continue;
 
     // ── Keyword matching — title matches weighted higher ──
     const titleLower = (p.title || "").toLowerCase();
@@ -460,16 +575,21 @@ function matchAndScore(posts, lowerKws) {
       if (found && inTitle) titleHits++;
       return found;
     });
+
+    // All posts (Reddit + Craigslist) require at least one keyword match
     if (matched.length === 0) continue;
 
-    // ── Score (title matches get a bonus) ──
+    // ── Score ──
     const score = computeScore(
       p,
       matched.length,
       lowerKws.length,
-      p._weight,
+      p._weight || 1.0,
       titleHits,
     );
+
+    // ── Skip low-relevance posts (spammy pitches that barely match) ──
+    if (score < 10) continue;
 
     // ── Category ──
     const category = detectCategory(combined);
@@ -488,7 +608,10 @@ function matchAndScore(posts, lowerKws) {
         .replace(/\s+/g, " ")
         .trim()
         .slice(0, 400),
-      url: `https://www.reddit.com${p.permalink}`,
+      url:
+        p._source_platform === "Reddit"
+          ? `https://www.reddit.com${p.permalink}`
+          : p.permalink || "",
       subreddit: p._sub || p.subreddit,
       budget,
       author: p.author || "unknown",
@@ -503,6 +626,7 @@ function matchAndScore(posts, lowerKws) {
       comment_count: p.num_comments || 0,
       upvotes: p.ups || 0,
       flair: p.link_flair_text || null,
+      source_platform: p._source_platform || "Reddit",
     });
   }
 

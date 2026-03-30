@@ -5,6 +5,7 @@ import {
   MessageSquare,
   TrendingUp,
   Tag,
+  Globe,
 } from "lucide-react";
 
 function ScoreBadge({ score }) {
@@ -44,6 +45,18 @@ export default function GigCard({ gig, onGenerateProposal }) {
           {gig.flair && (
             <span className="px-2 py-0.5 bg-purple-500/15 border border-purple-500/25 text-purple-400 text-xs font-medium rounded-full">
               {gig.flair}
+            </span>
+          )}
+          {gig.source_platform && (
+            <span
+              className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-bold rounded-full border ${
+                gig.source_platform === "Reddit"
+                  ? "bg-orange-500/15 border-orange-500/30 text-orange-400"
+                  : "bg-blue-500/15 border-blue-500/30 text-blue-400"
+              }`}
+            >
+              <Globe className="w-3 h-3" />
+              {gig.source_platform}
             </span>
           )}
         </div>

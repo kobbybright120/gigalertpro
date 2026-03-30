@@ -1,0 +1,25 @@
+name: Fetch Community Gigs (Craigslist)
+
+on:
+  schedule:
+    # Run every 15 minutes for the freshest gigs
+    - cron: "*/15 * * * *"
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  fetch-community:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Fetch Craigslist gigs & store in Upstash
+        env:
+          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+        run: node scripts/fetch-x.js

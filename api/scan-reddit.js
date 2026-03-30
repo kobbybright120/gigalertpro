@@ -15,8 +15,12 @@ const REDIS_KEY = "gigalertpro:latest";
 // ── Upstash Redis REST read (zero dependencies) ─────────────────────────────
 
 async function redisGet(key) {
-  let url = (process.env.UPSTASH_REDIS_REST_URL || "").trim().replace(/^["']+|["']+$/g, "");
-  let token = (process.env.UPSTASH_REDIS_REST_TOKEN || "").trim().replace(/^["']+|["']+$/g, "");
+  let url = (process.env.UPSTASH_REDIS_REST_URL || "")
+    .trim()
+    .replace(/^["']+|["']+$/g, "");
+  let token = (process.env.UPSTASH_REDIS_REST_TOKEN || "")
+    .trim()
+    .replace(/^["']+|["']+$/g, "");
   if (!url || !token) return null;
 
   url = url.replace(/\/+$/, "");
@@ -222,7 +226,7 @@ export default async function handler(req, res) {
       // Aggressive CDN caching — data is pre-fetched by cron, safe to cache long
       res.setHeader(
         "Cache-Control",
-        "public, s-maxage=300, stale-while-revalidate=600, stale-if-error=86400",
+        "public, s-maxage=60, stale-while-revalidate=120, stale-if-error=86400",
       );
       res.setHeader("Content-Type", "application/json");
       // cached is already a JSON string — send directly (no double-serialize)

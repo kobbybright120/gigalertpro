@@ -17,13 +17,35 @@ if (!UPSTASH_REDIS_REST_URL || !UPSTASH_REDIS_REST_TOKEN) {
 
 const COMBINED_SUBS = [
   "hiring",
-  "jobbit",
-  "remotejs",
   "freelance_forhire",
   "gameDevClassifieds",
   "DesignJobs",
+  "ProgrammingJobs",
+  "CodingJobs",
+  "Programmers_forhire",
+  "SoftwareEngineerJobs",
+  "WebDeveloperJobs",
+  "techjobs",
+  "WebDevJobs",
+  "MachineLearningJobs",
+  "DeveloperJobs",
+  "GraphicDesignJobs",
+  "Designers_forhire",
+  "HireAnEditor",
+  "ContentWriter_forhire",
+  "IllustratorsForHire",
+  "artistforhire",
+  "forhire2",
+  "YouTubeEditorsForHire",
+  "VoiceWork",
+  "VideoEditors_forhire",
+  "VoiceActing",
+  "MarketingJobs",
+  "hireforgigs",
+  "ForHireFreelance",
+  "DevsForHire",
   "Jobs4Bitcoins",
-  "WorkOnline",
+  "WritingJobBoard",
 ];
 
 const SEARCH_SUBS = [
@@ -114,7 +136,7 @@ function parseAtomFeed(xml, defaultSub) {
 // ── RSS Fetch ────────────────────────────────────────────────────────────────
 
 async function fetchRSS(url, label) {
-  const MAX_RETRIES = 2;
+  const MAX_RETRIES = 4;
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
       const resp = await fetch(url, {
@@ -127,8 +149,10 @@ async function fetchRSS(url, label) {
       });
 
       if (resp.status === 429) {
-        const wait = Math.pow(2, attempt + 1) * 1000 + Math.random() * 1000;
-        console.warn(`[fetcher] 429 on ${label}, retry ${attempt + 1}`);
+        const wait = Math.pow(2, attempt + 2) * 1000 + Math.random() * 2000;
+        console.warn(
+          `[fetcher] 429 on ${label}, retry ${attempt + 1} (wait ${Math.round(wait / 1000)}s)`,
+        );
         await delay(wait);
         continue;
       }
@@ -154,28 +178,36 @@ async function fetchAllPosts() {
   const diagnostics = [];
   const allPosts = [];
 
-  // 1) Combined multi-sub feed
-  const combinedUrl = `https://www.reddit.com/r/${COMBINED_SUBS.join("+")}/new/.rss?limit=100`;
-  const combined = await fetchRSS(combinedUrl, "combined");
-  if (combined.xml) {
-    const posts = parseAtomFeed(combined.xml, "combined");
-    allPosts.push(...posts);
-    diagnostics.push({
-      source: `r/${COMBINED_SUBS.join("+")}`,
-      status: combined.status,
-      count: posts.length,
-      error: null,
-    });
-  } else {
-    diagnostics.push({
-      source: `r/${COMBINED_SUBS.join("+")}`,
-      status: combined.status,
-      count: 0,
-      error: combined.error,
-    });
+  // 1) Combined multi-sub feeds (split into batches to keep URLs short)
+  const MID = Math.ceil(COMBINED_SUBS.length / 2);
+  const batches = [COMBINED_SUBS.slice(0, MID), COMBINED_SUBS.slice(MID)];
+
+  for (let i = 0; i < batches.length; i++) {
+    const batch = batches[i];
+    const batchLabel = `combined-${i + 1}`;
+    const url = `https://www.reddit.com/r/${batch.join("+")}/new/.rss?limit=100`;
+    const result = await fetchRSS(url, batchLabel);
+    if (result.xml) {
+      const posts = parseAtomFeed(result.xml, "combined");
+      allPosts.push(...posts);
+      diagnostics.push({
+        source: `r/${batch.join("+")}`,
+        status: result.status,
+        count: posts.length,
+        error: null,
+      });
+    } else {
+      diagnostics.push({
+        source: `r/${batch.join("+")}`,
+        status: result.status,
+        count: 0,
+        error: result.error,
+      });
+    }
+    if (i < batches.length - 1) await delay(2000);
   }
 
-  await delay(500);
+  await delay(2000);
 
   // 2) Search feeds
   for (const sub of SEARCH_SUBS) {
@@ -198,7 +230,7 @@ async function fetchAllPosts() {
         error: result.error,
       });
     }
-    await delay(500);
+    await delay(2000);
   }
 
   return { allPosts, diagnostics };

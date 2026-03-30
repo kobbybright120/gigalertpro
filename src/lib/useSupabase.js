@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "./supabase";
 import { useAuth } from "../context/AuthContext";
 import { fetchRedditGigs, clearCache } from "./redditClient";
+import { notifyNewGigs, seedSeenIds } from "./gigNotifications";
 
 const VITE_SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const VITE_SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -133,6 +134,12 @@ export function useGigAlerts(keywordList) {
       }
       try {
         const results = await fetchRedditGigs(kws);
+        // On first load, seed seen IDs; on polls, notify new gigs
+        if (pollingRef.current) {
+          notifyNewGigs(results);
+        } else {
+          seedSeenIds(results);
+        }
         setAlerts(results);
       } catch {
         // On poll failure keep existing results; on first fetch show empty
@@ -160,7 +167,13 @@ export function useGigAlerts(keywordList) {
       .order("reddit_created", { ascending: false })
       .limit(50);
 
-    setAlerts(data || []);
+    const results = data || [];
+    if (pollingRef.current) {
+      notifyNewGigs(results);
+    } else {
+      seedSeenIds(results);
+    }
+    setAlerts(results);
     setLoading(false);
   }, [user, keywordList]);
 
@@ -176,16 +189,13 @@ export function useGigAlerts(keywordList) {
     );
     if (kws.length === 0) return;
 
-    const id = setInterval(
-      () => {
-        pollingRef.current = true;
-        clearCache();
-        fetchAlerts().finally(() => {
-          pollingRef.current = false;
-        });
-      },
-      2 * 60 * 1000,
-    );
+    const id = setInterval(() => {
+      pollingRef.current = true;
+      clearCache();
+      fetchAlerts().finally(() => {
+        pollingRef.current = false;
+      });
+    }, 60 * 1000);
 
     return () => clearInterval(id);
   }, [fetchAlerts, keywordList]);
