@@ -10,6 +10,8 @@ import {
   Shield,
   Clock,
   BarChart3,
+  Check,
+  Star,
 } from "lucide-react";
 
 export default function LandingPage() {
@@ -213,6 +215,121 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── Pricing ── */}
+      <section className="relative py-28 border-t border-white/[0.04]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <p className="text-sm font-semibold text-[#00F0B5] uppercase tracking-widest mb-3">
+              Pricing
+            </p>
+            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+              Simple, transparent pricing
+            </h2>
+            <p className="mt-4 text-gray-400 text-lg max-w-xl mx-auto">
+              Start free and upgrade when you're ready to go all-in.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            {/* Free Tier */}
+            <div className="glass-card rounded-2xl p-8 hover:border-white/10 transition-all duration-300 flex flex-col">
+              <div className="mb-6">
+                <h3 className="text-lg font-bold text-white">Free</h3>
+                <p className="text-gray-500 text-sm mt-1">
+                  Get started instantly
+                </p>
+              </div>
+              <div className="mb-8">
+                <span className="text-4xl font-extrabold text-white">$0</span>
+                <span className="text-gray-500 text-sm ml-1">/month</span>
+              </div>
+              <ul className="space-y-3.5 mb-10 flex-1">
+                <PricingFeature text="5 keyword alerts" />
+                <PricingFeature text="Reddit scanning (34+ subs)" />
+                <PricingFeature text="Craigslist scanning (10 cities)" />
+                <PricingFeature text="Basic gig scoring" />
+                <PricingFeature text="Browser notifications" />
+              </ul>
+              <Link
+                to="/auth"
+                className="block w-full text-center px-6 py-3.5 border border-white/10 text-gray-300 font-semibold rounded-xl hover:bg-white/[0.04] hover:border-white/20 transition-all duration-300"
+              >
+                Get Started
+              </Link>
+            </div>
+
+            {/* Pro Tier — Highlighted */}
+            <div className="relative glass-card rounded-2xl p-8 border-[#00F0B5]/20 hover:border-[#00F0B5]/30 transition-all duration-300 flex flex-col glow-green">
+              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-[#00F0B5] text-[#020617] text-xs font-bold rounded-full">
+                  <Star className="w-3 h-3" /> Most Popular
+                </span>
+              </div>
+              <div className="mb-6">
+                <h3 className="text-lg font-bold text-white">Pro</h3>
+                <p className="text-gray-500 text-sm mt-1">
+                  For active freelancers
+                </p>
+              </div>
+              <div className="mb-8">
+                <span className="text-4xl font-extrabold text-gradient">
+                  $19
+                </span>
+                <span className="text-gray-500 text-sm ml-1">/month</span>
+              </div>
+              <ul className="space-y-3.5 mb-10 flex-1">
+                <PricingFeature text="Unlimited keyword alerts" highlighted />
+                <PricingFeature text="Everything in Free" highlighted />
+                <PricingFeature text="AI Proposal Generator" highlighted />
+                <PricingFeature
+                  text="Priority scanning (every 1 min)"
+                  highlighted
+                />
+                <PricingFeature text="Email + push notifications" highlighted />
+                <PricingFeature
+                  text="Proposal history & templates"
+                  highlighted
+                />
+              </ul>
+              <Link
+                to="/auth"
+                className="block w-full text-center px-6 py-3.5 bg-[#00F0B5] text-[#020617] font-bold rounded-xl hover:bg-[#00dba5] hover:shadow-[0_0_16px_rgba(0,240,181,0.2)] transition-all duration-300"
+              >
+                Upgrade to Pro
+              </Link>
+            </div>
+
+            {/* Elite Tier */}
+            <div className="glass-card rounded-2xl p-8 hover:border-white/10 transition-all duration-300 flex flex-col">
+              <div className="mb-6">
+                <h3 className="text-lg font-bold text-white">Elite</h3>
+                <p className="text-gray-500 text-sm mt-1">
+                  For agencies & power users
+                </p>
+              </div>
+              <div className="mb-8">
+                <span className="text-4xl font-extrabold text-white">$49</span>
+                <span className="text-gray-500 text-sm ml-1">/month</span>
+              </div>
+              <ul className="space-y-3.5 mb-10 flex-1">
+                <PricingFeature text="Everything in Pro" />
+                <PricingFeature text="Multi-user team access" />
+                <PricingFeature text="Custom source integrations" />
+                <PricingFeature text="Dedicated Discord support" />
+                <PricingFeature text="API access" />
+                <PricingFeature text="White-label proposals" />
+              </ul>
+              <Link
+                to="/auth"
+                className="block w-full text-center px-6 py-3.5 border border-white/10 text-gray-300 font-semibold rounded-xl hover:bg-white/[0.04] hover:border-white/20 transition-all duration-300"
+              >
+                Contact Us
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── Social Proof ── */}
       <section className="relative py-28 border-t border-white/[0.04]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -343,6 +460,26 @@ function FeatureCard({ icon: Icon, title, description, badge, accent }) {
       <h3 className="text-lg font-bold mb-2 text-white">{title}</h3>
       <p className="text-gray-400 text-sm leading-relaxed">{description}</p>
     </div>
+  );
+}
+
+/* ── Pricing Feature ── */
+function PricingFeature({ text, highlighted }) {
+  return (
+    <li className="flex items-center gap-3">
+      <div
+        className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
+          highlighted
+            ? "bg-[#00F0B5]/15 text-[#00F0B5]"
+            : "bg-white/[0.06] text-gray-400"
+        }`}
+      >
+        <Check className="w-3 h-3" />
+      </div>
+      <span className={highlighted ? "text-gray-200" : "text-gray-400"}>
+        {text}
+      </span>
+    </li>
   );
 }
 

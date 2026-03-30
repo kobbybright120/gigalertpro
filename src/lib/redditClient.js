@@ -607,7 +607,10 @@ function matchAndScore(posts, lowerKws) {
         .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
         .replace(/&\w+;/g, " ")
         // Strip Reddit RSS submission footer
-        .replace(/submitted\s+by\s+\/u\/\S+\s+to\s+r\/\S+.*?(\[link\]|\[comments\])[^\n]*/gi, "")
+        .replace(
+          /submitted\s+by\s+\/u\/\S+\s+to\s+r\/\S+.*?(\[link\]|\[comments\])[^\n]*/gi,
+          "",
+        )
         .replace(/\[link\]|\[comments\]/gi, "")
         .replace(/\s+/g, " ")
         .trim()

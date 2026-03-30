@@ -67,23 +67,28 @@ function delay(ms) {
 
 function stripHtml(html) {
   if (!html) return "";
-  return html
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&#x200B;/g, "")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
-    .replace(/<!--[\s\S]*?-->/g, "")
-    .replace(/<[^>]*>/g, " ")
-    // Strip Reddit RSS submission footer: "submitted by /u/... to r/... [link] [comments]"
-    .replace(/submitted\s+by\s+\/u\/\S+\s+to\s+r\/\S+.*?(\[link\]|\[comments\])[^\n]*/gi, "")
-    // Strip leftover [link] / [comments] fragments
-    .replace(/\[link\]|\[comments\]/gi, "")
-    .replace(/\s+/g, " ")
-    .trim();
+  return (
+    html
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&#x200B;/g, "")
+      .replace(/&nbsp;/g, " ")
+      .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
+      .replace(/<!--[\s\S]*?-->/g, "")
+      .replace(/<[^>]*>/g, " ")
+      // Strip Reddit RSS submission footer: "submitted by /u/... to r/... [link] [comments]"
+      .replace(
+        /submitted\s+by\s+\/u\/\S+\s+to\s+r\/\S+.*?(\[link\]|\[comments\])[^\n]*/gi,
+        "",
+      )
+      // Strip leftover [link] / [comments] fragments
+      .replace(/\[link\]|\[comments\]/gi, "")
+      .replace(/\s+/g, " ")
+      .trim()
+  );
 }
 
 function xmlText(xml, tag) {

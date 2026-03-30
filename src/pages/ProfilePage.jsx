@@ -85,7 +85,9 @@ export default function ProfilePage() {
               <X className="w-5 h-5" />
             </button>
 
-            <h2 className="text-2xl font-extrabold text-white mb-1 tracking-tight">Edit Profile</h2>
+            <h2 className="text-2xl font-extrabold text-white mb-1 tracking-tight">
+              Edit Profile
+            </h2>
             <p className="text-gray-500 text-sm mb-8">
               Update your public portfolio and give the AI context.
             </p>
@@ -297,7 +299,9 @@ export default function ProfilePage() {
         <div className="lg:col-span-3 space-y-6 lg:mt-16">
           {/* About Me Card */}
           <div className="glass-card rounded-2xl p-6">
-            <h3 className="text-xl font-extrabold text-white mb-3 tracking-tight">About Me</h3>
+            <h3 className="text-xl font-extrabold text-white mb-3 tracking-tight">
+              About Me
+            </h3>
             <p className="text-gray-400 leading-relaxed">
               {profile.bio ||
                 "No bio added yet. Click Edit Profile to add one."}

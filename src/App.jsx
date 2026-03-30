@@ -70,6 +70,7 @@ export default function App() {
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<PublicLanding />} />
+            <Route path="/landing" element={<LandingPage />} />
             <Route path="/auth" element={<AuthGuard />} />
 
             {/* Protected app routes */}
