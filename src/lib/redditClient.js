@@ -630,10 +630,12 @@ function matchAndScore(posts, lowerKws) {
     });
   }
 
-  // ── Sort: primary by score (desc), secondary by recency (desc) ──
+  // ── Sort: primary by recency (newest first), secondary by score (desc) ──
   results.sort((a, b) => {
-    if (b.score !== a.score) return b.score - a.score;
-    return new Date(b.reddit_created) - new Date(a.reddit_created);
+    const timeA = new Date(a.reddit_created).getTime();
+    const timeB = new Date(b.reddit_created).getTime();
+    if (timeB !== timeA) return timeB - timeA;
+    return b.score - a.score;
   });
 
   return results;
