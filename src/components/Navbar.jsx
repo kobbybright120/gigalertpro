@@ -136,10 +136,6 @@ export default function Navbar() {
 
         {/* Bottom section */}
         <div className="px-3 py-4 border-t border-white/[0.04] shrink-0 space-y-1">
-          <div className="flex items-center gap-3 px-3 py-2">
-            <NotificationBell />
-            <span className="text-sm text-gray-400">Alerts</span>
-          </div>
           <button
             onClick={handleSignOut}
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:bg-red-500/[0.06] hover:text-red-400 transition-all duration-200 w-full"
