@@ -57,7 +57,7 @@ const USER_AGENT =
   "Mozilla/5.0 (compatible; GigAlertPro/1.0; +https://gigalertpro.vercel.app)";
 
 const REDIS_KEY = "gigalertpro:latest";
-const REDIS_TTL = 900; // 15 min TTL in Redis (fetcher runs every 5 min)
+const REDIS_TTL = 3600; // 1 hour TTL (cron refreshes every 2 min, this is just a safety net)
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 

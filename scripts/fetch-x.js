@@ -20,7 +20,7 @@ if (!UPSTASH_REDIS_REST_URL || !UPSTASH_REDIS_REST_TOKEN) {
 // ── Config ───────────────────────────────────────────────────────────────────
 
 const REDIS_KEY = process.env.X_REDIS_KEY || "gigalertpro:x:latest";
-const REDIS_TTL = parseInt(process.env.X_REDIS_TTL || "1200", 10); // 20 min
+const REDIS_TTL = parseInt(process.env.X_REDIS_TTL || "3600", 10); // 1 hour safety net
 const MAX_POSTS = parseInt(process.env.X_MAX_POSTS || "300", 10);
 
 // Craigslist cities to scan (subdomain format)
