@@ -14,16 +14,20 @@ const REDIS_KEY = "gigalertpro:latest";
 
 // ── Upstash Redis REST read (zero dependencies) ─────────────────────────────
 
-async function redisGet(key) {
-  let url = (process.env.UPSTASH_REDIS_REST_URL || "")
+function getRedisCredentials() {
+  const url = (process.env.UPSTASH_REDIS_REST_URL || "")
+    .trim()
+    .replace(/^["']+|["']+$/g, "")
+    .replace(/\/+$/, "");
+  const token = (process.env.UPSTASH_REDIS_REST_TOKEN || "")
     .trim()
     .replace(/^["']+|["']+$/g, "");
-  let token = (process.env.UPSTASH_REDIS_REST_TOKEN || "")
-    .trim()
-    .replace(/^["']+|["']+$/g, "");
-  if (!url || !token) return null;
+  return { url, token };
+}
 
-  url = url.replace(/\/+$/, "");
+async function redisGet(key) {
+  const { url, token } = getRedisCredentials();
+  if (!url || !token) return null;
 
   try {
     const resp = await fetch(`${url}/get/${encodeURIComponent(key)}`, {
@@ -37,17 +41,58 @@ async function redisGet(key) {
   }
 }
 
+async function redisSet(key, value, ttlSeconds) {
+  const { url, token } = getRedisCredentials();
+  if (!url || !token) return;
+  try {
+    await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(["SET", key, value, "EX", ttlSeconds]),
+    });
+  } catch {
+    /* best effort */
+  }
+}
+
 // ── RSS Fallback (kept for dev mode / when Redis not configured) ─────────────
 
-const COMBINED_SUBS = [
+const COMBINED_SUBS_1 = [
   "hiring",
-  "jobbit",
-  "remotejs",
   "freelance_forhire",
   "gameDevClassifieds",
   "DesignJobs",
+  "ProgrammingJobs",
+  "CodingJobs",
+  "Programmers_forhire",
+  "SoftwareEngineerJobs",
+  "WebDeveloperJobs",
+  "techjobs",
+  "WebDevJobs",
+  "MachineLearningJobs",
+  "DeveloperJobs",
+  "GraphicDesignJobs",
+  "Designers_forhire",
+];
+const COMBINED_SUBS_2 = [
+  "HireAnEditor",
+  "ContentWriter_forhire",
+  "IllustratorsForHire",
+  "artistforhire",
+  "forhire2",
+  "YouTubeEditorsForHire",
+  "VoiceWork",
+  "VideoEditors_forhire",
+  "VoiceActing",
+  "MarketingJobs",
+  "hireforgigs",
+  "ForHireFreelance",
+  "DevsForHire",
   "Jobs4Bitcoins",
-  "WorkOnline",
+  "WritingJobBoard",
 ];
 const SEARCH_SUBS = [
   { name: "forhire", search: "flair:Hiring" },
@@ -157,26 +202,49 @@ async function fetchAllPostsLive() {
   const diagnostics = [];
   const allPosts = [];
 
-  const combinedUrl = `https://www.reddit.com/r/${COMBINED_SUBS.join("+")}/new/.rss?limit=100`;
-  const combined = await fetchRSS(combinedUrl, "combined");
-  if (combined.xml) {
-    const posts = parseAtomFeed(combined.xml, "combined");
+  // Batch 1
+  const url1 = `https://www.reddit.com/r/${COMBINED_SUBS_1.join("+")}/new/.rss?limit=100`;
+  const batch1 = await fetchRSS(url1, "batch1");
+  if (batch1.xml) {
+    const posts = parseAtomFeed(batch1.xml, "combined");
     allPosts.push(...posts);
     diagnostics.push({
-      source: `r/${COMBINED_SUBS.join("+")}`,
-      status: combined.status,
+      source: "batch1",
+      status: batch1.status,
       count: posts.length,
       error: null,
     });
   } else {
     diagnostics.push({
-      source: `r/${COMBINED_SUBS.join("+")}`,
-      status: combined.status,
+      source: "batch1",
+      status: batch1.status,
       count: 0,
-      error: combined.error,
+      error: batch1.error,
     });
   }
-  await delay(500);
+  await delay(2000);
+
+  // Batch 2
+  const url2 = `https://www.reddit.com/r/${COMBINED_SUBS_2.join("+")}/new/.rss?limit=100`;
+  const batch2 = await fetchRSS(url2, "batch2");
+  if (batch2.xml) {
+    const posts = parseAtomFeed(batch2.xml, "combined");
+    allPosts.push(...posts);
+    diagnostics.push({
+      source: "batch2",
+      status: batch2.status,
+      count: posts.length,
+      error: null,
+    });
+  } else {
+    diagnostics.push({
+      source: "batch2",
+      status: batch2.status,
+      count: 0,
+      error: batch2.error,
+    });
+  }
+  await delay(1000);
 
   for (const sub of SEARCH_SUBS) {
     const searchUrl = `https://www.reddit.com/r/${sub.name}/search.rss?q=${encodeURIComponent(sub.search)}&restrict_sr=1&sort=new&limit=30`;
@@ -236,6 +304,12 @@ export default async function handler(req, res) {
     // ── 2) Fallback: live RSS fetch (dev / Redis not configured) ──
     console.log("[scan-reddit] Redis miss — falling back to live RSS fetch");
     const data = await fetchAllPostsLive();
+
+    // Auto-populate Redis so subsequent requests are instant
+    if (data.posts.length > 0) {
+      const payload = JSON.stringify(data);
+      redisSet(REDIS_KEY, payload, 3600).catch(() => {}); // fire & forget
+    }
 
     // Shorter CDN TTL for live path
     res.setHeader(
