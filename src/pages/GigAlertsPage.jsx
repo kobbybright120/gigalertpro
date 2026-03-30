@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Plus,
@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import GigCard from "../components/GigCard";
 import { useKeywords, useGigAlerts, useProposals } from "../lib/useSupabase";
+import { useNewGigCount } from "../context/NewGigCountContext";
 import { generateProposal } from "../lib/mockData";
 
 export default function GigAlertsPage() {
@@ -22,6 +23,12 @@ export default function GigAlertsPage() {
   const { keywords, addKeyword, removeKeyword } = useKeywords();
   const { alerts, loading: alertsLoading } = useGigAlerts(keywords);
   const { saveProposal } = useProposals();
+  const { reset: resetGigCount } = useNewGigCount();
+
+  // Clear the badge whenever the user is on this page
+  useEffect(() => {
+    resetGigCount();
+  }, [resetGigCount]);
 
   function handleAddKeyword(e) {
     e.preventDefault();

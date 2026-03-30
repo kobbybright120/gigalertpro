@@ -6,6 +6,7 @@ import {
   Outlet,
 } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { NewGigCountProvider } from "./context/NewGigCountContext";
 
 const VITE_SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const VITE_SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -65,6 +66,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <NewGigCountProvider>
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<PublicLanding />} />
@@ -79,6 +81,7 @@ export default function App() {
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </NewGigCountProvider>
       </AuthProvider>
     </BrowserRouter>
   );

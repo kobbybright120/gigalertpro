@@ -12,6 +12,7 @@ import {
   X,
 } from "lucide-react";
 import NotificationBell from "./NotificationBell";
+import { useNewGigCount } from "../context/NewGigCountContext";
 
 const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -25,6 +26,7 @@ export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { count: newGigCount, reset: resetGigCount } = useNewGigCount();
 
   function handleSignOut() {
     signOut();
@@ -86,11 +88,15 @@ export default function Navbar() {
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {navItems.map(({ to, label, icon: Icon }) => {
             const active = location.pathname === to;
+            const isGigAlerts = to === "/gig-alerts";
             return (
               <Link
                 key={to}
                 to={to}
-                onClick={() => setMobileOpen(false)}
+                onClick={() => {
+                  setMobileOpen(false);
+                  if (isGigAlerts) resetGigCount();
+                }}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors relative
                   ${
                     active
@@ -103,6 +109,11 @@ export default function Navbar() {
                 )}
                 <Icon className="w-5 h-5" />
                 {label}
+                {isGigAlerts && newGigCount > 0 && (
+                  <span className="ml-auto min-w-5 h-5 flex items-center justify-center px-1.5 rounded-full bg-[#00F0B5] text-[#020617] text-xs font-bold animate-pulse">
+                    {newGigCount > 99 ? "99+" : newGigCount}
+                  </span>
+                )}
               </Link>
             );
           })}

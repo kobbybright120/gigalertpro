@@ -3,6 +3,7 @@ import { supabase } from "./supabase";
 import { useAuth } from "../context/AuthContext";
 import { fetchRedditGigs, clearCache } from "./redditClient";
 import { notifyNewGigs, seedSeenIds } from "./gigNotifications";
+import { useNewGigCount } from "../context/NewGigCountContext";
 
 const VITE_SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const VITE_SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -114,6 +115,7 @@ export function useKeywords() {
 // ── Gig Alerts (matched posts) with keyword filtering + auto-poll ──
 export function useGigAlerts(keywordList) {
   const { user } = useAuth();
+  const { bump } = useNewGigCount();
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const pollingRef = useRef(false);
@@ -136,7 +138,8 @@ export function useGigAlerts(keywordList) {
         const results = await fetchRedditGigs(kws);
         // On first load, seed seen IDs; on polls, notify new gigs
         if (pollingRef.current) {
-          notifyNewGigs(results);
+          const newCount = notifyNewGigs(results);
+          if (newCount > 0) bump(newCount);
         } else {
           seedSeenIds(results);
         }
@@ -169,13 +172,14 @@ export function useGigAlerts(keywordList) {
 
     const results = data || [];
     if (pollingRef.current) {
-      notifyNewGigs(results);
+      const newCount = notifyNewGigs(results);
+      if (newCount > 0) bump(newCount);
     } else {
       seedSeenIds(results);
     }
     setAlerts(results);
     setLoading(false);
-  }, [user, keywordList]);
+  }, [user, keywordList, bump]);
 
   // Initial fetch + re-fetch when keywords change
   useEffect(() => {
