@@ -69,31 +69,31 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="p-6 lg:p-8 space-y-0">
+    <div className="p-5 lg:p-8 space-y-0 max-w-6xl">
       {/* Edit Profile Modal */}
       {editing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             onClick={() => setEditing(false)}
           />
-          <div className="relative w-full max-w-2xl bg-[#0B1120] border border-white/10 rounded-2xl p-8 shadow-2xl max-h-[90vh] overflow-y-auto">
+          <div className="relative w-full max-w-2xl glass-card rounded-2xl p-8 shadow-2xl max-h-[90vh] overflow-y-auto border border-white/[0.08]">
             <button
               onClick={() => setEditing(false)}
-              className="absolute top-6 right-6 text-gray-400 hover:text-white transition-colors"
+              className="absolute top-6 right-6 text-gray-500 hover:text-white transition-colors"
             >
-              <X className="w-6 h-6" />
+              <X className="w-5 h-5" />
             </button>
 
-            <h2 className="text-2xl font-bold text-white mb-1">Edit Profile</h2>
-            <p className="text-gray-400 text-sm mb-8">
+            <h2 className="text-2xl font-extrabold text-white mb-1 tracking-tight">Edit Profile</h2>
+            <p className="text-gray-500 text-sm mb-8">
               Update your public portfolio and give the AI context.
             </p>
 
             <div className="space-y-5">
               {/* Display Name */}
               <div>
-                <label className="block text-sm font-medium text-white mb-2">
+                <label className="block text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wider">
                   Display Name
                 </label>
                 <input
@@ -103,15 +103,15 @@ export default function ProfilePage() {
                     setDraft((d) => ({ ...d, name: e.target.value }))
                   }
                   placeholder="Your display name"
-                  className="w-full px-4 py-3 bg-[#020617] border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-[#00F0B5]/40 focus:border-transparent outline-none transition"
+                  className="w-full px-4 py-3 bg-[#020617]/60 border border-white/[0.06] rounded-xl text-white placeholder-gray-600 focus:ring-2 focus:ring-[#00F0B5]/30 focus:border-[#00F0B5]/20 outline-none transition-all duration-200 text-sm"
                 />
               </div>
 
               {/* Bio */}
               <div>
-                <label className="block text-sm font-medium text-white mb-2">
+                <label className="block text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wider">
                   Bio{" "}
-                  <span className="text-[#00F0B5] font-normal">
+                  <span className="text-[#00F0B5] font-normal normal-case tracking-normal">
                     (Used heavily by AI for proposals)
                   </span>
                 </label>
@@ -122,15 +122,15 @@ export default function ProfilePage() {
                   }
                   rows={4}
                   placeholder="Tell clients about yourself..."
-                  className="w-full px-4 py-3 bg-[#020617] border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-[#00F0B5]/40 focus:border-transparent outline-none transition resize-y"
+                  className="w-full px-4 py-3 bg-[#020617]/60 border border-white/[0.06] rounded-xl text-white placeholder-gray-600 focus:ring-2 focus:ring-[#00F0B5]/30 focus:border-[#00F0B5]/20 outline-none transition-all duration-200 resize-y text-sm"
                 />
               </div>
 
               {/* Skills */}
               <div>
-                <label className="block text-sm font-medium text-white mb-2">
+                <label className="block text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wider">
                   Skills{" "}
-                  <span className="text-[#00F0B5] font-normal">
+                  <span className="text-[#00F0B5] font-normal normal-case tracking-normal">
                     (Comma separated)
                   </span>
                 </label>
@@ -141,16 +141,16 @@ export default function ProfilePage() {
                     setDraft((d) => ({ ...d, skills: e.target.value }))
                   }
                   placeholder="React developer, Logo designer, html"
-                  className="w-full px-4 py-3 bg-[#020617] border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-[#00F0B5]/40 focus:border-transparent outline-none transition"
+                  className="w-full px-4 py-3 bg-[#020617]/60 border border-white/[0.06] rounded-xl text-white placeholder-gray-600 focus:ring-2 focus:ring-[#00F0B5]/30 focus:border-[#00F0B5]/20 outline-none transition-all duration-200 text-sm"
                 />
               </div>
 
               {/* Portfolio Links + Testimonials side by side */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
+                  <label className="block text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wider">
                     Portfolio Links{" "}
-                    <span className="text-[#00F0B5] font-normal">
+                    <span className="text-[#00F0B5] font-normal normal-case tracking-normal">
                       (One per line)
                     </span>
                   </label>
@@ -164,13 +164,13 @@ export default function ProfilePage() {
                     }
                     rows={4}
                     placeholder={"facebook.com\nx.com"}
-                    className="w-full px-4 py-3 bg-[#020617] border border-white/10 rounded-xl text-white placeholder-gray-500 font-mono text-sm focus:ring-2 focus:ring-[#00F0B5]/40 focus:border-transparent outline-none transition resize-y"
+                    className="w-full px-4 py-3 bg-[#020617]/60 border border-white/[0.06] rounded-xl text-white placeholder-gray-600 font-mono text-sm focus:ring-2 focus:ring-[#00F0B5]/30 focus:border-[#00F0B5]/20 outline-none transition-all duration-200 resize-y"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
+                  <label className="block text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wider">
                     Testimonials{" "}
-                    <span className="text-[#00F0B5] font-normal">
+                    <span className="text-[#00F0B5] font-normal normal-case tracking-normal">
                       (One per line)
                     </span>
                   </label>
@@ -184,7 +184,7 @@ export default function ProfilePage() {
                     }
                     rows={4}
                     placeholder={"alex is a good dev\nfast"}
-                    className="w-full px-4 py-3 bg-[#020617] border border-white/10 rounded-xl text-white placeholder-gray-500 font-mono text-sm focus:ring-2 focus:ring-[#00F0B5]/40 focus:border-transparent outline-none transition resize-y"
+                    className="w-full px-4 py-3 bg-[#020617]/60 border border-white/[0.06] rounded-xl text-white placeholder-gray-600 font-mono text-sm focus:ring-2 focus:ring-[#00F0B5]/30 focus:border-[#00F0B5]/20 outline-none transition-all duration-200 resize-y"
                   />
                 </div>
               </div>
@@ -192,7 +192,7 @@ export default function ProfilePage() {
               {/* Save Button */}
               <button
                 onClick={handleSave}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-[#00F0B5] text-[#020617] font-semibold rounded-xl hover:bg-[#00dba5] transition-colors"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-[#00F0B5] text-[#020617] font-bold rounded-xl hover:bg-[#00dba5] hover:shadow-[0_0_16px_rgba(0,240,181,0.2)] transition-all duration-200"
               >
                 <Save className="w-5 h-5" />
                 Save Changes
@@ -205,9 +205,11 @@ export default function ProfilePage() {
       {/* Gradient Banner */}
       <div className="relative h-44 rounded-t-2xl bg-gradient-to-r from-[#0B1120] via-[#0a3d2e] to-[#0d4f5a] overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-transparent via-[#00F0B5]/5 to-[#00D4FF]/10" />
+        <div className="absolute -top-10 -right-10 w-40 h-40 bg-[#00F0B5]/10 rounded-full blur-3xl" />
+        <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-[#00D4FF]/10 rounded-full blur-3xl" />
         <button
           onClick={openEditor}
-          className="absolute top-4 right-4 inline-flex items-center gap-1.5 px-4 py-2 bg-white/10 backdrop-blur-sm border border-white/10 text-gray-200 text-sm font-medium rounded-lg hover:bg-white/20 transition-colors"
+          className="absolute top-4 right-4 inline-flex items-center gap-1.5 px-4 py-2 bg-white/[0.08] backdrop-blur-sm border border-white/[0.08] text-gray-200 text-sm font-medium rounded-xl hover:bg-white/[0.14] hover:border-white/[0.12] transition-all duration-200"
         >
           <Pencil className="w-4 h-4" />
           Edit Profile
@@ -219,17 +221,17 @@ export default function ProfilePage() {
         {/* Left Column */}
         <div className="lg:col-span-2 space-y-6">
           {/* Profile Card */}
-          <div className="bg-[#0B1120] border border-white/5 rounded-2xl p-6 pt-0 text-center">
+          <div className="glass-card rounded-2xl p-6 pt-0 text-center">
             <div className="flex justify-center -mt-10 mb-4">
-              <div className="w-20 h-20 rounded-xl bg-[#0B1120] border-2 border-white/10 flex items-center justify-center shadow-lg">
-                <User className="w-10 h-10 text-[#00F0B5]" />
+              <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-[#00F0B5] to-[#00D4FF] flex items-center justify-center shadow-[0_0_20px_rgba(0,240,181,0.25)]">
+                <User className="w-10 h-10 text-[#020617]" />
               </div>
             </div>
-            <h2 className="text-xl font-bold text-white">
+            <h2 className="text-xl font-extrabold text-white tracking-tight">
               {profile.name || "Your Name"}
             </h2>
-            <p className="text-gray-400 text-sm mt-1 flex items-center justify-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-[#00F0B5]" />
+            <p className="text-gray-500 text-sm mt-1 flex items-center justify-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-[#00F0B5] shadow-[0_0_6px_rgba(0,240,181,0.4)]" />
               Available Worldwide
             </p>
 
@@ -237,7 +239,7 @@ export default function ProfilePage() {
             <div className="mt-6 text-left">
               <div className="flex items-center gap-2 mb-3">
                 <Briefcase className="w-4 h-4 text-[#00F0B5]" />
-                <h3 className="text-sm font-bold text-white tracking-wide uppercase">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
                   Core Skills
                 </h3>
               </div>
@@ -246,7 +248,7 @@ export default function ProfilePage() {
                   profile.skills.map((skill, i) => (
                     <span
                       key={i}
-                      className="px-3 py-1.5 bg-white/5 text-gray-300 text-sm rounded-lg border border-white/10"
+                      className="px-3 py-1.5 bg-white/[0.04] text-gray-300 text-sm rounded-xl border border-white/[0.06] hover:border-[#00F0B5]/20 hover:text-[#00F0B5] transition-all duration-200"
                     >
                       {skill}
                     </span>
@@ -259,10 +261,10 @@ export default function ProfilePage() {
           </div>
 
           {/* Portfolio Links Card */}
-          <div className="bg-[#0B1120] border border-white/5 rounded-2xl p-6">
+          <div className="glass-card rounded-2xl p-6">
             <div className="flex items-center gap-2 mb-4">
               <Link2 className="w-4 h-4 text-[#00F0B5]" />
-              <h3 className="text-sm font-bold text-white tracking-wide uppercase">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
                 Portfolio Links
               </h3>
             </div>
@@ -271,14 +273,14 @@ export default function ProfilePage() {
                 profile.portfolioLinks.map((link, i) => (
                   <div
                     key={i}
-                    className="flex items-center gap-3 px-4 py-3 bg-white/5 rounded-lg"
+                    className="flex items-center gap-3 px-4 py-3 bg-white/[0.03] rounded-xl border border-white/[0.04] hover:border-[#00F0B5]/20 transition-all duration-200 group"
                   >
-                    <ExternalLink className="w-4 h-4 text-gray-500 shrink-0" />
+                    <ExternalLink className="w-4 h-4 text-gray-600 shrink-0 group-hover:text-[#00F0B5] transition-colors" />
                     <a
                       href={link.startsWith("http") ? link : `https://${link}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sm text-gray-300 hover:text-[#00F0B5] transition-colors truncate"
+                      className="text-sm text-gray-400 group-hover:text-[#00F0B5] transition-colors truncate"
                     >
                       {link}
                     </a>
@@ -294,8 +296,8 @@ export default function ProfilePage() {
         {/* Right Column */}
         <div className="lg:col-span-3 space-y-6 lg:mt-16">
           {/* About Me Card */}
-          <div className="bg-[#0B1120] border border-white/5 rounded-2xl p-6">
-            <h3 className="text-xl font-bold text-white mb-3">About Me</h3>
+          <div className="glass-card rounded-2xl p-6">
+            <h3 className="text-xl font-extrabold text-white mb-3 tracking-tight">About Me</h3>
             <p className="text-gray-400 leading-relaxed">
               {profile.bio ||
                 "No bio added yet. Click Edit Profile to add one."}
@@ -303,12 +305,12 @@ export default function ProfilePage() {
           </div>
 
           {/* Client Testimonials Card */}
-          <div className="bg-[#0B1120] border border-white/5 rounded-2xl overflow-hidden">
+          <div className="glass-card rounded-2xl overflow-hidden">
             <div className="h-1 bg-gradient-to-r from-[#00F0B5] to-[#00D4FF]" />
             <div className="p-6">
               <div className="flex items-center gap-2 mb-4">
                 <MessageSquareQuote className="w-5 h-5 text-[#00F0B5]" />
-                <h3 className="text-xl font-bold text-white">
+                <h3 className="text-xl font-extrabold text-white tracking-tight">
                   Client Testimonials
                 </h3>
               </div>
@@ -317,10 +319,10 @@ export default function ProfilePage() {
                   profile.testimonials.map((t, i) => (
                     <div
                       key={i}
-                      className="flex items-center justify-between p-4 bg-[#020617] border border-white/5 rounded-lg"
+                      className="flex items-center justify-between p-4 bg-[#020617]/50 border border-white/[0.04] rounded-xl"
                     >
                       <p className="text-gray-300 text-sm italic">"{t}"</p>
-                      <MessageSquareQuote className="w-8 h-8 text-white/5 shrink-0 ml-4" />
+                      <MessageSquareQuote className="w-8 h-8 text-white/[0.04] shrink-0 ml-4" />
                     </div>
                   ))
                 ) : (

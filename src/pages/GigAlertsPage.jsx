@@ -63,48 +63,50 @@ export default function GigAlertsPage() {
   ).length;
 
   return (
-    <div className="p-6 lg:p-8 space-y-6">
+    <div className="p-5 lg:p-8 space-y-6 max-w-6xl">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-            <Bell className="w-8 h-8 text-[#00F0B5]" />
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white flex items-center gap-3 tracking-tight">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00F0B5]/15 to-[#00D4FF]/10 flex items-center justify-center">
+              <Bell className="w-5 h-5 text-[#00F0B5]" />
+            </div>
             Gig Alerts
           </h1>
-          <p className="text-gray-400 mt-1">
+          <p className="text-gray-500 mt-1.5 text-sm">
             Search for gigs and get matched results from 34+ subreddits &
-            Craigslist.
+            Craigslist
           </p>
         </div>
-        <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-[#00F0B5]/10 border border-[#00F0B5]/30 rounded-full shrink-0">
+        <span className="inline-flex items-center gap-2 px-4 py-2 glass-card rounded-full border border-[#00F0B5]/15 shrink-0">
           <span className="relative flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00F0B5] opacity-75" />
             <span className="relative inline-flex rounded-full h-2 w-2 bg-[#00F0B5]" />
           </span>
-          <span className="text-sm font-semibold text-[#00F0B5]">
+          <span className="text-xs font-semibold text-[#00F0B5] tracking-wide">
             Live Scanning
           </span>
         </span>
       </div>
 
-      {/* Search bar — prominent */}
-      <div className="bg-[#0B1120] border border-white/5 rounded-2xl p-5">
-        <form onSubmit={handleAddKeyword} className="flex gap-3">
+      {/* Search bar */}
+      <div className="glass-card rounded-2xl p-5">
+        <form onSubmit={handleAddKeyword} className="flex gap-2.5">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-gray-600" />
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Search for gigs... e.g. React developer, logo design, video editor"
-              className="w-full pl-10 pr-4 py-3 bg-[#020617] border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-[#00F0B5]/40 focus:border-transparent outline-none transition"
+              className="w-full pl-10 pr-4 py-3 bg-[#020617]/60 border border-white/[0.06] rounded-xl text-white placeholder-gray-600 focus:ring-2 focus:ring-[#00F0B5]/30 focus:border-[#00F0B5]/20 outline-none transition-all duration-200 text-sm"
             />
           </div>
           <button
             type="submit"
-            className="px-6 py-3 bg-[#00F0B5] text-[#020617] rounded-xl font-semibold hover:bg-[#00dba5] transition-colors shrink-0 flex items-center gap-2"
+            className="px-6 py-3 bg-[#00F0B5] text-[#020617] rounded-xl font-bold hover:bg-[#00dba5] hover:shadow-[0_0_16px_rgba(0,240,181,0.2)] transition-all duration-200 shrink-0 flex items-center gap-2 text-sm"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="w-4 h-4" />
             Track
           </button>
         </form>
@@ -115,7 +117,7 @@ export default function GigAlertsPage() {
             {keywords.map((kwObj) => (
               <span
                 key={kwObj.id}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#00F0B5]/10 border border-[#00F0B5]/30 rounded-full text-sm text-[#00F0B5]"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#00F0B5]/[0.06] border border-[#00F0B5]/15 rounded-lg text-sm text-[#00F0B5] font-medium"
               >
                 {kwObj.keyword}
                 <button
@@ -132,8 +134,7 @@ export default function GigAlertsPage() {
 
       {/* Filter tabs + count */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-gray-500" />
+        <div className="flex items-center gap-1.5">
           {[
             { key: "all", label: "All", count: alerts.length },
             { key: "reddit", label: "Reddit", count: redditCount },
@@ -142,17 +143,17 @@ export default function GigAlertsPage() {
             <button
               key={key}
               onClick={() => setActiveFilter(key)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 ${
                 activeFilter === key
-                  ? "bg-[#00F0B5]/10 text-[#00F0B5] border border-[#00F0B5]/30"
-                  : "text-gray-400 hover:text-gray-200 hover:bg-white/5 border border-transparent"
+                  ? "bg-[#00F0B5]/[0.08] text-[#00F0B5] border border-[#00F0B5]/15 shadow-[inset_0_0_0_1px_rgba(0,240,181,0.05)]"
+                  : "text-gray-500 hover:text-gray-300 hover:bg-white/[0.03] border border-transparent"
               }`}
             >
               {label} ({count})
             </button>
           ))}
         </div>
-        <span className="text-sm text-gray-500">
+        <span className="text-xs text-gray-600 font-medium">
           {filtered.length} result{filtered.length !== 1 ? "s" : ""}
         </span>
       </div>
@@ -161,7 +162,7 @@ export default function GigAlertsPage() {
       <div className="grid gap-4">
         {alertsLoading ? (
           <div className="space-y-4">
-            <div className="bg-[#0B1120] border border-[#00F0B5]/20 rounded-2xl p-6 text-center">
+            <div className="glass-card glow-green rounded-2xl p-8 text-center">
               <div className="relative w-14 h-14 mx-auto mb-4">
                 <Radar
                   className="w-14 h-14 text-[#00F0B5] animate-spin"
@@ -174,42 +175,39 @@ export default function GigAlertsPage() {
               <h3 className="text-white font-bold text-lg">
                 Scanning Sources...
               </h3>
-              <p className="text-gray-400 text-sm mt-1">
+              <p className="text-gray-500 text-sm mt-1">
                 Searching Reddit & Craigslist for gigs matching your keywords
               </p>
             </div>
             {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="bg-[#0B1120] border border-white/5 rounded-xl p-5 animate-pulse"
-              >
+              <div key={i} className="glass-card rounded-2xl p-5">
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="h-5 w-24 bg-white/5 rounded-full" />
-                  <div className="h-5 w-16 bg-white/5 rounded-full" />
+                  <div className="h-6 w-20 rounded-lg animate-shimmer" />
+                  <div className="h-6 w-16 rounded-lg animate-shimmer" />
                 </div>
-                <div className="h-5 w-3/4 bg-white/5 rounded mb-2" />
-                <div className="h-4 w-full bg-white/5 rounded mb-1" />
-                <div className="h-4 w-2/3 bg-white/5 rounded mb-3" />
+                <div className="h-5 w-3/4 rounded-lg animate-shimmer mb-2" />
+                <div className="h-4 w-full rounded-lg animate-shimmer mb-1" />
+                <div className="h-4 w-2/3 rounded-lg animate-shimmer mb-4" />
                 <div className="flex gap-3">
-                  <div className="h-4 w-16 bg-white/5 rounded" />
-                  <div className="h-4 w-20 bg-white/5 rounded" />
+                  <div className="h-4 w-16 rounded-lg animate-shimmer" />
+                  <div className="h-4 w-20 rounded-lg animate-shimmer" />
                 </div>
-                <div className="flex gap-2 mt-4">
-                  <div className="h-9 w-28 bg-white/5 rounded-lg" />
-                  <div className="h-9 w-36 bg-white/5 rounded-lg" />
+                <div className="flex gap-2.5 mt-5 pt-4 border-t border-white/[0.04]">
+                  <div className="h-10 w-28 rounded-xl animate-shimmer" />
+                  <div className="h-10 w-36 rounded-xl animate-shimmer" />
                 </div>
               </div>
             ))}
           </div>
         ) : keywords.length === 0 ? (
-          <div className="bg-[#0B1120] border border-white/5 rounded-2xl p-12 text-center">
-            <div className="w-14 h-14 rounded-full bg-[#00F0B5]/10 flex items-center justify-center mx-auto mb-4">
-              <Search className="w-7 h-7 text-[#00F0B5]" />
+          <div className="glass-card rounded-2xl p-14 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-[#00F0B5]/[0.08] flex items-center justify-center mx-auto mb-5">
+              <Search className="w-8 h-8 text-[#00F0B5]" />
             </div>
             <h3 className="text-lg font-bold text-white mb-2">
               Start tracking gigs
             </h3>
-            <p className="text-gray-400 text-sm max-w-md mx-auto">
+            <p className="text-gray-500 text-sm max-w-md mx-auto">
               Type a keyword or skill above to start finding matching gigs from
               Reddit & Craigslist. Be the first to apply!
             </p>
@@ -244,14 +242,14 @@ export default function GigAlertsPage() {
             />
           ))
         ) : (
-          <div className="bg-[#0B1120] border border-white/5 rounded-2xl p-12 text-center">
-            <div className="w-14 h-14 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
-              <AlertCircle className="w-7 h-7 text-gray-500" />
+          <div className="glass-card rounded-2xl p-14 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-white/[0.04] flex items-center justify-center mx-auto mb-5">
+              <AlertCircle className="w-8 h-8 text-gray-600" />
             </div>
             <h3 className="text-lg font-bold text-white mb-2">
               No matches yet
             </h3>
-            <p className="text-gray-400 text-sm max-w-md mx-auto">
+            <p className="text-gray-500 text-sm max-w-md mx-auto">
               No gigs matched your keywords right now. New gigs are scanned
               every few minutes — check back soon!
             </p>

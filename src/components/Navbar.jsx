@@ -10,6 +10,7 @@ import {
   LogOut,
   Menu,
   X,
+  ChevronRight,
 } from "lucide-react";
 import NotificationBell from "./NotificationBell";
 import { useNewGigCount } from "../context/NewGigCountContext";
@@ -36,19 +37,21 @@ export default function Navbar() {
   return (
     <>
       {/* Mobile top bar */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-50 h-14 bg-[#0B1120] border-b border-white/5 flex items-center justify-between px-4">
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 h-14 bg-[#0B1120]/80 backdrop-blur-xl border-b border-white/[0.04] flex items-center justify-between px-4">
         <Link
           to="/dashboard"
-          className="flex items-center gap-2 text-lg font-bold text-white"
+          className="flex items-center gap-2.5 text-lg font-bold text-white"
         >
-          <Zap className="w-5 h-5 text-[#00F0B5]" />
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#00F0B5] to-[#00D4FF] flex items-center justify-center">
+            <Zap className="w-4 h-4 text-[#020617]" />
+          </div>
           <span>
-            GigAlert<span className="text-[#00F0B5]">Pro</span>
+            GigAlert<span className="text-gradient">Pro</span>
           </span>
         </Link>
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="text-gray-400 hover:text-white"
+          className="text-gray-400 hover:text-white transition-colors p-1"
         >
           {mobileOpen ? (
             <X className="w-6 h-6" />
@@ -61,31 +64,38 @@ export default function Navbar() {
       {/* Mobile overlay */}
       {mobileOpen && (
         <div
-          className="md:hidden fixed inset-0 z-40 bg-black/50"
+          className="md:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
           onClick={() => setMobileOpen(false)}
         />
       )}
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 z-40 h-screen w-60 bg-[#0B1120] border-r border-white/5 flex flex-col transition-transform duration-200
+        className={`fixed top-0 left-0 z-40 h-screen w-60 bg-[#0B1120]/95 backdrop-blur-xl border-r border-white/[0.04] flex flex-col transition-transform duration-300 ease-out
           ${mobileOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`}
       >
         {/* Logo */}
-        <div className="h-16 flex items-center gap-2.5 px-5 border-b border-white/5 shrink-0">
-          <div className="w-8 h-8 rounded-lg bg-[#00F0B5]/10 flex items-center justify-center">
-            <Zap className="w-5 h-5 text-[#00F0B5]" />
+        <div className="h-16 flex items-center gap-2.5 px-5 border-b border-white/[0.04] shrink-0">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#00F0B5] to-[#00D4FF] flex items-center justify-center shadow-[0_0_12px_rgba(0,240,181,0.15)]">
+            <Zap className="w-4.5 h-4.5 text-[#020617]" />
           </div>
           <Link
             to="/dashboard"
             className="text-lg font-bold text-white tracking-tight"
           >
-            GigAlert<span className="text-[#00F0B5]">Pro</span>
+            GigAlert<span className="text-gradient">Pro</span>
           </Link>
         </div>
 
+        {/* Nav section label */}
+        <div className="px-5 pt-6 pb-2">
+          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.15em]">
+            Menu
+          </p>
+        </div>
+
         {/* Nav items */}
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+        <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
           {navItems.map(({ to, label, icon: Icon }) => {
             const active = location.pathname === to;
             const isGigAlerts = to === "/gig-alerts";
@@ -97,39 +107,44 @@ export default function Navbar() {
                   setMobileOpen(false);
                   if (isGigAlerts) resetGigCount();
                 }}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors relative
+                className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 relative
                   ${
                     active
-                      ? "bg-[#00F0B5]/10 text-[#00F0B5]"
-                      : "text-gray-400 hover:bg-white/5 hover:text-gray-200"
+                      ? "bg-[#00F0B5]/[0.08] text-[#00F0B5] shadow-[inset_0_0_0_1px_rgba(0,240,181,0.1)]"
+                      : "text-gray-400 hover:bg-white/[0.04] hover:text-gray-200"
                   }`}
               >
                 {active && (
-                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-[#00F0B5] rounded-r-full" />
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-[#00F0B5] rounded-r-full shadow-[0_0_8px_rgba(0,240,181,0.4)]" />
                 )}
-                <Icon className="w-5 h-5" />
-                {label}
+                <Icon
+                  className={`w-[18px] h-[18px] ${active ? "text-[#00F0B5]" : "text-gray-500 group-hover:text-gray-300"} transition-colors`}
+                />
+                <span className="flex-1">{label}</span>
                 {isGigAlerts && newGigCount > 0 && (
-                  <span className="ml-auto min-w-5 h-5 flex items-center justify-center px-1.5 rounded-full bg-[#00F0B5] text-[#020617] text-xs font-bold animate-pulse">
+                  <span className="min-w-5 h-5 flex items-center justify-center px-1.5 rounded-full bg-[#00F0B5] text-[#020617] text-[10px] font-bold shadow-[0_0_8px_rgba(0,240,181,0.3)] animate-pulse">
                     {newGigCount > 99 ? "99+" : newGigCount}
                   </span>
+                )}
+                {!isGigAlerts && active && (
+                  <ChevronRight className="w-3.5 h-3.5 text-[#00F0B5]/40" />
                 )}
               </Link>
             );
           })}
         </nav>
 
-        {/* Notifications + Sign Out */}
-        <div className="px-3 py-4 border-t border-white/5 shrink-0 space-y-2">
-          <div className="flex items-center gap-3 px-3 py-1">
+        {/* Bottom section */}
+        <div className="px-3 py-4 border-t border-white/[0.04] shrink-0 space-y-1">
+          <div className="flex items-center gap-3 px-3 py-2">
             <NotificationBell />
             <span className="text-sm text-gray-400">Alerts</span>
           </div>
           <button
             onClick={handleSignOut}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-white/5 hover:text-gray-200 transition-colors w-full"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:bg-red-500/[0.06] hover:text-red-400 transition-all duration-200 w-full"
           >
-            <LogOut className="w-5 h-5" />
+            <LogOut className="w-[18px] h-[18px]" />
             Sign Out
           </button>
         </div>
