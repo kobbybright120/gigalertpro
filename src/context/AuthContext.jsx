@@ -52,7 +52,25 @@ export function AuthProvider({ children }) {
     if (DISABLE_AUTH) return { success: true, user: null };
     const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) return { success: false, error: error.message };
-    return { success: true, user: data.user };
+    // Supabase returns a user with identities=[] when email confirmation is required
+    const needsConfirmation =
+      data.user && (!data.user.identities || data.user.identities.length === 0);
+    if (needsConfirmation) {
+      return { success: true, user: null, confirmEmail: true };
+    }
+    return { success: true, user: data.user, confirmEmail: !data.session };
+  }
+
+  async function signInWithGoogle() {
+    if (DISABLE_AUTH) return { success: true };
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/dashboard`,
+      },
+    });
+    if (error) return { success: false, error: error.message };
+    return { success: true };
   }
 
   async function signOut() {
@@ -65,7 +83,9 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider
+      value={{ user, loading, signIn, signUp, signInWithGoogle, signOut }}
+    >
       {children}
     </AuthContext.Provider>
   );
