@@ -345,12 +345,19 @@ export function useProposals() {
       return;
     }
     if (!user) return;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("proposals")
       .select("*")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
-    setProposals(data || []);
+    if (error) {
+      // surface REST / table-not-found issues in the browser console for easier debugging
+      // eslint-disable-next-line no-console
+      console.warn("[useProposals] supabase error:", error);
+      setProposals([]);
+    } else {
+      setProposals(data || []);
+    }
     setLoading(false);
   }, [user]);
 

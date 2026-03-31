@@ -56,15 +56,18 @@ export function AuthProvider({ children }) {
     (async () => {
       try {
         // If the client exposes getSessionFromUrl, use it to parse OAuth response
-        if (supabase.auth.getSessionFromUrl && /access_token|provider_token|code|session/.test(window.location.href)) {
+        if (
+          supabase.auth.getSessionFromUrl &&
+          /access_token|provider_token|code|session/.test(window.location.href)
+        ) {
           // getSessionFromUrl returns { data, error } in supabase-js v2
           // eslint-disable-next-line no-unused-vars
           const maybe = await supabase.auth.getSessionFromUrl();
           // clean up URL to remove provider tokens for UX
           try {
             const url = new URL(window.location.href);
-            url.hash = '';
-            url.search = '';
+            url.hash = "";
+            url.search = "";
             window.history.replaceState({}, document.title, url.toString());
           } catch (e) {
             // ignore
@@ -87,11 +90,11 @@ export function AuthProvider({ children }) {
     } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
       // If a user just signed in via OAuth redirect, ensure they end up on the dashboard
-      if (event === 'SIGNED_IN' && session && typeof window !== 'undefined') {
+      if (event === "SIGNED_IN" && session && typeof window !== "undefined") {
         // If the user is on the landing page or auth page, force a navigation to the app
         const path = window.location.pathname;
-        if (path === '/' || path === '/landing' || path === '/auth') {
-          window.location.replace('/dashboard');
+        if (path === "/" || path === "/landing" || path === "/auth") {
+          window.location.replace("/dashboard");
         }
       }
     });

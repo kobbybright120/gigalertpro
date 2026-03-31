@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useProfile } from "../lib/useSupabase";
 import {
   Zap,
   LayoutDashboard,
@@ -23,11 +24,25 @@ const navItems = [
 ];
 
 export default function Navbar() {
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
+  const { profile } = useProfile();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { count: newGigCount, reset: resetGigCount } = useNewGigCount();
+
+  useEffect(() => {
+    // eslint-disable-next-line no-console
+    console.info("[Navbar debug] user:", user, "profile:", profile);
+  }, [user, profile]);
+
+  const avatarUrl = user?.user_metadata?.avatar_url;
+  const initials = (() => {
+    const name = profile?.name || user?.email || "U";
+    const parts = (name || "").split(/\s+/).filter(Boolean);
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  })();
 
   function handleSignOut() {
     signOut();
@@ -49,16 +64,38 @@ export default function Navbar() {
             GigAlert<span className="text-gradient">Pro</span>
           </span>
         </Link>
-        <button
-          onClick={() => setMobileOpen(!mobileOpen)}
-          className="text-gray-400 hover:text-white transition-colors p-1"
-        >
-          {mobileOpen ? (
-            <X className="w-6 h-6" />
-          ) : (
-            <Menu className="w-6 h-6" />
+
+        <div className="flex items-center gap-3">
+          {user && (
+            <Link
+              to="/profile"
+              onClick={() => setMobileOpen(false)}
+              className="flex items-center gap-2"
+            >
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt="avatar"
+                  className="w-8 h-8 rounded-full object-cover border-2 border-[#00F0B5]"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#00F0B5] to-[#00D4FF] flex items-center justify-center text-[#020617] font-bold text-sm">
+                  {initials}
+                </div>
+              )}
+            </Link>
           )}
-        </button>
+          <button
+            onClick={() => setMobileOpen(!mobileOpen)}
+            className="text-gray-400 hover:text-white transition-colors p-1"
+          >
+            {mobileOpen ? (
+              <X className="w-6 h-6" />
+            ) : (
+              <Menu className="w-6 h-6" />
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Mobile overlay */}
@@ -135,7 +172,33 @@ export default function Navbar() {
         </nav>
 
         {/* Bottom section */}
-        <div className="px-3 py-4 border-t border-white/[0.04] shrink-0 space-y-1">
+        <div className="px-3 py-4 border-t border-white/[0.04] shrink-0 space-y-2">
+          <Link
+            to="/profile"
+            onClick={() => setMobileOpen(false)}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/[0.02] transition-colors"
+          >
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt="avatar"
+                className="w-9 h-9 rounded-full object-cover border-2 border-[#00F0B5]"
+              />
+            ) : (
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#00F0B5] to-[#00D4FF] flex items-center justify-center text-[#020617] font-bold text-sm">
+                {initials}
+              </div>
+            )}
+            <div className="flex-1 text-left overflow-hidden">
+              <div className="text-sm font-medium text-white truncate">
+                {profile?.name || (user?.email || "User").split("@")[0]}
+              </div>
+              <div className="text-xs text-gray-400 truncate">
+                {user?.email || ""}
+              </div>
+            </div>
+          </Link>
+
           <button
             onClick={handleSignOut}
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:bg-red-500/[0.06] hover:text-red-400 transition-all duration-200 w-full"
