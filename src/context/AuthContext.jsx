@@ -32,7 +32,7 @@ export function AuthProvider({ children }) {
           // eslint-disable-next-line no-console
           console.warn(
             "[Auth] WARNING: Demo auth (DISABLE_AUTH) is active in production.\n" +
-              "Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your Vercel Production envs and redeploy."
+              "Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your Vercel Production envs and redeploy.",
           );
         }
       }
@@ -49,17 +49,51 @@ export function AuthProvider({ children }) {
       return;
     }
 
-    // Get current session on mount
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    // Handle OAuth redirect responses that contain session info in the URL.
+    // Some Supabase auth flows require parsing the URL to extract the session
+    // after the provider redirects back to the app. If the helper exists,
+    // parse the session first, then fall back to getSession().
+    (async () => {
+      try {
+        // If the client exposes getSessionFromUrl, use it to parse OAuth response
+        if (supabase.auth.getSessionFromUrl && /access_token|provider_token|code|session/.test(window.location.href)) {
+          // getSessionFromUrl returns { data, error } in supabase-js v2
+          // eslint-disable-next-line no-unused-vars
+          const maybe = await supabase.auth.getSessionFromUrl();
+          // clean up URL to remove provider tokens for UX
+          try {
+            const url = new URL(window.location.href);
+            url.hash = '';
+            url.search = '';
+            window.history.replaceState({}, document.title, url.toString());
+          } catch (e) {
+            // ignore
+          }
+        }
+
+        // Finally, request the current session state
+        const { data: { session } = {} } = await supabase.auth.getSession();
+        setUser(session?.user ?? null);
+      } catch (err) {
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    })();
 
     // Listen for auth state changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
+      // If a user just signed in via OAuth redirect, ensure they end up on the dashboard
+      if (event === 'SIGNED_IN' && session && typeof window !== 'undefined') {
+        // If the user is on the landing page or auth page, force a navigation to the app
+        const path = window.location.pathname;
+        if (path === '/' || path === '/landing' || path === '/auth') {
+          window.location.replace('/dashboard');
+        }
+      }
     });
 
     return () => subscription.unsubscribe();
