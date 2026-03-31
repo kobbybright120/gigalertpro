@@ -99,8 +99,16 @@ export function useKeywords() {
       clearCache();
       return;
     }
-    await supabase.from("keywords").delete().eq("id", id);
-    setKeywords((prev) => prev.filter((k) => k.id !== id));
+    const { error } = await supabase.from("keywords").delete().eq("id", id);
+    if (error) {
+      // Optionally, show a toast or alert here
+      console.error("Failed to delete keyword:", error.message);
+      // Refetch anyway to ensure UI matches DB
+      await fetchKeywords();
+      return;
+    }
+    // Always refetch from DB to ensure UI is correct
+    await fetchKeywords();
   }
 
   return {
