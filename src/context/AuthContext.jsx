@@ -14,6 +14,33 @@ export function AuthProvider({ children }) {
     VITE_SUPABASE_URL.includes("placeholder") ||
     !VITE_SUPABASE_ANON_KEY;
 
+  // Runtime diagnostic: in production builds this logs whether demo auth is enabled.
+  // This helps diagnose accidental demo-mode redirects (unauthenticated users
+  // being allowed into the app). We intentionally avoid printing any secret keys.
+  if (typeof window !== "undefined") {
+    try {
+      const host = window.location.hostname || "";
+      if (host.includes("vercel.app") || host.includes("gigalertpro")) {
+        // Non-sensitive info only
+        // eslint-disable-next-line no-console
+        console.info("[Auth] runtime config:", {
+          DISABLE_AUTH,
+          VITE_SUPABASE_URL: VITE_SUPABASE_URL || null,
+          host,
+        });
+        if (DISABLE_AUTH) {
+          // eslint-disable-next-line no-console
+          console.warn(
+            "[Auth] WARNING: Demo auth (DISABLE_AUTH) is active in production.\n" +
+              "Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your Vercel Production envs and redeploy."
+          );
+        }
+      }
+    } catch (e) {
+      // ignore logging errors
+    }
+  }
+
   useEffect(() => {
     if (DISABLE_AUTH) {
       // In demo mode we skip Supabase auth calls to avoid network errors
