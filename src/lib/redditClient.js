@@ -199,6 +199,18 @@ const X_REJECT_PATTERNS = [
   // Marketing / audience-building tweets
   /\blike\s+&\s+(?:comment|retweet|share|follow)\b/i,
   /\bfollow\s+(?:me|us|for|this)\b/i,
+  // Self-promo from X users (freelancers pitching themselves)
+  /\bI\s+am\s+a\s+professional\b/i,
+  /\bI'?m\s+a\s+(?:professional|experienced|skilled|certified)\b/i,
+  /\bhit\s+me\s+up\b/i,
+  /\bI\s+(?:offer|provide|specialize)\b/i,
+  /\banyone\s+(?:is\s+)?looking\s+for\s+(?:a|an)\b.{0,40}\bwith\s+\d+\s+years?\b/i,
+  // Manifestation, wishful thinking, not actual jobs
+  /\bmanifesting\b/i,
+  // Questions / discussions (not job posts)
+  /\bwhat'?s\s+the\s+(?:coolest|best|most)\b/i,
+  /\bI'?m\s+looking\s+for\s+(?:something|a\s+conference|advice|tips)\b/i,
+  /\ba\s+true\s+developer\b/i,
 ];
 
 // ── X/Tweet: STRONG hiring signals (tweet body must contain at least one) ──
@@ -687,18 +699,32 @@ function matchAndScore(posts, lowerKws) {
     results.push({
       id: postId,
       reddit_post_id: p.name || p.id,
-      title: p.title || "Untitled",
+      title: (p.title || "Untitled")
+        .replace(/\]\]>/g, "")
+        .replace(/&apos;/g, "'")
+        .replace(/&amp;/g, "&")
+        .replace(/R\s+to\s+@\w+:\s*/g, "")
+        .trim(),
       body_preview: (p.selftext || "")
         .replace(/<!--[\s\S]*?-->/g, "")
         .replace(/<[^>]*>/g, " ")
         .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
+        .replace(/&apos;/g, "'")
+        .replace(/&amp;/g, "&")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&quot;/g, '"')
         .replace(/&\w+;/g, " ")
+        .replace(/\]\]>/g, "")
+        // Strip nitter instance URLs
+        .replace(/https?:\/\/nitter\.[^\s]+/g, "")
         // Strip Reddit RSS submission footer
         .replace(
           /submitted\s+by\s+\/u\/\S+\s+to\s+r\/\S+.*?(\[link\]|\[comments\])[^\n]*/gi,
           "",
         )
         .replace(/\[link\]|\[comments\]/gi, "")
+        .replace(/R\s+to\s+@\w+:\s*/g, "")
         .replace(/\s+/g, " ")
         .trim()
         .slice(0, 400),
