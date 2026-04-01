@@ -168,6 +168,12 @@ const SELF_PROMO_PATTERNS = [
   /\bdecided\s+to\s+(?:throw|put)\s+it\s+out\s+there\b/i,
   /\bcurious\s+if\b.{0,40}\buseful\s+to\s+other/i,
   /\bi'?ve\s+been\s+(?:actively\s+)?(?:working|freelancing|building)\b/i,
+  // ── Career advice / coaching / content creators ──
+  /\bI\s+wanted\s+to\s+share\b.{0,30}\b(?:insights?|tips?|advice|video|resource|guide)\b/i,
+  /\bthe\s+community\s+might\s+find\s+(?:useful|helpful|interesting)\b/i,
+  /\ba\s+video\s+I\s+(?:found|made|created|recorded)\b/i,
+  /\byou(?:'re|\s+are)\s+not\s+alone\b/i,
+  /\bthe\s+market\s+(?:feels?|is|looks?|seems?)\s+(?:brutal|tough|rough|bad|terrible|dead|horrible)\b/i,
   // ── YOE / resume-style self-promo patterns ──
   /\b\d+\+?\s*(?:years?|yrs?)\s+(?:of\s+)?(?:experience|exp)\b/i,
   /\b(?:senior|lead|junior|mid|staff)\s+(?:level\s+)?(?:developer|engineer|designer|writer|editor|programmer|freelancer|consultant)\b.{0,50}\b(?:here|available|looking|seeking|open)\b/i,
@@ -412,7 +418,8 @@ const HIRING_SIGNALS = [
   { rx: /\[hiring\]/i, score: 25 },
   { rx: /\[task\]/i, score: 25 },
   { rx: /\[paid\]/i, score: 20 },
-  { rx: /\bhiring\b/i, score: 15 },
+  // "hiring" as action (not "hiring manager", "hiring process", "hiring freeze")
+  { rx: /\bhiring\b(?!\s+(?:manager|process|freez|practice|pipeline|decision|committee|team))/i, score: 15 },
   {
     rx: /\blooking\s+for\b.{0,35}\b(?:a|an)?\s*(?:designer|developer|writer|editor|freelanc|coder|programmer|marketer|va|virtual\s?assistant|consultant|someone|contractor|expert|specialist|agency)/i,
     score: 20,
@@ -465,6 +472,16 @@ const JUNK_PATTERNS = [
   /\brule\s+\d/i,
   /\bautomod/i,
   /\bsubreddit\s+rules?\b/i,
+  // ── Career advice / job-seeking tips (not job posts) ──
+  /\b\d+\s+(?:quiet|smart|sneaky|secret|proven|easy|simple|powerful|underrated|effective)\s+(?:strategies|tips|tricks|ways|methods|hacks|steps|things)\b/i,
+  /\bstrategies\s+(?:that|to|for)\b.{0,30}\b(?:get(?:ting)?\s+(?:hired|a\s+job|interviews?|offers?)|land(?:ing)?\s+(?:a\s+job|interviews?|offers?))\b/i,
+  /\b(?:how\s+to|tips?\s+(?:for|to)|guide\s+(?:to|for)|ways?\s+to)\s+(?:get\s+hired|land\s+(?:a\s+)?(?:job|interview|offer|role)|find\s+(?:a\s+)?(?:job|work|gig))\b/i,
+  /\bunemployed\b.{0,40}\b(?:engineer|developer|designer|hired|getting)\b/i,
+  /\bas\s+a\s+hiring\s+manager\b/i,
+  /\b(?:not\s+the\s+usual|stop\s+(?:doing|sending|applying))\b.{0,30}\b(?:advice|applications?|resumes?)\b/i,
+  /\b(?:finally|actually)\s+(?:getting|landing)\s+(?:hired|interviews?|offers?)\b/i,
+  /\bif\s+you(?:'re|\s+are)\s+(?:a\s+)?(?:junior|mid-?level|senior|unemployed|job\s*seeking|looking\s+for\s+(?:a\s+)?(?:job|work|your\s+(?:first|next)))\b/i,
+  /\b(?:real\s+)?insights?\b.{0,20}\b(?:from|for|about)\b.{0,20}\b(?:the\s+(?:market|industry)|job\s+(?:search|market|hunt)|hiring|interview)\b/i,
 ];
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
