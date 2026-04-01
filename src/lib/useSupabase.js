@@ -216,6 +216,7 @@ export function useGigAlerts(keywordList) {
           upvotes: r.upvotes ?? 0,
           flair: r.flair || null,
           category: r.category || null,
+          source: r.source_platform === "X" ? "x" : r.source_platform === "Craigslist" ? "craigslist" : "reddit",
         }));
         supabase
           .from("gig_alerts")
