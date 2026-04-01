@@ -53,7 +53,7 @@ const CL_CATEGORY_NAMES = {
 // Nitter instances to try (in priority order — fall through on failure)
 const NITTER_INSTANCES = (
   process.env.NITTER_INSTANCES ||
-  "nitter.poast.org,nitter.privacydev.net,nitter.net,nitter.cz,nitter.1d4.us"
+  "xcancel.com,nitter.privacyredirect.com,nitter.net,nitter.poast.org"
 )
   .split(",")
   .map((h) => h.trim())
@@ -81,7 +81,7 @@ const NITTER_SEARCHES = (
 
 const NITTER_MAX_POSTS = parseInt(process.env.NITTER_MAX_POSTS || "200", 10);
 const NITTER_UA =
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+  "GigAlertPro/1.0 (+https://gigalertpro.vercel.app)";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -520,7 +520,7 @@ async function fetchAllNitter() {
   let successCount = 0;
 
   for (const query of NITTER_SEARCHES) {
-    const path = `/search/rss?f=tweets&q=${encodeURIComponent(query)}`;
+    const path = `/search/rss?f=tweets&q=${query.replace(/\s+/g, '+')}`;
     console.log(`  [nitter] Searching: "${query}"`);
 
     const { xml, instance } = await fetchNitterWithFallback(

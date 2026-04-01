@@ -14,11 +14,10 @@ const REDIS_KEY = "gigalertpro:x:latest";
 // ── Nitter live-fallback config ──────────────────────────────────────────────
 
 const NITTER_INSTANCES = [
-  "nitter.poast.org",
-  "nitter.privacydev.net",
+  "xcancel.com",
+  "nitter.privacyredirect.com",
   "nitter.net",
-  "nitter.cz",
-  "nitter.1d4.us",
+  "nitter.poast.org",
 ];
 
 const NITTER_SEARCHES = [
@@ -30,7 +29,7 @@ const NITTER_SEARCHES = [
 ];
 
 const NITTER_UA =
-  "Mozilla/5.0 (compatible; GigAlertPro/1.0; +https://gigalertpro.vercel.app)";
+  "GigAlertPro/1.0 (+https://gigalertpro.vercel.app)";
 
 // ── Upstash Redis REST ───────────────────────────────────────────────────────
 
@@ -153,7 +152,7 @@ async function fetchNitterLive() {
   for (const query of NITTER_SEARCHES) {
     let fetched = false;
     for (const instance of NITTER_INSTANCES) {
-      const url = `https://${instance}/search/rss?f=tweets&q=${encodeURIComponent(query)}`;
+      const url = `https://${instance}/search/rss?f=tweets&q=${query.replace(/\s+/g, '+')}`;
       try {
         const resp = await fetch(url, {
           headers: { "User-Agent": NITTER_UA, Accept: "application/rss+xml, text/xml" },
