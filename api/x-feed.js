@@ -14,10 +14,10 @@ const REDIS_KEY = "gigalertpro:x:latest";
 // ── Nitter live-fallback config ──────────────────────────────────────────────
 
 const NITTER_INSTANCES = [
+  "nitter.perennialte.ch",
   "xcancel.com",
   "nitter.privacyredirect.com",
   "nitter.net",
-  "nitter.poast.org",
 ];
 
 const NITTER_SEARCHES = [
@@ -161,6 +161,7 @@ async function fetchNitterLive() {
         if (!resp.ok) continue;
         const xml = await resp.text();
         if (!xml.includes("<item>")) continue;
+        if (xml.includes("not yet whitelisted")) continue;
 
         const posts = parseNitterRss(xml, query);
         allPosts.push(...posts);

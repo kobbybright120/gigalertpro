@@ -53,7 +53,7 @@ const CL_CATEGORY_NAMES = {
 // Nitter instances to try (in priority order — fall through on failure)
 const NITTER_INSTANCES = (
   process.env.NITTER_INSTANCES ||
-  "xcancel.com,nitter.privacyredirect.com,nitter.net,nitter.poast.org"
+  "nitter.perennialte.ch,xcancel.com,nitter.privacyredirect.com,nitter.net"
 )
   .split(",")
   .map((h) => h.trim())
@@ -489,13 +489,19 @@ async function fetchNitterWithFallback(path, label) {
 
       const xml = await resp.text();
 
-      // Check for empty or error pages
+      // Check for empty, error, or whitelisting-block pages
       if (
         !xml.includes("<item>") &&
         !xml.includes("<entry>")
       ) {
         console.warn(
           `  [nitter] No items from ${instance} for ${label}, trying next`,
+        );
+        continue;
+      }
+      if (xml.includes("not yet whitelisted")) {
+        console.warn(
+          `  [nitter] ${instance} requires RSS whitelisting, trying next`,
         );
         continue;
       }
