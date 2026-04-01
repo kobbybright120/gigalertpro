@@ -80,6 +80,9 @@ export default function GigAlertsPage() {
   const craigslistCount = alerts.filter(
     (a) => a.source_platform === "Craigslist",
   ).length;
+  const xCount = alerts.filter(
+    (a) => a.source_platform === "X",
+  ).length;
 
   // Collect unique categories from current alerts
   const categorySet = new Set(alerts.map((a) => a.category).filter(Boolean));
@@ -97,8 +100,8 @@ export default function GigAlertsPage() {
             Gig Alerts
           </h1>
           <p className="text-gray-500 mt-1.5 text-sm">
-            Search for gigs and get matched results from 34+ subreddits &
-            Craigslist
+            Search for gigs and get matched results from 34+ subreddits,
+            Craigslist & X/Twitter
           </p>
         </div>
         <span className="inline-flex items-center gap-2 px-4 py-2 glass-card rounded-full border border-[#00F0B5]/15 shrink-0">
@@ -167,6 +170,7 @@ export default function GigAlertsPage() {
                 label: "Craigslist",
                 count: craigslistCount,
               },
+              { key: "x", label: "𝕏 / Twitter", count: xCount },
             ].map(({ key, label, count }) => (
               <button
                 key={key}
