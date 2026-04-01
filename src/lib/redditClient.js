@@ -696,16 +696,9 @@ function matchAndScore(posts, lowerKws) {
     // ── Budget ──
     const budget = extractBudget((p.title || "") + " " + (p.selftext || ""));
 
-    results.push({
-      id: postId,
-      reddit_post_id: p.name || p.id,
-      title: (p.title || "Untitled")
-        .replace(/\]\]>/g, "")
-        .replace(/&apos;/g, "'")
-        .replace(/&amp;/g, "&")
-        .replace(/R\s+to\s+@\w+:\s*/g, "")
-        .trim(),
-      body_preview: (p.selftext || "")
+    // ── Shared text cleaner ──
+    const cleanText = (txt) =>
+      (txt || "")
         .replace(/<!--[\s\S]*?-->/g, "")
         .replace(/<[^>]*>/g, " ")
         .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
@@ -716,9 +709,7 @@ function matchAndScore(posts, lowerKws) {
         .replace(/&quot;/g, '"')
         .replace(/&\w+;/g, " ")
         .replace(/\]\]>/g, "")
-        // Strip nitter instance URLs
         .replace(/https?:\/\/nitter\.[^\s]+/g, "")
-        // Strip Reddit RSS submission footer
         .replace(
           /submitted\s+by\s+\/u\/\S+\s+to\s+r\/\S+.*?(\[link\]|\[comments\])[^\n]*/gi,
           "",
@@ -726,8 +717,40 @@ function matchAndScore(posts, lowerKws) {
         .replace(/\[link\]|\[comments\]/gi, "")
         .replace(/R\s+to\s+@\w+:\s*/g, "")
         .replace(/\s+/g, " ")
-        .trim()
-        .slice(0, 400),
+        .trim();
+
+    // ── For X posts: derive a short headline + full body from the tweet ──
+    let finalTitle, finalBody;
+    if (isXPost) {
+      const fullTweet = cleanText((p.title || "") + " " + (p.selftext || ""));
+      // Remove duplicate halves (title often == selftext for tweets)
+      const deduped = fullTweet.length > 0 ? fullTweet : "Untitled";
+      // First sentence or first ~120 chars at a word boundary for the headline
+      const sentenceEnd = deduped.search(/[.!?\n]/);
+      const cutPoint =
+        sentenceEnd > 20 && sentenceEnd <= 150
+          ? sentenceEnd + 1
+          : Math.min(120, deduped.length);
+      let headline = deduped.slice(0, cutPoint).trim();
+      // If we cut mid-text, find last word boundary
+      if (cutPoint < deduped.length && sentenceEnd < 0) {
+        const lastSpace = headline.lastIndexOf(" ");
+        if (lastSpace > 40) headline = headline.slice(0, lastSpace);
+      }
+      finalTitle = headline;
+      // Body is the rest of the tweet (skip the headline portion)
+      const rest = deduped.slice(headline.length).trim();
+      finalBody = rest.length > 10 ? rest.slice(0, 400) : "";
+    } else {
+      finalTitle = cleanText(p.title || "Untitled");
+      finalBody = cleanText(p.selftext || "").slice(0, 400);
+    }
+
+    results.push({
+      id: postId,
+      reddit_post_id: p.name || p.id,
+      title: finalTitle,
+      body_preview: finalBody,
       url:
         p._source_platform === "Reddit"
           ? `https://www.reddit.com${p.permalink}`

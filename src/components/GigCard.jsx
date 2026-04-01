@@ -98,10 +98,8 @@ export default function GigCard({ gig, onGenerateProposal }) {
         {gig.title}
       </h3>
 
-      {/* Body preview — hide for X posts when body ≈ title */}
-      {gig.body_preview &&
-        !(gig.source_platform === "X" &&
-          gig.body_preview.slice(0, 80) === (gig.title || "").slice(0, 80)) && (
+      {/* Body preview */}
+      {gig.body_preview && (
         <p className="mt-2 text-sm text-gray-500 leading-relaxed line-clamp-2">
           {gig.body_preview}
         </p>
