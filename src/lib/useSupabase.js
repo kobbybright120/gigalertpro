@@ -34,6 +34,7 @@ function writeLS(key, value) {
 // ── Keywords ──
 export function useKeywords() {
   const { user } = useAuth();
+  const userId = user?.id;
   const [keywords, setKeywords] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -53,15 +54,15 @@ export function useKeywords() {
       return;
     }
 
-    if (!user) return;
+    if (!userId) return;
     const { data } = await supabase
       .from("keywords")
       .select("id, keyword")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .order("created_at", { ascending: true });
     setKeywords(data || []);
     setLoading(false);
-  }, [user]);
+  }, [userId]);
 
   useEffect(() => {
     fetchKeywords();
@@ -72,20 +73,22 @@ export function useKeywords() {
     const clean = kw.trim().toLowerCase();
 
     if (DISABLE_AUTH) {
-      if (keywords.some((k) => k.keyword === clean)) return;
-      const next = { id: Date.now(), keyword: clean };
-      const updated = [...keywords, next];
-      setKeywords(updated);
-      writeLS("gigalertpro_demo_keywords", updated);
+      setKeywords((prev) => {
+        if (prev.some((k) => k.keyword === clean)) return prev;
+        const next = { id: Date.now(), keyword: clean };
+        const updated = [...prev, next];
+        writeLS("gigalertpro_demo_keywords", updated);
+        return updated;
+      });
       clearCache();
       return;
     }
 
-    if (!user) return;
+    if (!userId) return;
     if (keywords.some((k) => k.keyword === clean)) return;
     const { data, error } = await supabase
       .from("keywords")
-      .insert({ user_id: user.id, keyword: clean })
+      .insert({ user_id: userId, keyword: clean })
       .select("id, keyword")
       .single();
     if (!error && data) setKeywords((prev) => [...prev, data]);
@@ -93,22 +96,24 @@ export function useKeywords() {
 
   async function removeKeyword(id) {
     if (DISABLE_AUTH) {
-      const updated = keywords.filter((k) => k.id !== id);
-      setKeywords(updated);
-      writeLS("gigalertpro_demo_keywords", updated);
+      setKeywords((prev) => {
+        const updated = prev.filter((k) => k.id !== id);
+        writeLS("gigalertpro_demo_keywords", updated);
+        return updated;
+      });
       clearCache();
       return;
     }
-    const { error } = await supabase.from("keywords").delete().eq("id", id);
+    const { error } = await supabase
+      .from("keywords")
+      .delete()
+      .eq("id", id)
+      .eq("user_id", userId);
     if (error) {
-      // Optionally, show a toast or alert here
       console.error("Failed to delete keyword:", error.message);
-      // Refetch anyway to ensure UI matches DB
-      await fetchKeywords();
       return;
     }
-    // Always refetch from DB to ensure UI is correct
-    await fetchKeywords();
+    setKeywords((prev) => prev.filter((k) => k.id !== id));
   }
 
   return {
@@ -123,6 +128,7 @@ export function useKeywords() {
 // ── Gig Alerts (matched posts) with keyword filtering + auto-poll ──
 export function useGigAlerts(keywordList) {
   const { user } = useAuth();
+  const userId = user?.id;
   const { bump } = useNewGigCount();
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -160,8 +166,8 @@ export function useGigAlerts(keywordList) {
       return;
     }
 
-    if (!user) return;
-    // Fetch gig_alerts that have at least one of the user's keywords
+    if (!userId) return;
+    // Fetch gig_alerts that match the user's keywords (title/body text search)
     const kws = (keywordList || []).map((k) =>
       typeof k === "string" ? k : k.keyword,
     );
@@ -171,10 +177,21 @@ export function useGigAlerts(keywordList) {
       return;
     }
 
+    // Build an OR filter: match posts where title or body contains any keyword
+    const orFilter = kws
+      .flatMap((kw) => {
+        const safe = kw.replace(/[%_]/g, "\\$&");
+        return [
+          `title.ilike.%${safe}%`,
+          `body_preview.ilike.%${safe}%`,
+        ];
+      })
+      .join(",");
+
     const { data } = await supabase
       .from("gig_alerts")
       .select("*")
-      .overlaps("matched_keywords", kws)
+      .or(orFilter)
       .order("reddit_created", { ascending: false })
       .limit(50);
 
@@ -187,7 +204,7 @@ export function useGigAlerts(keywordList) {
     }
     setAlerts(results);
     setLoading(false);
-  }, [user, keywordList, bump]);
+  }, [userId, keywordList, bump]);
 
   // Initial fetch + re-fetch when keywords change
   useEffect(() => {

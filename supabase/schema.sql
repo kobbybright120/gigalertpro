@@ -98,6 +98,57 @@ ALTER TABLE public.user_alerts  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.proposals    ENABLE ROW LEVEL SECURITY;
 -- gig_alerts and scanner_state are read-only for users, write by service_role
 
+-- ── Profiles policies ──
+CREATE POLICY "Users can view own profile"
+  ON public.profiles FOR SELECT
+  USING (auth.uid() = id);
+
+CREATE POLICY "Users can update own profile"
+  ON public.profiles FOR UPDATE
+  USING (auth.uid() = id);
+
+-- ── Keywords policies ──
+CREATE POLICY "Users can view own keywords"
+  ON public.keywords FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own keywords"
+  ON public.keywords FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own keywords"
+  ON public.keywords FOR DELETE
+  USING (auth.uid() = user_id);
+
+-- ── gig_alerts: readable by all authenticated users (populated by scanner via service_role) ──
+ALTER TABLE public.gig_alerts ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Authenticated users can read gig_alerts"
+  ON public.gig_alerts FOR SELECT
+  USING (auth.role() = 'authenticated');
+
+-- ── User alerts policies ──
+CREATE POLICY "Users can view own user_alerts"
+  ON public.user_alerts FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own user_alerts"
+  ON public.user_alerts FOR UPDATE
+  USING (auth.uid() = user_id);
+
+-- ── Proposals policies ──
+CREATE POLICY "Users can view own proposals"
+  ON public.proposals FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own proposals"
+  ON public.proposals FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own proposals"
+  ON public.proposals FOR DELETE
+  USING (auth.uid() = user_id);
+
 -- Profiles: users can read/update their own
 CREATE POLICY "Users read own profile"  ON public.profiles FOR SELECT USING (auth.uid() = id);
 CREATE POLICY "Users update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
