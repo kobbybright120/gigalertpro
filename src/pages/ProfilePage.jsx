@@ -37,8 +37,11 @@ export default function ProfilePage() {
 
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState({});
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   function openEditor() {
+    setSaveError("");
     setDraft({
       name: profile.name,
       bio: profile.bio,
@@ -50,6 +53,8 @@ export default function ProfilePage() {
   }
 
   async function handleSave() {
+    setSaving(true);
+    setSaveError("");
     const updated = {
       name: draft.name.trim(),
       bio: draft.bio.trim(),
@@ -66,7 +71,12 @@ export default function ProfilePage() {
         .map((s) => s.trim())
         .filter(Boolean),
     };
-    await updateProfile(updated);
+    const result = await updateProfile(updated);
+    setSaving(false);
+    if (result?.error) {
+      setSaveError(result.error.message || "Failed to save profile");
+      return;
+    }
     setEditing(false);
   }
 
@@ -201,13 +211,25 @@ export default function ProfilePage() {
                 </div>
               </div>
 
+              {/* Error message */}
+              {saveError && (
+                <div className="px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm">
+                  {saveError}
+                </div>
+              )}
+
               {/* Save Button */}
               <button
                 onClick={handleSave}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-[#00F0B5] text-[#020617] font-bold rounded-xl hover:bg-[#00dba5] hover:shadow-[0_0_16px_rgba(0,240,181,0.2)] transition-all duration-200"
+                disabled={saving}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-[#00F0B5] text-[#020617] font-bold rounded-xl hover:bg-[#00dba5] hover:shadow-[0_0_16px_rgba(0,240,181,0.2)] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Save className="w-5 h-5" />
-                Save Changes
+                {saving ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Save className="w-5 h-5" />
+                )}
+                {saving ? "Saving..." : "Save Changes"}
               </button>
             </div>
           </div>

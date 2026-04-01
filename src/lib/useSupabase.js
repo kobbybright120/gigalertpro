@@ -548,7 +548,7 @@ export function useProfile() {
       .from("profiles")
       .select("*")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
     setProfile(data);
     setLoading(false);
   }, [user]);
@@ -564,14 +564,22 @@ export function useProfile() {
       writeLS("gigalertpro_demo_profile", updated);
       return { data: updated, error: null };
     }
-    if (!user) return;
+    if (!user) return { data: null, error: { message: "Not authenticated" } };
+    const payload = {
+      id: user.id,
+      ...updates,
+      updated_at: new Date().toISOString(),
+    };
     const { data, error } = await supabase
       .from("profiles")
-      .update({ ...updates, updated_at: new Date().toISOString() })
-      .eq("id", user.id)
+      .upsert(payload, { onConflict: "id" })
       .select()
       .single();
-    if (!error && data) setProfile(data);
+    if (error) {
+      console.error("[useProfile] save error:", error);
+    } else if (data) {
+      setProfile(data);
+    }
     return { data, error };
   }
 
