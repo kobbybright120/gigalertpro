@@ -553,14 +553,21 @@ function matchAndScore(posts, lowerKws) {
     if (p.selftext === "[removed]" || p.selftext === "[deleted]") continue;
     if (p.author === "[deleted]" || p.author === "AutoModerator") continue;
 
-    // ── Skip self-promotions (freelancer ads) ──
-    if (isSelfPromotion(p.title || "", p.selftext || "", p.link_flair_text))
+    // ── Skip self-promotions (freelancer ads) — skip for X/Nitter posts
+    //    (tweets are pre-screened by search query and have different norms) ──
+    const isXPost = p._sub === "nitter" || p._source_platform === "X";
+    if (
+      !isXPost &&
+      isSelfPromotion(p.title || "", p.selftext || "", p.link_flair_text)
+    )
       continue;
 
     // ── Keyword matching — title matches weighted higher ──
     const titleLower = (p.title || "").toLowerCase();
     const bodyLower = (p.selftext || "").toLowerCase();
-    const combined = titleLower + " " + bodyLower;
+    // For X posts, also match against the Nitter search query (stored in flair)
+    const flairLower = isXPost ? (p.link_flair_text || "").toLowerCase() : "";
+    const combined = titleLower + " " + bodyLower + (flairLower ? " " + flairLower : "");
 
     let titleHits = 0;
     const matched = lowerKws.filter((kw) => {
