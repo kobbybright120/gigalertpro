@@ -183,6 +183,16 @@ const X_REJECT_PATTERNS = [
   /\bno\s+need\s+(?:for|to)\b/i,
   /\bnot\s+(?:actually\s+)?hiring\b/i,
 
+  // ── Hiring used as analogy, metaphor, or anti-hiring context ──
+  /\b(?:is|was|feels?|felt|sounds?)\s+like\s+hiring\b/i,
+  /\blike\s+hiring\s+(?:a|an)\b/i,
+  /\bsaved?\s+(?:myself|ourselves|me|us|yourself|you|money|time)\s+(?:from\s+)?hiring\b/i,
+  /\b(?:replaced?|replacing|eliminat|automat|avoid|skip|bypass)\b.{0,30}\bhiring\b/i,
+  /\binstead\s+of\s+hiring\b/i,
+  /\bwithout\s+(?:even\s+)?hiring\b/i,
+  /\bno\s+(?:need|point|reason)\b.{0,20}\bhiring\b/i,
+  /\bwhy\s+(?:you\s+)?(?:should(?:n'?t)?|don'?t)\s+(?:need\s+to\s+)?hir/i,
+
   // ── Stories, anecdotes, opinions ──
   /\bI\s+(?:met|saw|found|noticed|read|heard|came\s+across)\s+(?:this|a|an|some)\b/i,
   /\baccording\s+to\b/i,
@@ -200,6 +210,20 @@ const X_REJECT_PATTERNS = [
   /\bhere'?s\s+(?:why|what|how)\b/i,
   /\blet\s+me\s+(?:explain|tell\s+you|share)\b/i,
   /\bthe\s+future\s+of\b/i,
+  // ── AI / automation commentary (uses hiring vocab but isn't a job) ──
+  /\bai\s+(?:will|can|is|has|already)\b.{0,40}\b(?:replac|automat|eliminat|kill|destroy|disrupt|mak.{0,10}\bobsolete)\b/i,
+  /\b(?:replac|automat|eliminat)\b.{0,30}\b(?:hiring|freelancer|developer|designer|writer|human|worker|employee)\b/i,
+  /\balready\s+saved\s+(?:myself|me|us)\b/i,
+  /\bneed\s+more\s+convincing\b/i,
+  /\bimpression(?:s)?\s+we(?:'re|\s+are)\s+getting\b/i,
+  /\bsince\s+we\s+(?:automated|started|switched|stopped)\b/i,
+  // ── Tech / product tips, tutorials, threads ──
+  /\bevery\b.{0,20}\bsession\b.{0,30}\b(?:starts?\s+from|re-?explain|without\s+(?:a|context))\b/i,
+  /\byou(?:'ll|\s+will)\s+spend\b.{0,30}\b(?:minutes?|hours?|time)\b.{0,20}\b(?:re-?explain|context|onboard)\b/i,
+  /\b(?:pro\s+tip|here'?s\s+(?:a|the)\s+(?:fix|solution)|hot\s+take|unpopular\s+opinion|controversial\s+take)\b/i,
+  /\b\d+\s+(?:hours?|minutes?)\s+(?:per|a|every)\s+(?:month|week|day|session)\s+wasted\b/i,
+  /\b(?:wasted|wasting|waste)\s+(?:on|of)\s+(?:re-?explain|onboard|context(?:ing)?)\b/i,
+  /\bstarts?\s+from\s+zero\b/i,
 
   // ── Agency / company / service marketing (NOT a job post) ──
   /\bwe\s+(?:place|connect|match|pair|deliver|build|run)\b.{0,40}\b(?:managed|pre-?vetted|dedicated|professional|qualified)/i,
@@ -250,13 +274,23 @@ const X_REJECT_PATTERNS = [
   /\bI\s+(?:offer|provide|specialize)\b/i,
   /\bI\s+(?:can\s+)?help\s+(?:you|your)\b.{0,30}\b(?:with|build|grow|scale|manage|design|develop|create|write)\b/i,
   /\banyone\s+(?:is\s+)?looking\s+for\s+(?:a|an)\b.{0,40}\bwith\s+\d+\s+years?\b/i,
-  /\b(?:DM|message)\s+(?:me|us)\s+(?:for|if|to)\b/i,
+  /\b(?:DM|message)\s+(?:me|us)\b/i,
+  /\bfeel\s+free\s+to\s+(?:DM|message|contact|reach\s+out|email|ping)\b/i,
   /\bavailable\s+for\s+(?:hire|work|projects?|freelance|gigs?)\b/i,
   /\bopen\s+(?:for|to)\s+(?:work|projects?|freelance|collaborat|new\s+clients?)\b/i,
   /\bI\s+(?:just\s+)?(?:completed|finished|delivered|built|designed|created|developed)\s+(?:a|an|this)\b/i,
   /\blooking\s+for\s+(?:new\s+)?clients?\b/i,
   /\b(?:my|check\s+out\s+my)\s+(?:portfolio|website|work|services?|fiverr|upwork|profile)\b/i,
   /\bhire\s+me\b/i,
+  // "if you're looking for a [role]" — freelancer pitching, not a client posting
+  /\bif\s+you(?:'re|\s+are)\s+(?:looking|searching)\s+for\s+(?:a|an)\s+(?:professional|reliable|skilled|experienced|creative|talented)?\s*(?:designer|developer|writer|editor|freelanc|coder|programmer|marketer|va|virtual\s*assistant|consultant|photographer|illustrat|tutor|translator|bookkeeper|copywriter|video\s*editor|logo|brand|web)/i,
+  // "I'm/I am looking for [work-type]" — job seeker, not poster
+  /\bI(?:'m|\s+am)\s+(?:a\s+)?(?:looking\s+for|seeking|searching\s+for)\s+(?:work|projects?|gigs?|freelance|clients?|opportunities?|remote\s+work|new\s+opportunities)\b/i,
+  // "need a [role]? I'm your guy/person"
+  /\bneed\s+(?:a|an)\b.{0,30}\b(?:I'?m\s+your|look\s+no\s+further|I\s+(?:can|got)|here\s+to\s+help)\b/i,
+  // Generic self-promo closers
+  /\blet'?s\s+(?:connect|work\s+together|collaborate|chat|talk)\b/i,
+  /\bready\s+to\s+(?:help|work|collaborate|start|take\s+on)\b/i,
 
   // ── Manifestation, wishful thinking ──
   /\bmanifesting\b/i,
@@ -272,8 +306,9 @@ const X_REJECT_PATTERNS = [
 // ── X/Tweet: STRONG hiring signals (tweet body must contain at least one) ──
 // These are deliberately strict — the tweet itself must be a job/gig post
 const X_HIRING_SIGNALS = [
-  // "hiring" used as an ACTION — "we're hiring", "now hiring", "is hiring",
-  // "currently hiring" — NOT "hiring a VA means..."
+  // "hiring" used as an ACTION — "we're hiring", "now hiring", "is hiring"
+  // Analogy/avoidance uses ("like hiring", "saved myself hiring") are
+  // caught by X_REJECT_PATTERNS BEFORE this signal check runs.
   /\b(?:we(?:'re|\s+are)|i(?:'m|\s+am)|now|currently|actively|urgently|immediately)\s+hiring\b/i,
   /\b(?:\[hiring\]|#hiring)\b/i,
   /\bhiring\s+(?:a|an|for|remote|immediately|now|asap)\b/i,
@@ -324,8 +359,14 @@ const PENALTY_PATTERNS = [
   { rx: /\bwatch\s+(?:my|this|the)\s+(?:video|reel|demo)\b/i, penalty: 15 },
   { rx: /\bwanna\s+(?:scale|grow|level\s+up)\b/i, penalty: 15 },
   { rx: /\bguaranteed\s+(?:results?|ROI|income|revenue)\b/i, penalty: 25 },
-  { rx: /\b(?:10x|100x|5x)\s+(?:your|the|growth|revenue|results?)\b/i, penalty: 20 },
-  { rx: /\b(?:limited\s+(?:spots?|slots?|seats?)|only\s+\d+\s+(?:spots?|slots?|seats?))\b/i, penalty: 20 },
+  {
+    rx: /\b(?:10x|100x|5x)\s+(?:your|the|growth|revenue|results?)\b/i,
+    penalty: 20,
+  },
+  {
+    rx: /\b(?:limited\s+(?:spots?|slots?|seats?)|only\s+\d+\s+(?:spots?|slots?|seats?))\b/i,
+    penalty: 20,
+  },
   { rx: /\bdon'?t\s+miss\s+(?:out|this)\b/i, penalty: 15 },
 ];
 
