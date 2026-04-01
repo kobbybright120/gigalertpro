@@ -366,12 +366,24 @@ Deno.serve(async () => {
     let totalAlerts = 0;
     let totalSkippedPromo = 0;
     let totalSkippedJunk = 0;
+    let totalPostsFetched = 0;
+    let totalPostsAfterDedup = 0;
+    let totalDeletedOrRemoved = 0;
+    let totalNoKeywordMatch = 0;
+    let totalLowScore = 0;
+    const subsWithPosts: string[] = [];
+    const subsEmpty: string[] = [];
 
     for (const sub of SUBREDDITS) {
       const lastId = stateMap[sub.name] || "";
       const posts = await fetchSubredditPosts(sub);
 
-      if (posts.length === 0) continue;
+      if (posts.length === 0) {
+        subsEmpty.push(sub.name);
+        continue;
+      }
+      totalPostsFetched += posts.length;
+      subsWithPosts.push(`${sub.name}(${posts.length})`);
 
       // Ensure scanner_state row exists for new subreddits
       await supabase
@@ -390,6 +402,7 @@ Deno.serve(async () => {
       for (const post of posts) {
         // Skip posts we've already processed
         if (post.id === lastId) continue;
+        totalPostsAfterDedup++;
         if (
           !newestId ||
           post.created_utc >
@@ -409,9 +422,8 @@ Deno.serve(async () => {
         }
 
         // ── Skip deleted / removed ──
-        if (body === "[removed]" || body === "[deleted]") continue;
-        if (post.author === "[deleted]" || post.author === "AutoModerator")
-          continue;
+        if (body === "[removed]" || body === "[deleted]") { totalDeletedOrRemoved++; continue; }
+        if (post.author === "[deleted]" || post.author === "AutoModerator") { totalDeletedOrRemoved++; continue; }
 
         // ── Skip self-promotions (freelancer ads) ──
         if (isSelfPromotion(title, body, flair)) {
@@ -423,7 +435,7 @@ Deno.serve(async () => {
 
         // Match keywords
         const matched = allKeywords.filter((kw) => text.includes(kw));
-        if (matched.length === 0) continue;
+        if (matched.length === 0) { totalNoKeywordMatch++; continue; }
 
         // Compute relevance score
         const score = computeScore(
@@ -434,7 +446,7 @@ Deno.serve(async () => {
         );
 
         // Skip very low relevance posts
-        if (score < 10) continue;
+        if (score < 10) { totalLowScore++; continue; }
 
         // Detect category
         const category = detectCategory(`${title} ${body}`);
@@ -510,10 +522,18 @@ Deno.serve(async () => {
       JSON.stringify({
         success: true,
         scanned: SUBREDDITS.length,
-        newAlerts: totalInserted,
-        userNotifications: totalAlerts,
+        keywords: allKeywords,
+        totalPostsFetched,
+        totalPostsAfterDedup,
+        totalDeletedOrRemoved,
         skippedSelfPromo: totalSkippedPromo,
         skippedJunk: totalSkippedJunk,
+        totalNoKeywordMatch,
+        totalLowScore,
+        newAlerts: totalInserted,
+        userNotifications: totalAlerts,
+        subsWithPosts: subsWithPosts.join(", "),
+        subsEmpty: subsEmpty.join(", "),
       }),
       { headers: { "Content-Type": "application/json" } },
     );

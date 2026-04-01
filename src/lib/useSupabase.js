@@ -183,7 +183,9 @@ export function useGigAlerts(keywordList) {
     }
 
     if (!userId) return;
-    // Fetch gig_alerts that match the user's keywords (title/body text search)
+    // Fetch gig alerts: use Vercel proxy (redditClient) for live Reddit data,
+    // then persist to Supabase for history. The edge function can't reach Reddit
+    // from cloud IPs, so the frontend fetches via the proxy instead.
     const kws = (keywordList || []).map((k) =>
       typeof k === "string" ? k : k.keyword,
     );
@@ -193,41 +195,80 @@ export function useGigAlerts(keywordList) {
       return;
     }
 
-    // Build an OR filter: match posts where title or body contains any keyword
-    const orFilter = kws
-      .flatMap((kw) => {
-        const safe = kw.replace(/[%_]/g, "\\$&");
-        return [`title.ilike.%${safe}%`, `body_preview.ilike.%${safe}%`];
-      })
-      .join(",");
+    try {
+      // Fetch live from Reddit via Vercel proxy (same as demo mode)
+      const liveResults = await fetchRedditGigs(kws);
 
-    const { data } = await supabase
-      .from("gig_alerts")
-      .select("*")
-      .or(orFilter)
-      .order("reddit_created", { ascending: false })
-      .limit(50);
+      // Persist each result to Supabase in the background (fire-and-forget)
+      if (liveResults.length > 0) {
+        const rows = liveResults.map((r) => ({
+          reddit_post_id: r.reddit_post_id || r.id,
+          title: r.title || "Untitled",
+          body_preview: (r.body_preview || "").slice(0, 500),
+          url: r.url || "",
+          subreddit: r.subreddit || "",
+          budget: r.budget || null,
+          author: r.author || null,
+          reddit_created: r.reddit_created || new Date().toISOString(),
+          matched_keywords: r.matched_keywords || r.keywords || [],
+          score: r.score ?? 0,
+          comment_count: r.comment_count ?? 0,
+          upvotes: r.upvotes ?? 0,
+          flair: r.flair || null,
+          category: r.category || null,
+        }));
+        supabase
+          .from("gig_alerts")
+          .upsert(rows, { onConflict: "reddit_post_id" })
+          .then(({ error }) => {
+            if (error) console.warn("[GigAlertPro] gig_alerts upsert:", error.message);
+          });
+      }
 
-    // Map DB rows to the shape GigCard expects
-    const results = (data || []).map((row) => ({
-      ...row,
-      source: row.author ? `@${row.author}` : "",
-      source_platform: "Reddit",
-      postedAt: row.reddit_created ? timeAgo(row.reddit_created) : "",
-      keywords: row.matched_keywords || [],
-      score: row.score ?? 0,
-      category: row.category || null,
-      flair: row.flair || null,
-      comment_count: row.comment_count ?? 0,
-      upvotes: row.upvotes ?? 0,
-    }));
-    if (pollingRef.current) {
-      const newCount = notifyNewGigs(results);
-      if (newCount > 0) bump(newCount);
-    } else {
-      seedSeenIds(results);
+      if (pollingRef.current) {
+        const newCount = notifyNewGigs(liveResults);
+        if (newCount > 0) bump(newCount);
+      } else {
+        seedSeenIds(liveResults);
+      }
+      setAlerts(liveResults);
+    } catch (err) {
+      console.warn("[GigAlertPro] Live fetch failed, falling back to DB:", err);
+      // Fallback: read from Supabase if the proxy is unavailable
+      const orFilter = kws
+        .flatMap((kw) => {
+          const safe = kw.replace(/[%_]/g, "\\$&");
+          return [`title.ilike.%${safe}%`, `body_preview.ilike.%${safe}%`];
+        })
+        .join(",");
+
+      const { data } = await supabase
+        .from("gig_alerts")
+        .select("*")
+        .or(orFilter)
+        .order("reddit_created", { ascending: false })
+        .limit(50);
+
+      const results = (data || []).map((row) => ({
+        ...row,
+        source: row.author ? `@${row.author}` : "",
+        source_platform: "Reddit",
+        postedAt: row.reddit_created ? timeAgo(row.reddit_created) : "",
+        keywords: row.matched_keywords || [],
+        score: row.score ?? 0,
+        category: row.category || null,
+        flair: row.flair || null,
+        comment_count: row.comment_count ?? 0,
+        upvotes: row.upvotes ?? 0,
+      }));
+      if (pollingRef.current) {
+        const newCount = notifyNewGigs(results);
+        if (newCount > 0) bump(newCount);
+      } else {
+        seedSeenIds(results);
+      }
+      setAlerts(results);
     }
-    setAlerts(results);
     setLoading(false);
   }, [userId, keywordList, bump]);
 
