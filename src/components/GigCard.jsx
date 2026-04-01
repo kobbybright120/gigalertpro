@@ -100,7 +100,10 @@ export default function GigCard({ gig, onGenerateProposal }) {
         {gig.budget && gig.budget !== "—" && (
           <span className="inline-flex items-center gap-1 font-bold text-[#00F0B5]">
             <DollarSign className="w-3.5 h-3.5" />
-            {gig.budget}
+            {String(gig.budget)
+              .trim()
+              .replace(/^\$+/, "")
+              .replace(/\s+/g, " ")}
           </span>
         )}
         <span className="text-gray-500">{gig.source}</span>
