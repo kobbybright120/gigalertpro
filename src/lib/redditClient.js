@@ -719,27 +719,42 @@ function matchAndScore(posts, lowerKws) {
         .replace(/\s+/g, " ")
         .trim();
 
+    // Extra cleaning for X tweets: strip hashtags, URLs, and shortened links
+    const cleanTweet = (txt) =>
+      cleanText(txt)
+        .replace(/#\w+/g, "")                         // remove hashtags
+        .replace(/https?:\/\/\S+/g, "")               // remove URLs
+        .replace(/\S+\.com\/\S*/g, "")                // remove shortened links (e.g. jobfound.org/job/...)
+        .replace(/\S+\.io\/\S*/g, "")
+        .replace(/\S+\.org\/\S*/g, "")
+        .replace(/\S+\.net\/\S*/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+
     // ── For X posts: derive a short headline + full body from the tweet ──
     let finalTitle, finalBody;
     if (isXPost) {
-      const fullTweet = cleanText((p.title || "") + " " + (p.selftext || ""));
-      // Remove duplicate halves (title often == selftext for tweets)
-      const deduped = fullTweet.length > 0 ? fullTweet : "Untitled";
+      // Use whichever is longer (title & selftext are often identical for tweets)
+      const rawTitle = p.title || "";
+      const rawBody = p.selftext || "";
+      const source = rawBody.length >= rawTitle.length ? rawBody : rawTitle;
+      const fullTweet = cleanTweet(source) || "Untitled";
+
       // First sentence or first ~120 chars at a word boundary for the headline
-      const sentenceEnd = deduped.search(/[.!?\n]/);
+      const sentenceEnd = fullTweet.search(/[.!?\n]/);
       const cutPoint =
         sentenceEnd > 20 && sentenceEnd <= 150
           ? sentenceEnd + 1
-          : Math.min(120, deduped.length);
-      let headline = deduped.slice(0, cutPoint).trim();
+          : Math.min(120, fullTweet.length);
+      let headline = fullTweet.slice(0, cutPoint).trim();
       // If we cut mid-text, find last word boundary
-      if (cutPoint < deduped.length && sentenceEnd < 0) {
+      if (cutPoint < fullTweet.length && sentenceEnd < 0) {
         const lastSpace = headline.lastIndexOf(" ");
         if (lastSpace > 40) headline = headline.slice(0, lastSpace);
       }
       finalTitle = headline;
       // Body is the rest of the tweet (skip the headline portion)
-      const rest = deduped.slice(headline.length).trim();
+      const rest = fullTweet.slice(headline.length).trim();
       finalBody = rest.length > 10 ? rest.slice(0, 400) : "";
     } else {
       finalTitle = cleanText(p.title || "Untitled");
