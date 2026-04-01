@@ -5,6 +5,7 @@ import {
   User,
   Pencil,
   Briefcase,
+  Link2,
   ExternalLink,
   MessageSquareQuote,
   Loader2,
@@ -299,6 +300,38 @@ export default function ProfilePage() {
                   <p className="text-gray-600 text-sm">No skills added yet</p>
                 )}
               </div>
+            </div>
+          </div>
+
+          {/* Portfolio Links Card */}
+          <div className="glass-card rounded-2xl p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Link2 className="w-4 h-4 text-[#00F0B5]" />
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                Portfolio Links
+              </h3>
+            </div>
+            <div className="space-y-2">
+              {profile.portfolioLinks.length > 0 ? (
+                profile.portfolioLinks.map((link, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-3 px-4 py-3 bg-white/[0.03] rounded-xl border border-white/[0.04] hover:border-[#00F0B5]/20 transition-all duration-200 group"
+                  >
+                    <ExternalLink className="w-4 h-4 text-gray-600 shrink-0 group-hover:text-[#00F0B5] transition-colors" />
+                    <a
+                      href={link.startsWith("http") ? link : `https://${link}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-gray-400 group-hover:text-[#00F0B5] transition-colors truncate"
+                    >
+                      {link}
+                    </a>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-600 text-sm">No links added yet</p>
+              )}
             </div>
           </div>
         </div>
