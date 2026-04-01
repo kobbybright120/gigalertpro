@@ -6,7 +6,6 @@ import {
   TrendingUp,
   Tag,
   Globe,
-  DollarSign,
   ArrowBigUp,
 } from "lucide-react";
 
@@ -54,6 +53,9 @@ function SourceBadge({ platform }) {
 
 export default function GigCard({ gig, onGenerateProposal }) {
   const isHot = gig.score >= 70;
+  const cleanBudget = gig?.budget
+    ? String(gig.budget).trim().replace(/^\$+/, "").replace(/\s+/g, " ")
+    : null;
 
   return (
     <div
@@ -97,13 +99,9 @@ export default function GigCard({ gig, onGenerateProposal }) {
 
       {/* Meta row */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-3.5 text-[13px]">
-        {gig.budget && gig.budget !== "—" && (
-          <span className="inline-flex items-center gap-1 font-bold text-[#00F0B5]">
-            <DollarSign className="w-3.5 h-3.5" />
-            {String(gig.budget)
-              .trim()
-              .replace(/^\$+/, "")
-              .replace(/\s+/g, " ")}
+        {cleanBudget && cleanBudget !== "—" && (
+          <span className="inline-flex items-center gap-0 font-bold text-[#00F0B5]">
+            {"$" + cleanBudget}
           </span>
         )}
         <span className="text-gray-500">{gig.source}</span>
