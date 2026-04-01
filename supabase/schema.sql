@@ -152,6 +152,11 @@ CREATE POLICY "Authenticated users can insert gig_alerts"
   ON public.gig_alerts FOR INSERT
   WITH CHECK (auth.role() = 'authenticated');
 
+CREATE POLICY "Authenticated users can update gig_alerts"
+  ON public.gig_alerts FOR UPDATE
+  USING (auth.role() = 'authenticated')
+  WITH CHECK (auth.role() = 'authenticated');
+
 -- ── User alerts policies ──
 CREATE POLICY "Users can view own user_alerts"
   ON public.user_alerts FOR SELECT
