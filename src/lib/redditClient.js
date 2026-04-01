@@ -282,8 +282,13 @@ const X_REJECT_PATTERNS = [
   /\blooking\s+for\s+(?:new\s+)?clients?\b/i,
   /\b(?:my|check\s+out\s+my)\s+(?:portfolio|website|work|services?|fiverr|upwork|profile)\b/i,
   /\bhire\s+me\b/i,
+
+  // "if [anyone/you/you're/somebody] need/looking for [someone/a] [role]" — freelancer pitch
+  /\bif\s+(?:anyone|anybody|someone|somebody|you(?:'re|\s+are)?)\s+(?:need|looking|search)\b/i,
+
   // "if you're looking for a [role]" — freelancer pitching, not a client posting
   /\bif\s+you(?:'re|\s+are)\s+(?:looking|searching)\s+for\s+(?:a|an)\s+(?:professional|reliable|skilled|experienced|creative|talented)?\s*(?:designer|developer|writer|editor|freelanc|coder|programmer|marketer|va|virtual\s*assistant|consultant|photographer|illustrat|tutor|translator|bookkeeper|copywriter|video\s*editor|logo|brand|web)/i,
+
   // "I'm/I am looking for [work-type]" — job seeker, not poster
   /\bI(?:'m|\s+am)\s+(?:a\s+)?(?:looking\s+for|seeking|searching\s+for)\s+(?:work|projects?|gigs?|freelance|clients?|opportunities?|remote\s+work|new\s+opportunities)\b/i,
   // "need a [role]? I'm your guy/person"
@@ -291,6 +296,23 @@ const X_REJECT_PATTERNS = [
   // Generic self-promo closers
   /\blet'?s\s+(?:connect|work\s+together|collaborate|chat|talk)\b/i,
   /\bready\s+to\s+(?:help|work|collaborate|start|take\s+on)\b/i,
+
+  // ── Portfolio showcase / work samples (freelancer showing work, not a job) ──
+  /\b(?:I|we)\s+(?:made|designed|created|built|did|drew|edited|animated|produced)\s+(?:this|that|it)\s+(?:for|with)\s+(?:a|my|our|the)?\s*client\b/i,
+  /\bclient\s+(?:loved|was\s+(?:happy|thrilled|super\s+happy|pleased|satisfied)|approved)\b/i,
+  /\b(?:came|turned)\s+out\s+(?:exactly|great|amazing|perfect|clean|fire)\b/i,
+  /\bput\s+(?:a\s+lot\s+of\s+)?work\s+into\s+this\b/i,
+  /\bspent\s+hours?\s+(?:designing|creating|working|editing|building|drawing|animating)\b/i,
+
+  // ── Service listing spam (listing multiple services = freelancer ad) ──
+  /\bunlimited\s+revisions?\b/i,
+  /\b(?:logo|banner|thumbnail|emotes?|overlay|sub\s*badge|stream\s*(?:revamp|package|branding)|kick\s*\/?\s*twitch)\b.{0,60}\b(?:logo|banner|thumbnail|emotes?|overlay|sub\s*badge|stream|illustration|animation)\b/i,
+  /\bwho\s+(?:do|make|does|creates?|designs?|builds?)\b.{0,40}\b(?:logo|banner|thumbnail|emotes?|overlay)\b/i,
+  /\bGFX\s+artist\b/i,
+
+  // ── Broad freelancer-ad structural patterns ──
+  // Tweet that lists 3+ service types separated by commas (service catalog = ad)
+  /(?:logo|banner|thumbnail|emotes?|overlay|flyer|poster|brochure|business\s*card|mockup|infographic|social\s*media\s*(?:post|design)|packaging|label|merch(?:andise)?|t-?shirt)(?:\s*[,/&+]\s*(?:logo|banner|thumbnail|emotes?|overlay|flyer|poster|brochure|business\s*card|mockup|infographic|social\s*media|packaging|label|merch|t-?shirt|illustration|animation|pixel\s*art)){2,}/i,
 
   // ── Manifestation, wishful thinking ──
   /\bmanifesting\b/i,
