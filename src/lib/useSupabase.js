@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { supabase } from "./supabase";
 import { useAuth } from "../context/AuthContext";
 import { fetchRedditGigs, clearCache } from "./redditClient";
@@ -216,7 +216,12 @@ export function useGigAlerts(keywordList) {
           upvotes: r.upvotes ?? 0,
           flair: r.flair || null,
           category: r.category || null,
-          source: r.source_platform === "X" ? "x" : r.source_platform === "Craigslist" ? "craigslist" : "reddit",
+          source:
+            r.source_platform === "X"
+              ? "x"
+              : r.source_platform === "Craigslist"
+                ? "craigslist"
+                : "reddit",
         }));
         supabase
           .from("gig_alerts")
@@ -528,6 +533,8 @@ export function useProfile() {
           skills: ["React", "Design"],
           testimonials: ["Great work!"],
           portfolio_links: ["https://example.com"],
+          hourly_rate: 50,
+          availability: "available",
         };
         setProfile(p);
         writeLS("gigalertpro_demo_profile", p);
@@ -569,4 +576,62 @@ export function useProfile() {
   }
 
   return { profile, loading, updateProfile, refetch: fetchProfile };
+}
+
+// ── Saved Gigs ──
+export function useSavedGigs() {
+  const { user } = useAuth();
+  const [saved, setSaved] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchSaved = useCallback(async () => {
+    if (DISABLE_AUTH) {
+      const demo = readLS("gigalertpro_demo_saved", []);
+      setSaved(demo);
+      setLoading(false);
+      return;
+    }
+    if (!user) return;
+    const { data } = await supabase
+      .from("saved_gigs")
+      .select("alert_id")
+      .eq("user_id", user.id);
+    setSaved((data || []).map((d) => d.alert_id));
+    setLoading(false);
+  }, [user]);
+
+  useEffect(() => {
+    fetchSaved();
+  }, [fetchSaved]);
+
+  const savedIds = useMemo(() => new Set(saved), [saved]);
+
+  async function toggleSave(alertId) {
+    if (DISABLE_AUTH) {
+      setSaved((prev) => {
+        const next = prev.includes(alertId)
+          ? prev.filter((id) => id !== alertId)
+          : [...prev, alertId];
+        writeLS("gigalertpro_demo_saved", next);
+        return next;
+      });
+      return;
+    }
+    if (!user) return;
+    if (savedIds.has(alertId)) {
+      await supabase
+        .from("saved_gigs")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("alert_id", alertId);
+      setSaved((prev) => prev.filter((id) => id !== alertId));
+    } else {
+      await supabase
+        .from("saved_gigs")
+        .insert({ user_id: user.id, alert_id: alertId });
+      setSaved((prev) => [...prev, alertId]);
+    }
+  }
+
+  return { saved, savedIds, toggleSave, loading };
 }

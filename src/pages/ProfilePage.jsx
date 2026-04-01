@@ -9,11 +9,37 @@ import {
   ExternalLink,
   MessageSquareQuote,
   Loader2,
+  DollarSign,
+  FileText,
+  Bookmark,
 } from "lucide-react";
-import { useProfile } from "../lib/useSupabase";
+import { useProfile, useProposals, useSavedGigs } from "../lib/useSupabase";
+
+const AVAILABILITY_OPTIONS = [
+  {
+    value: "available",
+    label: "Available",
+    color: "bg-[#00F0B5]",
+    textColor: "text-[#00F0B5]",
+  },
+  {
+    value: "busy",
+    label: "Busy \u2014 Limited",
+    color: "bg-amber-400",
+    textColor: "text-amber-400",
+  },
+  {
+    value: "unavailable",
+    label: "Unavailable",
+    color: "bg-red-400",
+    textColor: "text-red-400",
+  },
+];
 
 export default function ProfilePage() {
   const { profile: dbProfile, loading, updateProfile } = useProfile();
+  const { proposals } = useProposals();
+  const { saved } = useSavedGigs();
 
   const profile = {
     name: dbProfile?.name || "",
@@ -21,11 +47,28 @@ export default function ProfilePage() {
     skills: dbProfile?.skills || [],
     testimonials: dbProfile?.testimonials || [],
     portfolioLinks: dbProfile?.portfolio_links || [],
+    hourlyRate: dbProfile?.hourly_rate || "",
+    availability: dbProfile?.availability || "available",
   };
 
-  const [editing, setEditing] = useState(false);
+  const completenessChecks = [
+    !!profile.name,
+    !!profile.bio,
+    profile.skills.length > 0,
+    !!profile.hourlyRate,
+    profile.portfolioLinks.length > 0,
+    profile.testimonials.length > 0,
+  ];
+  const completeness = Math.round(
+    (completenessChecks.filter(Boolean).length / completenessChecks.length) *
+      100,
+  );
 
-  // Draft form state for modal
+  const availConfig =
+    AVAILABILITY_OPTIONS.find((o) => o.value === profile.availability) ||
+    AVAILABILITY_OPTIONS[0];
+
+  const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState({});
 
   function openEditor() {
@@ -35,6 +78,8 @@ export default function ProfilePage() {
       skills: profile.skills.join(", "),
       portfolioLinks: profile.portfolioLinks.join("\n"),
       testimonials: profile.testimonials.join("\n"),
+      hourlyRate: profile.hourlyRate,
+      availability: profile.availability,
     });
     setEditing(true);
   }
@@ -55,6 +100,8 @@ export default function ProfilePage() {
         .split("\n")
         .map((s) => s.trim())
         .filter(Boolean),
+      hourly_rate: draft.hourlyRate ? Number(draft.hourlyRate) : null,
+      availability: draft.availability || "available",
     };
     await updateProfile(updated);
     setEditing(false);
@@ -147,6 +194,44 @@ export default function ProfilePage() {
                 />
               </div>
 
+              {/* Hourly Rate + Availability */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wider">
+                    Hourly Rate (USD)
+                  </label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
+                    <input
+                      type="number"
+                      min="0"
+                      value={draft.hourlyRate}
+                      onChange={(e) =>
+                        setDraft((d) => ({ ...d, hourlyRate: e.target.value }))
+                      }
+                      placeholder="75"
+                      className="w-full pl-10 pr-4 py-3 bg-[#020617]/60 border border-white/[0.06] rounded-xl text-white placeholder-gray-600 focus:ring-2 focus:ring-[#00F0B5]/30 focus:border-[#00F0B5]/20 outline-none transition-all duration-200 text-sm"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wider">
+                    Availability
+                  </label>
+                  <select
+                    value={draft.availability}
+                    onChange={(e) =>
+                      setDraft((d) => ({ ...d, availability: e.target.value }))
+                    }
+                    className="w-full px-4 py-3 bg-[#020617]/60 border border-white/[0.06] rounded-xl text-white focus:ring-2 focus:ring-[#00F0B5]/30 focus:border-[#00F0B5]/20 outline-none transition-all duration-200 text-sm appearance-none"
+                  >
+                    <option value="available">Available</option>
+                    <option value="busy">Busy — Limited Availability</option>
+                    <option value="unavailable">Unavailable</option>
+                  </select>
+                </div>
+              </div>
+
               {/* Portfolio Links + Testimonials side by side */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
@@ -232,10 +317,49 @@ export default function ProfilePage() {
             <h2 className="text-xl font-extrabold text-white tracking-tight">
               {profile.name || "Your Name"}
             </h2>
-            <p className="text-gray-500 text-sm mt-1 flex items-center justify-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-[#00F0B5] shadow-[0_0_6px_rgba(0,240,181,0.4)]" />
-              Available Worldwide
+            <p className="text-sm mt-1.5 flex items-center justify-center gap-1.5">
+              <span
+                className={`w-2 h-2 rounded-full ${availConfig.color} shadow-[0_0_6px_rgba(0,0,0,0.3)]`}
+              />
+              <span className={availConfig.textColor}>{availConfig.label}</span>
             </p>
+            {profile.hourlyRate && (
+              <p className="text-sm text-gray-400 mt-1 flex items-center justify-center gap-1">
+                <DollarSign className="w-3.5 h-3.5" />
+                {profile.hourlyRate}/hr
+              </p>
+            )}
+
+            {/* Profile Completeness */}
+            <div className="mt-5 text-left">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Profile Strength
+                </span>
+                <span
+                  className={`text-xs font-bold ${completeness === 100 ? "text-[#00F0B5]" : "text-gray-400"}`}
+                >
+                  {completeness}%
+                </span>
+              </div>
+              <div className="w-full h-2 bg-white/[0.04] rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ${
+                    completeness === 100
+                      ? "bg-gradient-to-r from-[#00F0B5] to-[#00D4FF]"
+                      : completeness >= 60
+                        ? "bg-[#00F0B5]/70"
+                        : "bg-amber-400/70"
+                  }`}
+                  style={{ width: `${completeness}%` }}
+                />
+              </div>
+              {completeness < 100 && (
+                <p className="text-[11px] text-gray-600 mt-1.5">
+                  Complete your profile to improve AI proposals
+                </p>
+              )}
+            </div>
 
             {/* Core Skills */}
             <div className="mt-6 text-left">
@@ -259,6 +383,24 @@ export default function ProfilePage() {
                   <p className="text-gray-600 text-sm">No skills added yet</p>
                 )}
               </div>
+            </div>
+          </div>
+
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="glass-card rounded-2xl p-4 text-center">
+              <FileText className="w-5 h-5 text-[#00F0B5] mx-auto mb-2" />
+              <p className="text-2xl font-extrabold text-white">
+                {proposals.length}
+              </p>
+              <p className="text-xs text-gray-500 mt-0.5">Proposals</p>
+            </div>
+            <div className="glass-card rounded-2xl p-4 text-center">
+              <Bookmark className="w-5 h-5 text-[#00D4FF] mx-auto mb-2" />
+              <p className="text-2xl font-extrabold text-white">
+                {saved.length}
+              </p>
+              <p className="text-xs text-gray-500 mt-0.5">Saved Gigs</p>
             </div>
           </div>
 

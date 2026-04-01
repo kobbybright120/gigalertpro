@@ -7,6 +7,7 @@ import {
   Tag,
   Globe,
   ArrowBigUp,
+  Bookmark,
 } from "lucide-react";
 
 function ScoreBadge({ score }) {
@@ -59,7 +60,12 @@ function SourceBadge({ platform }) {
   );
 }
 
-export default function GigCard({ gig, onGenerateProposal }) {
+export default function GigCard({
+  gig,
+  onGenerateProposal,
+  onSaveGig,
+  isSaved,
+}) {
   const isHot = gig.score >= 70;
   const cleanBudget = gig?.budget
     ? String(gig.budget).trim().replace(/^\$+/, "").replace(/\s+/g, " ")
@@ -148,7 +154,7 @@ export default function GigCard({ gig, onGenerateProposal }) {
       )}
 
       {/* Actions */}
-      <div className="flex flex-wrap gap-2.5 mt-5 pt-4 border-t border-white/[0.04]">
+      <div className="flex flex-wrap items-center gap-2.5 mt-5 pt-4 border-t border-white/[0.04]">
         <a
           href={gig.url}
           target="_blank"
@@ -165,6 +171,19 @@ export default function GigCard({ gig, onGenerateProposal }) {
           <Sparkles className="w-4 h-4" />
           Generate Proposal
         </button>
+        {onSaveGig && (
+          <button
+            onClick={() => onSaveGig(gig)}
+            className={`ml-auto inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
+              isSaved
+                ? "bg-[#00D4FF]/[0.1] border border-[#00D4FF]/20 text-[#00D4FF]"
+                : "bg-white/[0.04] border border-white/[0.08] text-gray-500 hover:text-gray-300 hover:bg-white/[0.08]"
+            }`}
+            title={isSaved ? "Unsave gig" : "Save gig"}
+          >
+            <Bookmark className={`w-4 h-4 ${isSaved ? "fill-current" : ""}`} />
+          </button>
+        )}
       </div>
     </div>
   );

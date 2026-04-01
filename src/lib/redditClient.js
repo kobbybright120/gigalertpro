@@ -419,7 +419,10 @@ const HIRING_SIGNALS = [
   { rx: /\[task\]/i, score: 25 },
   { rx: /\[paid\]/i, score: 20 },
   // "hiring" as action (not "hiring manager", "hiring process", "hiring freeze")
-  { rx: /\bhiring\b(?!\s+(?:manager|process|freez|practice|pipeline|decision|committee|team))/i, score: 15 },
+  {
+    rx: /\bhiring\b(?!\s+(?:manager|process|freez|practice|pipeline|decision|committee|team))/i,
+    score: 15,
+  },
   {
     rx: /\blooking\s+for\b.{0,35}\b(?:a|an)?\s*(?:designer|developer|writer|editor|freelanc|coder|programmer|marketer|va|virtual\s?assistant|consultant|someone|contractor|expert|specialist|agency)/i,
     score: 20,

@@ -15,7 +15,12 @@ import {
   RefreshCw,
 } from "lucide-react";
 import GigCard from "../components/GigCard";
-import { useKeywords, useGigAlerts, useProposals } from "../lib/useSupabase";
+import {
+  useKeywords,
+  useGigAlerts,
+  useProposals,
+  useSavedGigs,
+} from "../lib/useSupabase";
 import { useNewGigCount } from "../context/NewGigCountContext";
 import { generateProposal } from "../lib/mockData";
 
@@ -29,6 +34,7 @@ export default function GigAlertsPage() {
   const { keywords, addKeyword, removeKeyword } = useKeywords();
   const { alerts, loading: alertsLoading } = useGigAlerts(keywords);
   const { saveProposal } = useProposals();
+  const { savedIds, toggleSave } = useSavedGigs();
   const { reset: resetGigCount } = useNewGigCount();
 
   // Derive last-updated time from alert freshness
@@ -80,9 +86,7 @@ export default function GigAlertsPage() {
   const craigslistCount = alerts.filter(
     (a) => a.source_platform === "Craigslist",
   ).length;
-  const xCount = alerts.filter(
-    (a) => a.source_platform === "X",
-  ).length;
+  const xCount = alerts.filter((a) => a.source_platform === "X").length;
 
   // Collect unique categories from current alerts
   const categorySet = new Set(alerts.map((a) => a.category).filter(Boolean));
@@ -100,8 +104,7 @@ export default function GigAlertsPage() {
             Gig Alerts
           </h1>
           <p className="text-gray-500 mt-1.5 text-sm">
-            Search for gigs and get matched results from 34+ subreddits,
-            Craigslist & X/Twitter
+            Real-time gig matching across Reddit, Craigslist & X/Twitter
           </p>
         </div>
         <span className="inline-flex items-center gap-2 px-4 py-2 glass-card rounded-full border border-[#00F0B5]/15 shrink-0">
@@ -278,7 +281,7 @@ export default function GigAlertsPage() {
                 Scanning Sources...
               </h3>
               <p className="text-gray-500 text-sm mt-1">
-                Searching Reddit & Craigslist for gigs matching your keywords
+                Searching Reddit, Craigslist & X/Twitter for matching gigs
               </p>
             </div>
             {[1, 2, 3].map((i) => (
@@ -311,7 +314,7 @@ export default function GigAlertsPage() {
             </h3>
             <p className="text-gray-500 text-sm max-w-md mx-auto">
               Type a keyword or skill above to start finding matching gigs from
-              Reddit & Craigslist. Be the first to apply!
+              Reddit, Craigslist & X/Twitter. Be the first to apply!
             </p>
           </div>
         ) : filtered.length > 0 ? (
@@ -342,6 +345,8 @@ export default function GigAlertsPage() {
                 source_platform: alert.source_platform || "Reddit",
               }}
               onGenerateProposal={handleGenerateProposal}
+              onSaveGig={(gig) => toggleSave(gig.id)}
+              isSaved={savedIds.has(alert.id)}
             />
           ))
         ) : (

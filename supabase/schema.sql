@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   skills      TEXT[] NOT NULL DEFAULT '{}',
   testimonials TEXT[] NOT NULL DEFAULT '{}',
   portfolio_links TEXT[] NOT NULL DEFAULT '{}',
+  hourly_rate    NUMERIC,
+  availability   TEXT NOT NULL DEFAULT 'available' CHECK (availability IN ('available', 'busy', 'unavailable')),
   plan        TEXT NOT NULL DEFAULT 'free' CHECK (plan IN ('free', 'pro')),
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -87,6 +89,15 @@ CREATE TABLE IF NOT EXISTS public.scanner_state (
   subreddit       TEXT PRIMARY KEY,
   last_post_id    TEXT NOT NULL DEFAULT '',
   last_scanned_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- 7. Saved gigs (bookmarked by users)
+CREATE TABLE IF NOT EXISTS public.saved_gigs (
+  id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id     UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  alert_id    BIGINT NOT NULL REFERENCES public.gig_alerts(id) ON DELETE CASCADE,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (user_id, alert_id)
 );
 
 -- Seed the subreddits we scan
@@ -202,6 +213,12 @@ CREATE POLICY "Users read own proposals"  ON public.proposals FOR SELECT USING (
 CREATE POLICY "Users insert own proposals" ON public.proposals FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users delete own proposals" ON public.proposals FOR DELETE USING (auth.uid() = user_id);
 
+-- Saved gigs: users manage their own
+ALTER TABLE public.saved_gigs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users read own saved_gigs"  ON public.saved_gigs FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users insert own saved_gigs" ON public.saved_gigs FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users delete own saved_gigs" ON public.saved_gigs FOR DELETE USING (auth.uid() = user_id);
+
 -- Scanner state: only service_role writes; authenticated can read
 ALTER TABLE public.scanner_state ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Authenticated read scanner_state" ON public.scanner_state FOR SELECT USING (auth.role() = 'authenticated');
@@ -216,6 +233,8 @@ CREATE INDEX IF NOT EXISTS idx_gig_alerts_source ON public.gig_alerts(source);
 CREATE INDEX IF NOT EXISTS idx_user_alerts_user ON public.user_alerts(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_alerts_read ON public.user_alerts(user_id, is_read) WHERE NOT is_read;
 CREATE INDEX IF NOT EXISTS idx_proposals_user ON public.proposals(user_id);
+CREATE INDEX IF NOT EXISTS idx_saved_gigs_user ON public.saved_gigs(user_id);
+CREATE INDEX IF NOT EXISTS idx_saved_gigs_alert ON public.saved_gigs(alert_id);
 
 -- Enable Realtime on tables that the frontend subscribes to
 ALTER PUBLICATION supabase_realtime ADD TABLE public.user_alerts;
