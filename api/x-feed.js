@@ -21,25 +21,39 @@ const NITTER_INSTANCES = [
 ];
 
 const NITTER_SEARCHES = [
-  "hiring developer",
-  "hiring freelancer",
-  "hiring designer",
-  "hiring writer",
+  // Design & Creative
+  "hiring graphic designer",
   "hiring video editor",
-  "hiring virtual assistant",
-  "hiring social media manager",
+  "hiring animator",
+  "hiring illustrator",
+  // Development & Tech
+  "hiring web developer",
+  "hiring software engineer",
+  "hiring mobile app developer",
+  "hiring game developer",
+  // Writing & Content
   "hiring copywriter",
-  "hiring photographer",
-  "hiring translator",
-  "hiring bookkeeper",
+  "hiring content writer",
+  "hiring ghostwriter",
+  // Marketing & Sales
+  "hiring social media manager",
   "hiring SEO specialist",
-  "hiring voiceover artist",
-  "hiring proofreader",
+  "hiring digital marketer",
+  // Business & Admin
+  "hiring virtual assistant",
+  "hiring project manager",
+  "hiring customer support",
+  // Specialized
+  "hiring translator",
+  "hiring voice actor",
   "hiring music producer",
+  "hiring photographer",
+  // General
   "freelance gig",
   "freelance opportunity",
   "looking for freelancer",
   "need a freelancer",
+  "remote freelance job",
 ];
 
 const NITTER_UA = "GigAlertPro/1.0 (+https://gigalertpro.vercel.app)";

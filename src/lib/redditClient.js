@@ -71,12 +71,12 @@ const CATEGORIES = [
   {
     label: "Development",
     icon: "code",
-    rx: /\b(develop|coding|programm|software|web\s?dev|frontend|backend|full.?stack|react|angular|vue|node|python|java|php|ruby|swift|flutter|mobile\s?app|android|ios|api|database|wordpress|shopify|wix|squarespace|html|css|javascript|typescript)\b/i,
+    rx: /\b(develop|coding|programm|software|web\s?dev|frontend|backend|full.?stack|react|angular|vue|node|python|java|php|ruby|swift|flutter|mobile\s?app|android|ios|api|database|wordpress|shopify|wix|squarespace|html|css|javascript|typescript|blockchain|solidity|smart\s?contract|game\s?dev|unity|unreal|godot)\b/i,
   },
   {
     label: "Design",
     icon: "palette",
-    rx: /\b(design|logo|graphic|ui\/?ux|figma|photoshop|illustrat|brand|visual|banner|poster|flyer|infographic|thumbnail|canva)\b/i,
+    rx: /\b(design|logo|graphic|ui\/?ux|figma|photoshop|illustrat|brand|visual|banner|poster|flyer|infographic|thumbnail|canva|3d\s?artist|blender|creative\s?director)\b/i,
   },
   {
     label: "Writing",
@@ -86,12 +86,12 @@ const CATEGORIES = [
   {
     label: "Marketing",
     icon: "megaphone",
-    rx: /\b(market|seo|social\s?media|ads?\b|advertis|email\s?market|ppc|google\s?ads|facebook\s?ads|growth|funnel|lead\s?gen|influencer)\b/i,
+    rx: /\b(market|seo|social\s?media|ads?\b|advertis|email\s?market|ppc|google\s?ads|facebook\s?ads|growth\s?hack|funnel|lead\s?gen|influencer|digital\s?market|brand\s?strateg)\b/i,
   },
   {
     label: "Video & Audio",
     icon: "video",
-    rx: /\b(video|animation|motion|after\s?effects|premiere|youtube|podcast|audio|voice.?over|narrator)\b/i,
+    rx: /\b(video|animation|motion\s?graphic|after\s?effects|premiere|youtube|podcast|audio|voice.?over|voice\s?act|narrator|music\s?produc|sound\s?design|audio\s?engineer)\b/i,
   },
   {
     label: "Data & AI",
@@ -99,9 +99,24 @@ const CATEGORIES = [
     rx: /\b(data|machine\s?learn|ai\b|artificial|scraping|analy|automat|bot|chatbot|gpt|llm|neural|deep\s?learn)\b/i,
   },
   {
-    label: "Virtual Assistant",
+    label: "Business & Admin",
     icon: "headset",
-    rx: /\b(virtual\s?assistant|va\b|admin|data\s?entry|research|customer\s?service|support|bookkeep|scheduling)\b/i,
+    rx: /\b(virtual\s?assistant|va\b|admin|data\s?entry|research|customer\s?(?:service|support)|bookkeep|scheduling|project\s?manag|executive\s?assist|secretary|operations)\b/i,
+  },
+  {
+    label: "Sales",
+    icon: "dollar-sign",
+    rx: /\b(sales|cold\s?call|outreach|biz\s?dev|business\s?develop|account\s?exec|closing|lead\s?qualif|commission|telesales)\b/i,
+  },
+  {
+    label: "Photography",
+    icon: "camera",
+    rx: /\b(photo|photographer|headshot|portrait|product\s?photo|real\s?estate\s?photo|lightroom|retouching)\b/i,
+  },
+  {
+    label: "Translation",
+    icon: "globe",
+    rx: /\b(translat|interpret|locali[sz]|multilingual|bilingual|spanish|french|german|chinese|japanese|korean|arabic|portuguese|hindi)\b/i,
   },
 ];
 
@@ -335,9 +350,9 @@ const X_HIRING_SIGNALS = [
   /\b(?:\[hiring\]|#hiring)\b/i,
   /\bhiring\s+(?:a|an|for|remote|immediately|now|asap)\b/i,
   /\bwe(?:'re|\s+are)\s+(?:looking|searching)\b/i,
-  /\blooking\s+(?:for|to\s+hire)\b.{0,35}\b(?:a|an)?\s*(?:designer|developer|writer|editor|freelanc|coder|programmer|marketer|va|virtual\s*assistant|consultant|someone|contractor|expert|engineer|animator|videograph|photographer|illustrat|tutor|translator|bookkeeper|social\s*media|copywriter|voice|proofread|transcri|podcast|music\s*produc|3d\s*artist|motion\s*graphic|seo|email\s*market|community\s*manag|project\s*manag|executive\s*assist|ghostwrit|blog|coach|accountant|paralegal|tax|sales|customer\s*support|lead\s*gen|shopify|amazon|product\s*list|data\s*(?:entry|analyst))/i,
-  /\bneed\s+(?:a|an)\s+(?:designer|developer|writer|editor|freelanc|coder|programmer|marketer|consultant|expert|engineer|animator|videograph|photographer|illustrat|tutor|translator|bookkeeper|virtual\s*assistant|va|copywriter|voice\s*over|social\s*media|data\s*entry|proofread|transcri|podcast\s*editor|music\s*produc|3d\s*artist|motion\s*graphic|seo|ghostwrit|blog|coach|accountant|paralegal|tax\s*prepar|sales\s*rep|customer\s*support|shopify|lead\s*gen|project\s*manag)\b/i,
-  /\b(?:seeking|searching\s+for)\s+(?:a|an)?\s*(?:designer|developer|writer|freelanc|someone|expert|contractor|engineer|photographer|illustrat|animator|tutor|translator|va|virtual\s*assistant|marketer|copywriter|proofread|transcri|bookkeeper|coach|accountant|podcast|seo|social\s*media|data\s*analyst|project\s*manag)/i,
+  /\blooking\s+(?:for|to\s+hire)\b.{0,35}\b(?:a|an)?\s*(?:designer|developer|writer|editor|freelanc|coder|programmer|marketer|va|virtual\s*assistant|consultant|someone|contractor|expert|engineer|animator|videograph|photographer|illustrat|tutor|translator|bookkeeper|social\s*media|copywriter|voice\s*(?:over|act)|proofread|transcri|podcast|music\s*produc|3d\s*artist|motion\s*graphic|seo|email\s*market|community\s*manag|project\s*manag|executive\s*assist|ghostwrit|blog|coach|accountant|paralegal|tax|sales|customer\s*support|lead\s*gen|shopify|amazon|product\s*list|data\s*(?:entry|analyst)|game\s*dev|blockchain|mobile\s*(?:app)?\s*dev|frontend|backend|full\s*stack|growth\s*hack|digital\s*market|brand\s*strateg|sound\s*design|audio\s*engineer|retoucher|locali[sz])/i,
+  /\bneed\s+(?:a|an)\s+(?:designer|developer|writer|editor|freelanc|coder|programmer|marketer|consultant|expert|engineer|animator|videograph|photographer|illustrat|tutor|translator|bookkeeper|virtual\s*assistant|va|copywriter|voice\s*(?:over|act)|social\s*media|data\s*entry|proofread|transcri|podcast\s*editor|music\s*produc|3d\s*artist|motion\s*graphic|seo|ghostwrit|blog|coach|accountant|paralegal|tax\s*prepar|sales\s*rep|customer\s*support|shopify|lead\s*gen|project\s*manag|game\s*dev|blockchain\s*dev|mobile\s*(?:app)?\s*dev|frontend\s*dev|backend\s*dev|full\s*stack|growth\s*hack|digital\s*market|sound\s*design|audio\s*engineer|retoucher|locali[sz])\b/i,
+  /\b(?:seeking|searching\s+for)\s+(?:a|an)?\s*(?:designer|developer|writer|freelanc|someone|expert|contractor|engineer|photographer|illustrat|animator|tutor|translator|va|virtual\s*assistant|marketer|copywriter|proofread|transcri|bookkeeper|coach|accountant|podcast|seo|social\s*media|data\s*analyst|project\s*manag|game\s*dev|blockchain|voice\s*(?:act|over)|music\s*produc|growth\s*hack|digital\s*market|mobile\s*dev|frontend|backend|full\s*stack)/i,
   /\bjob\s+(?:posting|opening|opportunity|position|listing|alert)\b/i,
   /\bopen\s+(?:role|position)s?\b/i,
   /\b(?:part|full)\s*-?\s*time\b.{0,20}\b(?:role|position|job|work|remote)\b/i,

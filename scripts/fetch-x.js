@@ -60,80 +60,72 @@ const NITTER_INSTANCES = (
   .filter(Boolean);
 
 // Search queries for job/gig tweets (Nitter search RSS)
-// Covers all major freelance niches — not just IT
+// ── Niche-based search queries mapped to freelance categories ──
 const NITTER_SEARCHES = (
   process.env.NITTER_SEARCHES ||
   [
-    // Tech / Dev
-    "hiring developer",
-    "hiring freelancer",
-    "remote developer job",
-    "hiring programmer",
-    "need a web developer",
-    // Design
-    "hiring designer",
-    "need a graphic designer",
-    "looking for logo designer",
+    // ── Design & Creative ──
+    "hiring graphic designer",
     "hiring UI UX designer",
-    // Writing & Content
-    "hiring writer",
-    "freelance copywriter",
-    "need a content writer",
-    "hiring ghostwriter",
-    "hiring blogger",
-    "hiring technical writer",
-    // Video & Audio
+    "hiring illustrator",
     "hiring video editor",
-    "looking for voiceover artist",
-    "need an animator",
-    "hiring music producer",
-    "hiring podcast editor",
     "hiring motion graphics",
-    // Marketing & Social Media
+    "hiring animator",
+    "need a logo designer",
+    "looking for graphic designer",
+    // ── Development & Tech ──
+    "hiring web developer",
+    "hiring frontend developer",
+    "hiring backend developer",
+    "hiring mobile app developer",
+    "hiring software engineer",
+    "hiring machine learning engineer",
+    "hiring AI developer",
+    "hiring game developer",
+    "hiring blockchain developer",
+    "hiring Shopify developer",
+    "need a developer",
+    "looking for programmer",
+    // ── Writing & Content ──
+    "hiring copywriter",
+    "hiring content writer",
+    "hiring technical writer",
+    "hiring ghostwriter",
+    "hiring editor proofreader",
+    "need a writer",
+    "looking for blogger",
+    // ── Marketing & Sales ──
     "hiring social media manager",
-    "freelance marketer",
     "hiring SEO specialist",
+    "hiring digital marketer",
+    "hiring growth hacker",
     "hiring email marketer",
-    "need a community manager",
-    // Virtual Assistant & Admin
+    "need a marketer",
+    "hiring sales freelancer",
+    // ── Business & Admin ──
     "hiring virtual assistant",
-    "need a VA",
+    "hiring data entry",
     "hiring project manager",
+    "hiring customer support",
     "hiring executive assistant",
-    // Translation & Tutoring
-    "hiring translator",
-    "looking for tutor",
-    "hiring proofreader",
-    "hiring transcriptionist",
-    // Photography & Creative
-    "hiring photographer",
-    "freelance illustrator",
-    "hiring 3D artist",
-    // Bookkeeping & Data
+    "need a VA",
     "hiring bookkeeper",
-    "freelance data entry",
-    "hiring accountant freelance",
-    "hiring data analyst",
-    // Sales & Customer Support
-    "hiring sales rep freelance",
-    "need customer support agent",
-    "hiring lead generation",
-    // Coaching & Consulting
-    "hiring business consultant",
-    "hiring coach freelance",
-    // Legal & Finance
-    "hiring paralegal freelance",
-    "hiring tax preparer",
-    // E-commerce & Misc
-    "hiring product lister",
-    "hiring Amazon VA",
-    "hiring Shopify expert",
-    // General freelance
+    // ── Specialized Niches ──
+    "hiring translator",
+    "hiring voice actor",
+    "hiring voiceover artist",
+    "hiring music producer",
+    "hiring photographer",
+    "hiring 3D artist",
+    "hiring transcriptionist",
+    // ── General / Remote ──
     "freelance gig",
+    "freelance opportunity",
+    "remote freelance job",
     "looking for freelancer",
     "need a freelancer",
-    "freelance opportunity",
-    "remote freelance work",
+    "hiring freelancer",
+    "remote job hiring",
   ].join(",")
 )
   .split(",")
