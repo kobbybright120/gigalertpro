@@ -60,19 +60,80 @@ const NITTER_INSTANCES = (
   .filter(Boolean);
 
 // Search queries for job/gig tweets (Nitter search RSS)
+// Covers all major freelance niches — not just IT
 const NITTER_SEARCHES = (
   process.env.NITTER_SEARCHES ||
   [
+    // Tech / Dev
     "hiring developer",
-    "hiring designer",
     "hiring freelancer",
-    "hiring writer",
-    "freelance gig",
     "remote developer job",
-    "looking for developer",
-    "need a developer",
-    "need a designer",
+    "hiring programmer",
+    "need a web developer",
+    // Design
+    "hiring designer",
+    "need a graphic designer",
+    "looking for logo designer",
+    "hiring UI UX designer",
+    // Writing & Content
+    "hiring writer",
+    "freelance copywriter",
+    "need a content writer",
+    "hiring ghostwriter",
+    "hiring blogger",
+    "hiring technical writer",
+    // Video & Audio
+    "hiring video editor",
+    "looking for voiceover artist",
+    "need an animator",
+    "hiring music producer",
+    "hiring podcast editor",
+    "hiring motion graphics",
+    // Marketing & Social Media
+    "hiring social media manager",
+    "freelance marketer",
+    "hiring SEO specialist",
+    "hiring email marketer",
+    "need a community manager",
+    // Virtual Assistant & Admin
+    "hiring virtual assistant",
+    "need a VA",
+    "hiring project manager",
+    "hiring executive assistant",
+    // Translation & Tutoring
+    "hiring translator",
+    "looking for tutor",
+    "hiring proofreader",
+    "hiring transcriptionist",
+    // Photography & Creative
+    "hiring photographer",
+    "freelance illustrator",
+    "hiring 3D artist",
+    // Bookkeeping & Data
+    "hiring bookkeeper",
+    "freelance data entry",
+    "hiring accountant freelance",
+    "hiring data analyst",
+    // Sales & Customer Support
+    "hiring sales rep freelance",
+    "need customer support agent",
+    "hiring lead generation",
+    // Coaching & Consulting
+    "hiring business consultant",
+    "hiring coach freelance",
+    // Legal & Finance
+    "hiring paralegal freelance",
+    "hiring tax preparer",
+    // E-commerce & Misc
+    "hiring product lister",
+    "hiring Amazon VA",
+    "hiring Shopify expert",
+    // General freelance
+    "freelance gig",
     "looking for freelancer",
+    "need a freelancer",
+    "freelance opportunity",
+    "remote freelance work",
   ].join(",")
 )
   .split(",")
@@ -80,8 +141,7 @@ const NITTER_SEARCHES = (
   .filter(Boolean);
 
 const NITTER_MAX_POSTS = parseInt(process.env.NITTER_MAX_POSTS || "200", 10);
-const NITTER_UA =
-  "GigAlertPro/1.0 (+https://gigalertpro.vercel.app)";
+const NITTER_UA = "GigAlertPro/1.0 (+https://gigalertpro.vercel.app)";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -432,9 +492,7 @@ function parseNitterRss(xml, searchQuery) {
       : Math.floor(Date.now() / 1000);
 
     // Convert nitter link to real twitter/x.com link
-    const twitterUrl = link
-      .replace(/https?:\/\/[^/]+/, "https://x.com")
-      .trim();
+    const twitterUrl = link.replace(/https?:\/\/[^/]+/, "https://x.com").trim();
 
     items.push({
       id: `x_${tweetId}`,
@@ -490,10 +548,7 @@ async function fetchNitterWithFallback(path, label) {
       const xml = await resp.text();
 
       // Check for empty, error, or whitelisting-block pages
-      if (
-        !xml.includes("<item>") &&
-        !xml.includes("<entry>")
-      ) {
+      if (!xml.includes("<item>") && !xml.includes("<entry>")) {
         console.warn(
           `  [nitter] No items from ${instance} for ${label}, trying next`,
         );
@@ -526,7 +581,7 @@ async function fetchAllNitter() {
   let successCount = 0;
 
   for (const query of NITTER_SEARCHES) {
-    const path = `/search/rss?f=tweets&q=${query.replace(/\s+/g, '+')}`;
+    const path = `/search/rss?f=tweets&q=${query.replace(/\s+/g, "+")}`;
     console.log(`  [nitter] Searching: "${query}"`);
 
     const { xml, instance } = await fetchNitterWithFallback(
@@ -544,9 +599,7 @@ async function fetchAllNitter() {
         count: posts.length,
         error: null,
       });
-      console.log(
-        `    → ${posts.length} tweets from ${instance}`,
-      );
+      console.log(`    → ${posts.length} tweets from ${instance}`);
     } else {
       diagnostics.push({
         query,

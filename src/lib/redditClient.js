@@ -167,68 +167,130 @@ const SELF_PROMO_PATTERNS = [
 ];
 
 // ── Non-tech "developer" false-positive filter (real-estate, housing, etc.) ──
-const NON_TECH_DEVELOPER_RX = /\b(?:real\s*estate|housing|property|land|construction|urban|residential|affordable\s*housing|HUD|zoning|building\s*permits?|condo|apartment)\s.{0,40}\bdeveloper\b|\bdeveloper\b.{0,40}\b(?:real\s*estate|housing|property|land\s*use|rezoning|HUD|affordable|permits?)\b/i;
+const NON_TECH_DEVELOPER_RX =
+  /\b(?:real\s*estate|housing|property|land|construction|urban|residential|affordable\s*housing|HUD|zoning|building\s*permits?|condo|apartment)\s.{0,40}\bdeveloper\b|\bdeveloper\b.{0,40}\b(?:real\s*estate|housing|property|land\s*use|rezoning|HUD|affordable|permits?)\b/i;
 
 // ── X/Tweet: patterns that indicate a tweet is NOT an actionable job post ──
 const X_REJECT_PATTERNS = [
   // Replies and retweets (not original job posts)
   /^R\s+to\s+@/i,
   /^RT\s+@/i,
-  // Negations: "you don't need a developer", "no need for", "not hiring"
+
+  // ── Negations: "you don't need a developer", "no need for", "not hiring" ──
   /\b(?:don'?t|doesn'?t|do\s+not|no\s+longer|not?)\s+(?:need|looking|hiring|seeking)\b/i,
   /\bdon'?t\s+need\s+to\s+be\s+a\b/i,
   /\byou\s+don'?t\s+need\b/i,
   /\bno\s+need\s+(?:for|to)\b/i,
   /\bnot\s+(?:actually\s+)?hiring\b/i,
-  // Stories, anecdotes, opinions (not job posts)
+
+  // ── Stories, anecdotes, opinions ──
   /\bI\s+(?:met|saw|found|noticed|read|heard|came\s+across)\s+(?:this|a|an|some)\b/i,
   /\baccording\s+to\b/i,
   /\bI\s+genuinely\s+(?:felt|feel|think|believe)\b/i,
   /\bsadly\b/i,
   /\bvolunteer\s+(?:role|position|basis|work)\b/i,
   /\bno\s+pay\b|\bunpaid\b|\bfor\s+free\b|\bfree\s+work\b/i,
-  // Commentary, advice, hot-takes (not job posts)
+
+  // ── Commentary, advice, hot-takes ──
   /\b(?:freelancers?|developers?)\s+(?:who|that|should|will|are\s+going\s+to)\b.{0,40}\b(?:dominate|win|succeed|learn|thrive)\b/i,
   /\bwould\s+love\s+to\s+learn\s+more\b/i,
-  /\bthe\s+(?:biggest|real)\s+(?:barrier|problem|issue|challenge)\b/i,
+  /\bthe\s+(?:biggest|real)\s+(?:barrier|problem|issue|challenge|reason)\b/i,
   /\bremoving\s+the\b.{0,20}\bbarrier\b/i,
   /\b(?:tips?|advice|thread|thoughts?)\s+(?:for|on|about)\b.{0,20}\b(?:freelanc|developer|designer|hiring)/i,
   /\bhere'?s\s+(?:why|what|how)\b/i,
   /\blet\s+me\s+(?:explain|tell\s+you|share)\b/i,
   /\bthe\s+future\s+of\b/i,
-  // Marketing / audience-building tweets
+
+  // ── Agency / company / service marketing (NOT a job post) ──
+  /\bwe\s+(?:place|connect|match|pair|deliver|build|run)\b.{0,40}\b(?:managed|pre-?vetted|dedicated|professional|qualified)/i,
+  /\bwe\s+(?:place|provide|offer)\b.{0,30}\b(?:virtual\s*assistant|VA|freelancer|developer|designer|writer|marketer|talent)/i,
+  /\bthat'?s\s+(?:not\s+)?what\s+we\s+do\b/i,
+  /\b(?:our|my)\s+(?:agency|company|service|platform|firm|business|solution|tool)\b.{0,40}\b(?:helps?|offers?|provides?|handles?|manages?|delivers?|connects?|places?)/i,
+  /\bwe\s+(?:help|assist|support|enable)\s+(?:you|founders?|businesses?|companies|startups?|entrepreneurs?|clients?|teams?|brands?)\b/i,
+  /\bwe\b.{0,20}\b(?:specialize|focus|excel)\s+(?:in|on|at)\b/i,
+  /\bpre-?vetted\b/i,
+  /\bdedicated\s+(?:account\s+)?manager\b/i,
+  /\b(?:book|schedule)\s+(?:a\s+)?(?:call|demo|consultation|session|meeting)\b/i,
+  /\bour\s+(?:team|VA|virtual\s*assistant|freelancer|talent|expert)s?\s+(?:are|have|come\s+with|include|handle)\b/i,
+  /\bfull(?:y)?\s+(?:managed|onboarded|trained|vetted)\b/i,
+
+  // ── Testimonial stats / sales results ──
+  /\b\d{2,3}\s*%\s+(?:retention|satisfaction|success|completion|approval|uptime|of\s+(?:our|my)\s+clients?)\b/i,
+  /\bthe\s+result\s*[?→:]/i,
+  /\bclient\s+(?:results?|success|testimonial|story|case\s+study)\b/i,
+  /\bcase\s+stud(?:y|ies)\b/i,
+
+  // ── Pain-point marketing / sales copy ──
+  /\bif\s+you(?:'re|\s+are)\s+(?:a\s+)?(?:founder|CEO|startup|business\s*owner|entrepreneur|agency\s*owner|solopreneur|coach|creator)\b/i,
+  /\b(?:stop|quit|tired\s+of)\s+(?:wasting|spending|losing|doing)\b.{0,30}\b(?:time|money|hours?|admin|tasks?|work)\b/i,
+  /\bwithout\s+the\b.{0,25}\b(?:hassle|headache|stress|risk|worry|revolving|guesswork|burnout)\b/i,
+  /\brevolving\s+door\b/i,
+  /\byou\s+get\s+(?:your|a)\b.{0,30}\bhandled\b/i,
+  /\bthe\s+real\s+reason\b/i,
+  /\b(?:most|many)\s+(?:founders?|businesses?|companies|entrepreneurs?|people)\s+(?:fail|struggle|waste|don'?t|can'?t)\b/i,
+
+  // ── Product / tool / course marketing ──
+  /\bjust\s+launched\b/i,
+  /\bbuilt\s+(?:a|this|an?)\s+(?:tool|app|platform|product|saas|extension|plugin)\b/i,
+  /\b(?:my|our)\s+(?:new\s+)?(?:tool|app|platform|product|saas|course|program|ebook|masterclass)\b/i,
+  /\benroll\s+(?:now|today|here)\b/i,
+  /\b(?:free|paid)\s+(?:trial|demo|webinar|masterclass|workshop|bootcamp|course)\b/i,
+  /\bsubscribe\s+(?:to\s+)?(?:my|our)\b/i,
+
+  // ── Marketing / audience-building tweets ──
   /\blike\s+&\s+(?:comment|retweet|share|follow)\b/i,
   /\bfollow\s+(?:me|us|for|this)\b/i,
-  // Self-promo from X users (freelancers pitching themselves)
+  /\bretweet\s+(?:if|this)\b/i,
+  /\btag\s+(?:a|someone|your)\b/i,
+
+  // ── Self-promo from X users (freelancers pitching themselves) ──
   /\bI\s+am\s+a\s+professional\b/i,
   /\bI'?m\s+a\s+(?:professional|experienced|skilled|certified)\b/i,
   /\bhit\s+me\s+up\b/i,
   /\bI\s+(?:offer|provide|specialize)\b/i,
+  /\bI\s+(?:can\s+)?help\s+(?:you|your)\b.{0,30}\b(?:with|build|grow|scale|manage|design|develop|create|write)\b/i,
   /\banyone\s+(?:is\s+)?looking\s+for\s+(?:a|an)\b.{0,40}\bwith\s+\d+\s+years?\b/i,
-  // Manifestation, wishful thinking, not actual jobs
+  /\b(?:DM|message)\s+(?:me|us)\s+(?:for|if|to)\b/i,
+  /\bavailable\s+for\s+(?:hire|work|projects?|freelance|gigs?)\b/i,
+  /\bopen\s+(?:for|to)\s+(?:work|projects?|freelance|collaborat|new\s+clients?)\b/i,
+  /\bI\s+(?:just\s+)?(?:completed|finished|delivered|built|designed|created|developed)\s+(?:a|an|this)\b/i,
+  /\blooking\s+for\s+(?:new\s+)?clients?\b/i,
+  /\b(?:my|check\s+out\s+my)\s+(?:portfolio|website|work|services?|fiverr|upwork|profile)\b/i,
+  /\bhire\s+me\b/i,
+
+  // ── Manifestation, wishful thinking ──
   /\bmanifesting\b/i,
-  // Questions / discussions (not job posts)
+
+  // ── Questions / discussions (not job posts) ──
   /\bwhat'?s\s+the\s+(?:coolest|best|most)\b/i,
   /\bI'?m\s+looking\s+for\s+(?:something|a\s+conference|advice|tips)\b/i,
   /\ba\s+true\s+developer\b/i,
+  /\bwhat\s+do\s+you\s+(?:think|recommend|suggest|prefer)\b/i,
+  /\bhow\s+(?:do|did|can|should)\s+(?:you|we|I|they)\b.{0,30}\b(?:find|get|start|learn|choose|pick)\b/i,
 ];
 
 // ── X/Tweet: STRONG hiring signals (tweet body must contain at least one) ──
 // These are deliberately strict — the tweet itself must be a job/gig post
 const X_HIRING_SIGNALS = [
-  /\bhiring\b(?!.*\bnot\s+hiring)/i,
-  /\bwe(?:'re|\s+are)\s+(?:looking|hiring|searching)\b/i,
-  /\blooking\s+(?:for|to\s+hire)\b.{0,35}\b(?:a|an)?\s*(?:designer|developer|writer|editor|freelanc|coder|programmer|marketer|va|consultant|someone|contractor|expert|engineer|animator|videograph)/i,
-  /\bneed\s+(?:a|an)\s+(?:designer|developer|writer|editor|freelanc|coder|programmer|marketer|consultant|expert|engineer|animator|videograph)\b/i,
-  /\b(?:seeking|searching\s+for)\s+(?:a|an)?\s*(?:designer|developer|writer|freelanc|someone|expert|contractor|engineer)/i,
+  // "hiring" used as an ACTION — "we're hiring", "now hiring", "is hiring",
+  // "currently hiring" — NOT "hiring a VA means..."
+  /\b(?:we(?:'re|\s+are)|i(?:'m|\s+am)|now|currently|actively|urgently|immediately)\s+hiring\b/i,
+  /\b(?:\[hiring\]|#hiring)\b/i,
+  /\bhiring\s+(?:a|an|for|remote|immediately|now|asap)\b/i,
+  /\bwe(?:'re|\s+are)\s+(?:looking|searching)\b/i,
+  /\blooking\s+(?:for|to\s+hire)\b.{0,35}\b(?:a|an)?\s*(?:designer|developer|writer|editor|freelanc|coder|programmer|marketer|va|virtual\s*assistant|consultant|someone|contractor|expert|engineer|animator|videograph|photographer|illustrat|tutor|translator|bookkeeper|social\s*media|copywriter|voice|proofread|transcri|podcast|music\s*produc|3d\s*artist|motion\s*graphic|seo|email\s*market|community\s*manag|project\s*manag|executive\s*assist|ghostwrit|blog|coach|accountant|paralegal|tax|sales|customer\s*support|lead\s*gen|shopify|amazon|product\s*list|data\s*(?:entry|analyst))/i,
+  /\bneed\s+(?:a|an)\s+(?:designer|developer|writer|editor|freelanc|coder|programmer|marketer|consultant|expert|engineer|animator|videograph|photographer|illustrat|tutor|translator|bookkeeper|virtual\s*assistant|va|copywriter|voice\s*over|social\s*media|data\s*entry|proofread|transcri|podcast\s*editor|music\s*produc|3d\s*artist|motion\s*graphic|seo|ghostwrit|blog|coach|accountant|paralegal|tax\s*prepar|sales\s*rep|customer\s*support|shopify|lead\s*gen|project\s*manag)\b/i,
+  /\b(?:seeking|searching\s+for)\s+(?:a|an)?\s*(?:designer|developer|writer|freelanc|someone|expert|contractor|engineer|photographer|illustrat|animator|tutor|translator|va|virtual\s*assistant|marketer|copywriter|proofread|transcri|bookkeeper|coach|accountant|podcast|seo|social\s*media|data\s*analyst|project\s*manag)/i,
   /\bjob\s+(?:posting|opening|opportunity|position|listing|alert)\b/i,
   /\bopen\s+(?:role|position)s?\b/i,
   /\b(?:part|full)\s*-?\s*time\b.{0,20}\b(?:role|position|job|work|remote)\b/i,
   /\bcontract\s+(?:work|role|position|job|opportunity)\b/i,
   /\bwill\s+pay\b|\bpaying\s+\$|\bbudget\s*[:.]?\s*\$/i,
   /\$\s?\d{2,}/,
-  /\bsend\s+(?:your\s+)?(?:portfolio|resume|cv|samples?)\b/i,
+  /\bsend\s+(?:your\s+)?(?:portfolio|resume|cv|samples?|reel)\b/i,
   /\bapply\b.{0,15}\b(?:now|here|today|below|at|via)\b/i,
+  /\bfreelance\s+(?:gig|job|work|opportunity|project|position|role)\b/i,
+  /\bremote\s+(?:gig|job|work|opportunity|position|role)\b/i,
 ];
 
 // ── Pitch / Spam Score Penalties (reduce score instead of hard-reject) ────────
@@ -257,6 +319,14 @@ const PENALTY_PATTERNS = [
     penalty: 20,
   },
   { rx: /\bhey\s+everyone\b/i, penalty: 5 },
+  // ── Service / agency soft signals ──
+  { rx: /\b(?:DM|message)\s+(?:me|us)\b/i, penalty: 20 },
+  { rx: /\bwatch\s+(?:my|this|the)\s+(?:video|reel|demo)\b/i, penalty: 15 },
+  { rx: /\bwanna\s+(?:scale|grow|level\s+up)\b/i, penalty: 15 },
+  { rx: /\bguaranteed\s+(?:results?|ROI|income|revenue)\b/i, penalty: 25 },
+  { rx: /\b(?:10x|100x|5x)\s+(?:your|the|growth|revenue|results?)\b/i, penalty: 20 },
+  { rx: /\b(?:limited\s+(?:spots?|slots?|seats?)|only\s+\d+\s+(?:spots?|slots?|seats?))\b/i, penalty: 20 },
+  { rx: /\bdon'?t\s+miss\s+(?:out|this)\b/i, penalty: 15 },
 ];
 
 // ── Hiring Signals (clients seeking work — we WANT these) ────────────────────
@@ -654,7 +724,8 @@ function matchAndScore(posts, lowerKws) {
     const bodyLower = (p.selftext || "").toLowerCase();
     // For X posts, also match against the Nitter search query (stored in flair)
     const flairLower = isXPost ? (p.link_flair_text || "").toLowerCase() : "";
-    const combined = titleLower + " " + bodyLower + (flairLower ? " " + flairLower : "");
+    const combined =
+      titleLower + " " + bodyLower + (flairLower ? " " + flairLower : "");
 
     let titleHits = 0;
     const matched = lowerKws.filter((kw) => {
@@ -722,9 +793,9 @@ function matchAndScore(posts, lowerKws) {
     // Extra cleaning for X tweets: strip hashtags, URLs, and shortened links
     const cleanTweet = (txt) =>
       cleanText(txt)
-        .replace(/#\w+/g, "")                         // remove hashtags
-        .replace(/https?:\/\/\S+/g, "")               // remove URLs
-        .replace(/\S+\.com\/\S*/g, "")                // remove shortened links (e.g. jobfound.org/job/...)
+        .replace(/#\w+/g, "") // remove hashtags
+        .replace(/https?:\/\/\S+/g, "") // remove URLs
+        .replace(/\S+\.com\/\S*/g, "") // remove shortened links (e.g. jobfound.org/job/...)
         .replace(/\S+\.io\/\S*/g, "")
         .replace(/\S+\.org\/\S*/g, "")
         .replace(/\S+\.net\/\S*/g, "")

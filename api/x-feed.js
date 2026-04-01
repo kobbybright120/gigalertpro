@@ -22,14 +22,27 @@ const NITTER_INSTANCES = [
 
 const NITTER_SEARCHES = [
   "hiring developer",
-  "hiring designer",
   "hiring freelancer",
+  "hiring designer",
+  "hiring writer",
+  "hiring video editor",
+  "hiring virtual assistant",
+  "hiring social media manager",
+  "hiring copywriter",
+  "hiring photographer",
+  "hiring translator",
+  "hiring bookkeeper",
+  "hiring SEO specialist",
+  "hiring voiceover artist",
+  "hiring proofreader",
+  "hiring music producer",
   "freelance gig",
-  "remote developer job",
+  "freelance opportunity",
+  "looking for freelancer",
+  "need a freelancer",
 ];
 
-const NITTER_UA =
-  "GigAlertPro/1.0 (+https://gigalertpro.vercel.app)";
+const NITTER_UA = "GigAlertPro/1.0 (+https://gigalertpro.vercel.app)";
 
 // ── Upstash Redis REST ───────────────────────────────────────────────────────
 
@@ -113,7 +126,8 @@ function parseNitterRss(xml, searchQuery) {
     const link = xmlText(entry, "link");
     const description = xmlText(entry, "description");
     const pubDate = xmlText(entry, "pubDate");
-    const creator = xmlText(entry, "dc:creator") || xmlText(entry, "creator") || "";
+    const creator =
+      xmlText(entry, "dc:creator") || xmlText(entry, "creator") || "";
 
     const statusMatch = link.match(/\/status\/(\d+)/);
     const tweetId = statusMatch ? statusMatch[1] : link;
@@ -152,10 +166,13 @@ async function fetchNitterLive() {
   for (const query of NITTER_SEARCHES) {
     let fetched = false;
     for (const instance of NITTER_INSTANCES) {
-      const url = `https://${instance}/search/rss?f=tweets&q=${query.replace(/\s+/g, '+')}`;
+      const url = `https://${instance}/search/rss?f=tweets&q=${query.replace(/\s+/g, "+")}`;
       try {
         const resp = await fetch(url, {
-          headers: { "User-Agent": NITTER_UA, Accept: "application/rss+xml, text/xml" },
+          headers: {
+            "User-Agent": NITTER_UA,
+            Accept: "application/rss+xml, text/xml",
+          },
           redirect: "follow",
         });
         if (!resp.ok) continue;
@@ -173,7 +190,12 @@ async function fetchNitterLive() {
       }
     }
     if (!fetched) {
-      diagnostics.push({ query, instance: null, count: 0, error: "All instances failed" });
+      diagnostics.push({
+        query,
+        instance: null,
+        count: 0,
+        error: "All instances failed",
+      });
     }
   }
 
