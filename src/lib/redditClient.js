@@ -159,30 +159,64 @@ const SELF_PROMO_PATTERNS = [
   /\bI\s+have\s+\d+\+?\s*(?:years?|yrs?)\b/i,
   /\bI\s+am\s+(?:a\s+)?(?:considered|experienced|seasoned|skilled|proficient|senior|lead)\b/i,
   /\bwell\s*[-\s]?versed\s+in\b/i,
+  // ── Job-seeker patterns ("help me get hired", "getting into freelancing") ──
+  /\b(?:need|want)\s+(?:assistance|help|advice|tips?)\s+(?:for|with|on|about)\s+(?:getting|finding|landing)\s+(?:hired|a\s+job|work|clients?)\b/i,
+  /\b(?:how\s+(?:do|can|to)|help\s+me)\b.{0,30}\b(?:get\s+hired|find\s+(?:a\s+)?(?:job|work|clients?)|land\s+(?:a\s+)?(?:job|gig|role))\b/i,
+  /\b(?:final|last)\s+year\s+student\b/i,
+  /\blooking\s+(?:for|to\s+(?:get|find|land))\b.{0,25}\b(?:my\s+first|an?\s+(?:entry|junior)|(?:a|some)\s+(?:job|work|internship|position|role))\b/i,
 ];
 
 // ── Non-tech "developer" false-positive filter (real-estate, housing, etc.) ──
 const NON_TECH_DEVELOPER_RX = /\b(?:real\s*estate|housing|property|land|construction|urban|residential|affordable\s*housing|HUD|zoning|building\s*permits?|condo|apartment)\s.{0,40}\bdeveloper\b|\bdeveloper\b.{0,40}\b(?:real\s*estate|housing|property|land\s*use|rezoning|HUD|affordable|permits?)\b/i;
 
-// ── X/Tweet relevance signals (at least one must match for a tweet to pass) ──
-const X_RELEVANCE_SIGNALS = [
-  /\bhiring\b/i,
-  /\bfreelance/i,
-  /\bremote\b.{0,20}\b(?:job|work|position|role|gig|developer|designer|writer|engineer)/i,
-  /\blooking\s+for\b.{0,35}\b(?:a|an)?\s*(?:designer|developer|writer|editor|freelanc|coder|programmer|marketer|va|consultant|someone|contractor|expert|engineer)/i,
-  /\bneed\b.{0,25}\b(?:a|an)?\s*(?:designer|developer|writer|editor|freelanc|coder|programmer|marketer|consultant|someone|help|expert|engineer)\b/i,
-  /\b(?:seeking|searching\s+for)\b.{0,25}\b(?:a|an)?\s*(?:designer|developer|writer|freelanc|someone|expert|contractor|engineer)/i,
-  /\bjob\b.{0,15}\b(?:posting|opening|opportunity|position|listing|alert)\b/i,
+// ── X/Tweet: patterns that indicate a tweet is NOT an actionable job post ──
+const X_REJECT_PATTERNS = [
+  // Replies and retweets (not original job posts)
+  /^R\s+to\s+@/i,
+  /^RT\s+@/i,
+  // Negations: "you don't need a developer", "no need for", "not hiring"
+  /\b(?:don'?t|doesn'?t|do\s+not|no\s+longer|not?)\s+(?:need|looking|hiring|seeking)\b/i,
+  /\bdon'?t\s+need\s+to\s+be\s+a\b/i,
+  /\byou\s+don'?t\s+need\b/i,
+  /\bno\s+need\s+(?:for|to)\b/i,
+  /\bnot\s+(?:actually\s+)?hiring\b/i,
+  // Stories, anecdotes, opinions (not job posts)
+  /\bI\s+(?:met|saw|found|noticed|read|heard|came\s+across)\s+(?:this|a|an|some)\b/i,
+  /\baccording\s+to\b/i,
+  /\bI\s+genuinely\s+(?:felt|feel|think|believe)\b/i,
+  /\bsadly\b/i,
+  /\bvolunteer\s+(?:role|position|basis|work)\b/i,
+  /\bno\s+pay\b|\bunpaid\b|\bfor\s+free\b|\bfree\s+work\b/i,
+  // Commentary, advice, hot-takes (not job posts)
+  /\b(?:freelancers?|developers?)\s+(?:who|that|should|will|are\s+going\s+to)\b.{0,40}\b(?:dominate|win|succeed|learn|thrive)\b/i,
+  /\bwould\s+love\s+to\s+learn\s+more\b/i,
+  /\bthe\s+(?:biggest|real)\s+(?:barrier|problem|issue|challenge)\b/i,
+  /\bremoving\s+the\b.{0,20}\bbarrier\b/i,
+  /\b(?:tips?|advice|thread|thoughts?)\s+(?:for|on|about)\b.{0,20}\b(?:freelanc|developer|designer|hiring)/i,
+  /\bhere'?s\s+(?:why|what|how)\b/i,
+  /\blet\s+me\s+(?:explain|tell\s+you|share)\b/i,
+  /\bthe\s+future\s+of\b/i,
+  // Marketing / audience-building tweets
+  /\blike\s+&\s+(?:comment|retweet|share|follow)\b/i,
+  /\bfollow\s+(?:me|us|for|this)\b/i,
+];
+
+// ── X/Tweet: STRONG hiring signals (tweet body must contain at least one) ──
+// These are deliberately strict — the tweet itself must be a job/gig post
+const X_HIRING_SIGNALS = [
+  /\bhiring\b(?!.*\bnot\s+hiring)/i,
   /\bwe(?:'re|\s+are)\s+(?:looking|hiring|searching)\b/i,
-  /\bgig\b/i,
-  /\bcontract\s*(?:work|role|position|job)\b/i,
-  /\bwill\s+pay\b|\bpaying\b|\bbudget\b.{0,10}\$|\bcompensation\b/i,
-  /\$\s?\d/,
-  /\bapply\b.{0,15}\b(?:now|here|today|below|at)\b/i,
-  /\bsend\b.{0,15}\b(?:portfolio|resume|cv|samples?)\b/i,
-  /\bDM\s+(?:me|us|for)\b/i,
-  /\b(?:part|full)\s*-?\s*time\b/i,
-  /\bopen\s+(?:role|position)\b/i,
+  /\blooking\s+(?:for|to\s+hire)\b.{0,35}\b(?:a|an)?\s*(?:designer|developer|writer|editor|freelanc|coder|programmer|marketer|va|consultant|someone|contractor|expert|engineer|animator|videograph)/i,
+  /\bneed\s+(?:a|an)\s+(?:designer|developer|writer|editor|freelanc|coder|programmer|marketer|consultant|expert|engineer|animator|videograph)\b/i,
+  /\b(?:seeking|searching\s+for)\s+(?:a|an)?\s*(?:designer|developer|writer|freelanc|someone|expert|contractor|engineer)/i,
+  /\bjob\s+(?:posting|opening|opportunity|position|listing|alert)\b/i,
+  /\bopen\s+(?:role|position)s?\b/i,
+  /\b(?:part|full)\s*-?\s*time\b.{0,20}\b(?:role|position|job|work|remote)\b/i,
+  /\bcontract\s+(?:work|role|position|job|opportunity)\b/i,
+  /\bwill\s+pay\b|\bpaying\s+\$|\bbudget\s*[:.]?\s*\$/i,
+  /\$\s?\d{2,}/,
+  /\bsend\s+(?:your\s+)?(?:portfolio|resume|cv|samples?)\b/i,
+  /\bapply\b.{0,15}\b(?:now|here|today|below|at|via)\b/i,
 ];
 
 // ── Pitch / Spam Score Penalties (reduce score instead of hard-reject) ────────
@@ -592,13 +626,15 @@ function matchAndScore(posts, lowerKws) {
     )
       continue;
 
-    // ── X/Tweet: require at least one freelance/hiring relevance signal ──
+    // ── X/Tweet: strict quality gate ─ only show actionable job/gig posts ──
     if (isXPost) {
       const tweetText = (p.title || "") + " " + (p.selftext || "");
       // Reject non-tech "developer" (real estate, housing, etc.)
       if (NON_TECH_DEVELOPER_RX.test(tweetText)) continue;
-      // Must have at least one hiring/gig signal
-      if (!X_RELEVANCE_SIGNALS.some((rx) => rx.test(tweetText))) continue;
+      // Reject replies, retweets, stories, negations, commentary
+      if (X_REJECT_PATTERNS.some((rx) => rx.test(tweetText))) continue;
+      // Tweet body must contain at least one STRONG hiring signal
+      if (!X_HIRING_SIGNALS.some((rx) => rx.test(tweetText))) continue;
     }
 
     // ── Keyword matching — title matches weighted higher ──
