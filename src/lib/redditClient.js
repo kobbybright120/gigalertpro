@@ -153,6 +153,36 @@ const SELF_PROMO_PATTERNS = [
   /\bdecided\s+to\s+(?:throw|put)\s+it\s+out\s+there\b/i,
   /\bcurious\s+if\b.{0,40}\buseful\s+to\s+other/i,
   /\bi'?ve\s+been\s+(?:actively\s+)?(?:working|freelancing|building)\b/i,
+  // ── YOE / resume-style self-promo patterns ──
+  /\b\d+\+?\s*(?:years?|yrs?)\s+(?:of\s+)?(?:experience|exp)\b/i,
+  /\b(?:senior|lead|junior|mid|staff)\s+(?:level\s+)?(?:developer|engineer|designer|writer|editor|programmer|freelancer|consultant)\b.{0,50}\b(?:here|available|looking|seeking|open)\b/i,
+  /\bI\s+have\s+\d+\+?\s*(?:years?|yrs?)\b/i,
+  /\bI\s+am\s+(?:a\s+)?(?:considered|experienced|seasoned|skilled|proficient|senior|lead)\b/i,
+  /\bwell\s*[-\s]?versed\s+in\b/i,
+];
+
+// ── Non-tech "developer" false-positive filter (real-estate, housing, etc.) ──
+const NON_TECH_DEVELOPER_RX = /\b(?:real\s*estate|housing|property|land|construction|urban|residential|affordable\s*housing|HUD|zoning|building\s*permits?|condo|apartment)\s.{0,40}\bdeveloper\b|\bdeveloper\b.{0,40}\b(?:real\s*estate|housing|property|land\s*use|rezoning|HUD|affordable|permits?)\b/i;
+
+// ── X/Tweet relevance signals (at least one must match for a tweet to pass) ──
+const X_RELEVANCE_SIGNALS = [
+  /\bhiring\b/i,
+  /\bfreelance/i,
+  /\bremote\b.{0,20}\b(?:job|work|position|role|gig|developer|designer|writer|engineer)/i,
+  /\blooking\s+for\b.{0,35}\b(?:a|an)?\s*(?:designer|developer|writer|editor|freelanc|coder|programmer|marketer|va|consultant|someone|contractor|expert|engineer)/i,
+  /\bneed\b.{0,25}\b(?:a|an)?\s*(?:designer|developer|writer|editor|freelanc|coder|programmer|marketer|consultant|someone|help|expert|engineer)\b/i,
+  /\b(?:seeking|searching\s+for)\b.{0,25}\b(?:a|an)?\s*(?:designer|developer|writer|freelanc|someone|expert|contractor|engineer)/i,
+  /\bjob\b.{0,15}\b(?:posting|opening|opportunity|position|listing|alert)\b/i,
+  /\bwe(?:'re|\s+are)\s+(?:looking|hiring|searching)\b/i,
+  /\bgig\b/i,
+  /\bcontract\s*(?:work|role|position|job)\b/i,
+  /\bwill\s+pay\b|\bpaying\b|\bbudget\b.{0,10}\$|\bcompensation\b/i,
+  /\$\s?\d/,
+  /\bapply\b.{0,15}\b(?:now|here|today|below|at)\b/i,
+  /\bsend\b.{0,15}\b(?:portfolio|resume|cv|samples?)\b/i,
+  /\bDM\s+(?:me|us|for)\b/i,
+  /\b(?:part|full)\s*-?\s*time\b/i,
+  /\bopen\s+(?:role|position)\b/i,
 ];
 
 // ── Pitch / Spam Score Penalties (reduce score instead of hard-reject) ────────
@@ -561,6 +591,15 @@ function matchAndScore(posts, lowerKws) {
       isSelfPromotion(p.title || "", p.selftext || "", p.link_flair_text)
     )
       continue;
+
+    // ── X/Tweet: require at least one freelance/hiring relevance signal ──
+    if (isXPost) {
+      const tweetText = (p.title || "") + " " + (p.selftext || "");
+      // Reject non-tech "developer" (real estate, housing, etc.)
+      if (NON_TECH_DEVELOPER_RX.test(tweetText)) continue;
+      // Must have at least one hiring/gig signal
+      if (!X_RELEVANCE_SIGNALS.some((rx) => rx.test(tweetText))) continue;
+    }
 
     // ── Keyword matching — title matches weighted higher ──
     const titleLower = (p.title || "").toLowerCase();
