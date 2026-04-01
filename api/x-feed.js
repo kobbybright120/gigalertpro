@@ -1,11 +1,38 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Vercel Serverless Function — X (Twitter) job feed endpoint
+// Vercel Serverless Function — X (Twitter) + Craigslist job feed endpoint
 //
-// Reads pre-fetched X job posts from Upstash Redis (written by cron fetcher).
-// Returns JSON with the same shape as scan-reddit for easy frontend integration.
+// PRODUCTION (recommended):
+//   Reads pre-fetched data from Upstash Redis (written by GitHub Action cron).
+//   → Zero external calls per user request, instant KV read.
+//
+// FALLBACK (no Redis data):
+//   Falls back to live Nitter RSS fetch so the feed is never empty.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const REDIS_KEY = "gigalertpro:x:latest";
+
+// ── Nitter live-fallback config ──────────────────────────────────────────────
+
+const NITTER_INSTANCES = [
+  "nitter.poast.org",
+  "nitter.privacydev.net",
+  "nitter.net",
+  "nitter.cz",
+  "nitter.1d4.us",
+];
+
+const NITTER_SEARCHES = [
+  "hiring developer",
+  "hiring designer",
+  "hiring freelancer",
+  "freelance gig",
+  "remote developer job",
+];
+
+const NITTER_UA =
+  "Mozilla/5.0 (compatible; GigAlertPro/1.0; +https://gigalertpro.vercel.app)";
+
+// ── Upstash Redis REST ───────────────────────────────────────────────────────
 
 async function redisGet(key) {
   let url = (process.env.UPSTASH_REDIS_REST_URL || "")
@@ -30,6 +57,149 @@ async function redisGet(key) {
   }
 }
 
+async function redisSet(key, value, ttlSeconds) {
+  let url = (process.env.UPSTASH_REDIS_REST_URL || "")
+    .trim()
+    .replace(/^["']+|["']+$/g, "")
+    .replace(/\/+$/, "");
+  let token = (process.env.UPSTASH_REDIS_REST_TOKEN || "")
+    .trim()
+    .replace(/^["']+|["']+$/g, "");
+  if (!url || !token) return;
+  try {
+    await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(["SET", key, value, "EX", ttlSeconds]),
+    });
+  } catch {
+    /* best effort */
+  }
+}
+
+// ── Nitter RSS helpers ───────────────────────────────────────────────────────
+
+function stripHtml(html) {
+  if (!html) return "";
+  return html
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function xmlText(xml, tag) {
+  const rx = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`, "i");
+  const m = xml.match(rx);
+  return m ? m[1].trim() : "";
+}
+
+function parseNitterRss(xml, searchQuery) {
+  const items = [];
+  const itemRegex = /<item>([\s\S]*?)<\/item>/gi;
+  let match;
+  while ((match = itemRegex.exec(xml)) !== null) {
+    const entry = match[1];
+    const rawTitle = xmlText(entry, "title");
+    const link = xmlText(entry, "link");
+    const description = xmlText(entry, "description");
+    const pubDate = xmlText(entry, "pubDate");
+    const creator = xmlText(entry, "dc:creator") || xmlText(entry, "creator") || "";
+
+    const statusMatch = link.match(/\/status\/(\d+)/);
+    const tweetId = statusMatch ? statusMatch[1] : link;
+    const author = creator.replace(/^@/, "").trim() || "unknown";
+    const body = stripHtml(description);
+    const title = stripHtml(rawTitle).slice(0, 300);
+    const createdUtc = pubDate
+      ? Math.floor(new Date(pubDate).getTime() / 1000)
+      : Math.floor(Date.now() / 1000);
+    const twitterUrl = link.replace(/https?:\/\/[^/]+/, "https://x.com").trim();
+
+    items.push({
+      id: `x_${tweetId}`,
+      name: `x_${tweetId}`,
+      title,
+      selftext: body.slice(0, 2000),
+      author,
+      author_name: `@${author}`,
+      permalink: twitterUrl,
+      subreddit: null,
+      created_utc: createdUtc,
+      num_comments: 0,
+      ups: 0,
+      link_flair_text: searchQuery,
+      _sub: "nitter",
+      source: `x-search-${searchQuery.replace(/\s+/g, "-").toLowerCase()}`,
+    });
+  }
+  return items;
+}
+
+async function fetchNitterLive() {
+  const allPosts = [];
+  const diagnostics = [];
+
+  for (const query of NITTER_SEARCHES) {
+    let fetched = false;
+    for (const instance of NITTER_INSTANCES) {
+      const url = `https://${instance}/search/rss?f=tweets&q=${encodeURIComponent(query)}`;
+      try {
+        const resp = await fetch(url, {
+          headers: { "User-Agent": NITTER_UA, Accept: "application/rss+xml, text/xml" },
+          redirect: "follow",
+        });
+        if (!resp.ok) continue;
+        const xml = await resp.text();
+        if (!xml.includes("<item>")) continue;
+
+        const posts = parseNitterRss(xml, query);
+        allPosts.push(...posts);
+        diagnostics.push({ query, instance, count: posts.length, error: null });
+        fetched = true;
+        break; // success — move to next query
+      } catch {
+        continue;
+      }
+    }
+    if (!fetched) {
+      diagnostics.push({ query, instance: null, count: 0, error: "All instances failed" });
+    }
+  }
+
+  // Dedup by tweet ID
+  const seen = new Set();
+  const unique = [];
+  for (const p of allPosts) {
+    if (!seen.has(p.id)) {
+      seen.add(p.id);
+      unique.push(p);
+    }
+  }
+
+  unique.sort((a, b) => (b.created_utc || 0) - (a.created_utc || 0));
+
+  return {
+    posts: unique.slice(0, 100),
+    cached_at: new Date().toISOString(),
+    post_count: unique.length,
+    feed: "nitter-live",
+    diagnostics,
+  };
+}
+
+// ── Handler ──────────────────────────────────────────────────────────────────
+
 export default async function handler(req, res) {
   // CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -38,10 +208,11 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(204).end();
 
   try {
+    // ── 1) Try Upstash Redis first (production path) ──
     const cached = await redisGet(REDIS_KEY);
 
     if (cached) {
-      // Serve pre-fetched data with aggressive CDN caching
+      console.log("[x-feed] Serving from Upstash Redis cache");
       res.setHeader(
         "Cache-Control",
         "public, s-maxage=60, stale-while-revalidate=120",
@@ -50,18 +221,24 @@ export default async function handler(req, res) {
       return res.status(200).send(cached);
     }
 
-    // No cached data available
-    res.setHeader("Cache-Control", "public, s-maxage=60");
-    return res.status(200).json({
-      posts: [],
-      cached_at: null,
-      post_count: 0,
-      feed: "x-empty",
-      message:
-        "No X feed data cached yet. The fetcher cron may not have run, or all Nitter instances may be down.",
-    });
+    // ── 2) Fallback: live Nitter RSS fetch ──
+    console.log("[x-feed] Redis miss — falling back to live Nitter RSS fetch");
+    const data = await fetchNitterLive();
+
+    // Auto-populate Redis so subsequent requests are instant
+    if (data.posts.length > 0) {
+      const payload = JSON.stringify(data);
+      redisSet(REDIS_KEY, payload, 3600).catch(() => {}); // fire & forget
+    }
+
+    res.setHeader(
+      "Cache-Control",
+      "public, s-maxage=120, stale-while-revalidate=600",
+    );
+    res.setHeader("Content-Type", "application/json");
+    return res.status(200).json(data);
   } catch (err) {
     console.error("[x-feed] Error:", err);
-    return res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error", posts: [] });
   }
 }

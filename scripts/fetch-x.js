@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────────
-// GigAlertPro — Community Gig Monitor (Craigslist)
+// GigAlertPro — Community Gig Monitor (Craigslist + Nitter/X)
 //
-// Fetches REAL community gig posts from Craigslist gigs section
-// (computer, creative, writing, all gigs).
+// Fetches REAL community gig posts from:
+//   1. Craigslist gigs section (computer, creative, writing, all gigs)
+//   2. X (Twitter) via Nitter RSS search feeds
 //
 // 100% free, no API keys required.
 // Stores results in Upstash Redis for the API endpoint to serve.
@@ -46,6 +47,41 @@ const CL_CATEGORY_NAMES = {
   evg: "Event",
   lbg: "Labor",
 };
+
+// ── Nitter / X Config ────────────────────────────────────────────────────────
+
+// Nitter instances to try (in priority order — fall through on failure)
+const NITTER_INSTANCES = (
+  process.env.NITTER_INSTANCES ||
+  "nitter.poast.org,nitter.privacydev.net,nitter.net,nitter.cz,nitter.1d4.us"
+)
+  .split(",")
+  .map((h) => h.trim())
+  .filter(Boolean);
+
+// Search queries for job/gig tweets (Nitter search RSS)
+const NITTER_SEARCHES = (
+  process.env.NITTER_SEARCHES ||
+  [
+    "hiring developer",
+    "hiring designer",
+    "hiring freelancer",
+    "hiring writer",
+    "freelance gig",
+    "remote developer job",
+    "looking for developer",
+    "need a developer",
+    "need a designer",
+    "looking for freelancer",
+  ].join(",")
+)
+  .split(",")
+  .map((q) => q.trim())
+  .filter(Boolean);
+
+const NITTER_MAX_POSTS = parseInt(process.env.NITTER_MAX_POSTS || "200", 10);
+const NITTER_UA =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -330,10 +366,206 @@ async function fetchAllCraigslist() {
   return { posts: allPosts, diagnostics };
 }
 
+// ── Source 2: Nitter / X (Twitter) RSS Feeds ─────────────────────────────────
+
+/**
+ * Strip HTML tags and decode entities from Nitter RSS content.
+ */
+function stripNitterHtml(html) {
+  if (!html) return "";
+  return html
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Extract text content from an XML tag.
+ */
+function nitterXmlText(xml, tag) {
+  const rx = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`, "i");
+  const m = xml.match(rx);
+  return m ? m[1].trim() : "";
+}
+
+/**
+ * Parse Nitter RSS feed XML into normalized post objects.
+ */
+function parseNitterRss(xml, searchQuery) {
+  const items = [];
+  const itemRegex = /<item>([\s\S]*?)<\/item>/gi;
+  let match;
+  while ((match = itemRegex.exec(xml)) !== null) {
+    const entry = match[1];
+
+    const rawTitle = nitterXmlText(entry, "title");
+    const link = nitterXmlText(entry, "link");
+    const description = nitterXmlText(entry, "description");
+    const pubDate = nitterXmlText(entry, "pubDate");
+    const creator =
+      nitterXmlText(entry, "dc:creator") ||
+      nitterXmlText(entry, "creator") ||
+      "";
+
+    // Extract tweet ID from link (e.g. https://nitter.net/user/status/123456)
+    const statusMatch = link.match(/\/status\/(\d+)/);
+    const tweetId = statusMatch ? statusMatch[1] : link;
+
+    // Clean the author handle
+    const author = creator.replace(/^@/, "").trim() || "unknown";
+
+    // Build plain-text body from description
+    const body = stripNitterHtml(description);
+    // Title from Nitter is usually "@user: tweet text..." — extract clean title
+    const title = stripNitterHtml(rawTitle).slice(0, 300);
+
+    const createdUtc = pubDate
+      ? Math.floor(new Date(pubDate).getTime() / 1000)
+      : Math.floor(Date.now() / 1000);
+
+    // Convert nitter link to real twitter/x.com link
+    const twitterUrl = link
+      .replace(/https?:\/\/[^/]+/, "https://x.com")
+      .trim();
+
+    items.push({
+      id: `x_${tweetId}`,
+      name: `x_${tweetId}`,
+      title,
+      selftext: body.slice(0, 2000),
+      author,
+      author_name: `@${author}`,
+      permalink: twitterUrl,
+      subreddit: null,
+      created_utc: createdUtc,
+      num_comments: 0,
+      ups: 0,
+      link_flair_text: searchQuery,
+      compensation: null,
+      employment_type: null,
+      location: null,
+      _sub: "nitter",
+      source: `x-search-${searchQuery.replace(/\s+/g, "-").toLowerCase()}`,
+    });
+  }
+  return items;
+}
+
+/**
+ * Try fetching a URL from multiple Nitter instances with fallback.
+ * Returns { xml, instance } on success, or { xml: null } on total failure.
+ */
+async function fetchNitterWithFallback(path, label) {
+  for (const instance of NITTER_INSTANCES) {
+    const url = `https://${instance}${path}`;
+    try {
+      const resp = await fetch(url, {
+        headers: {
+          "User-Agent": NITTER_UA,
+          Accept: "application/rss+xml, application/xml, text/xml",
+        },
+        redirect: "follow",
+        signal: AbortSignal.timeout(10000), // 10s timeout per instance
+      });
+
+      if (resp.status === 429) {
+        console.warn(`  [nitter] 429 on ${instance} for ${label}, trying next`);
+        continue;
+      }
+      if (!resp.ok) {
+        console.warn(
+          `  [nitter] ${resp.status} on ${instance} for ${label}, trying next`,
+        );
+        continue;
+      }
+
+      const xml = await resp.text();
+
+      // Check for empty or error pages
+      if (
+        !xml.includes("<item>") &&
+        !xml.includes("<entry>")
+      ) {
+        console.warn(
+          `  [nitter] No items from ${instance} for ${label}, trying next`,
+        );
+        continue;
+      }
+
+      return { xml, instance };
+    } catch (err) {
+      console.warn(
+        `  [nitter] ${instance} failed for ${label}: ${err.message}`,
+      );
+      continue;
+    }
+  }
+  return { xml: null, instance: null };
+}
+
+/**
+ * Fetch all Nitter search feeds and return normalized posts.
+ */
+async function fetchAllNitter() {
+  const allPosts = [];
+  const diagnostics = [];
+  let successCount = 0;
+
+  for (const query of NITTER_SEARCHES) {
+    const path = `/search/rss?f=tweets&q=${encodeURIComponent(query)}`;
+    console.log(`  [nitter] Searching: "${query}"`);
+
+    const { xml, instance } = await fetchNitterWithFallback(
+      path,
+      `search:${query}`,
+    );
+
+    if (xml) {
+      const posts = parseNitterRss(xml, query);
+      allPosts.push(...posts);
+      successCount++;
+      diagnostics.push({
+        query,
+        instance,
+        count: posts.length,
+        error: null,
+      });
+      console.log(
+        `    → ${posts.length} tweets from ${instance}`,
+      );
+    } else {
+      diagnostics.push({
+        query,
+        instance: null,
+        count: 0,
+        error: "All instances failed",
+      });
+      console.warn(`    → All instances failed for "${query}"`);
+    }
+
+    // Polite delay between searches
+    await delay(1500);
+  }
+
+  console.log(
+    `  [nitter] Summary: ${successCount}/${NITTER_SEARCHES.length} searches succeeded, ${allPosts.length} tweets total`,
+  );
+
+  return { posts: allPosts, diagnostics };
+}
+
 // ── Fetch All & Deduplicate ──────────────────────────────────────────────────
 
 async function fetchAllPosts() {
-  const diagnostics = { craigslist: [] };
+  const diagnostics = { craigslist: [], nitter: [] };
 
   // ── Craigslist ──
   console.log("\n[fetcher] === Craigslist Gigs ===");
@@ -341,10 +573,16 @@ async function fetchAllPosts() {
   diagnostics.craigslist = cl.diagnostics;
   console.log(`[fetcher] Craigslist: ${cl.posts.length} fetched`);
 
-  // Deduplicate
+  // ── Nitter / X ──
+  console.log("\n[fetcher] === Nitter / X (Twitter) ===");
+  const nitter = await fetchAllNitter();
+  diagnostics.nitter = nitter.diagnostics;
+  console.log(`[fetcher] Nitter: ${nitter.posts.length} fetched`);
+
+  // Deduplicate across both sources
   const seen = new Set();
   const allPosts = [];
-  for (const p of cl.posts) {
+  for (const p of [...cl.posts, ...nitter.posts]) {
     if (!seen.has(p.id)) {
       seen.add(p.id);
       allPosts.push(p);
@@ -390,6 +628,9 @@ async function main() {
   console.log("[fetcher] Starting community gig monitor...");
   console.log(
     `[fetcher] Craigslist cities: ${CL_CITIES.length}, categories: ${CL_CATEGORIES.length}`,
+  );
+  console.log(
+    `[fetcher] Nitter instances: ${NITTER_INSTANCES.length}, searches: ${NITTER_SEARCHES.length}`,
   );
 
   const start = Date.now();

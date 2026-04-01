@@ -1,4 +1,4 @@
-name: Fetch Community Gigs (Craigslist)
+name: Fetch Community Gigs (Craigslist + X/Nitter)
 
 on:
   schedule:
@@ -9,7 +9,7 @@ on:
 jobs:
   fetch-community:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
 
     steps:
       - uses: actions/checkout@v4
@@ -18,8 +18,11 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Fetch Craigslist gigs & store in Upstash
+      - name: Fetch Craigslist + X/Nitter gigs & store in Upstash
         env:
           UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
           UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+          # Optional overrides (defaults are built into the script)
+          # NITTER_INSTANCES: "nitter.poast.org,nitter.privacydev.net,nitter.net"
+          # NITTER_SEARCHES: "hiring developer,hiring designer,freelance gig"
         run: node scripts/fetch-x.js

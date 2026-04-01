@@ -444,7 +444,12 @@ async function fetchCommunityPostsFromProxy() {
     return (json.posts || []).map((p) => ({
       ...p,
       _weight: 1.0,
-      _source_platform: p._sub === "craigslist" ? "Craigslist" : "Community",
+      _source_platform:
+        p._sub === "craigslist"
+          ? "Craigslist"
+          : p._sub === "nitter"
+            ? "X"
+            : "Community",
     }));
   } catch (err) {
     console.error("[GigAlertPro] Community API fetch failed:", err.message);

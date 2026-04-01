@@ -33,13 +33,21 @@ function ScoreBadge({ score }) {
 }
 
 function SourceBadge({ platform }) {
-  const config =
-    platform === "Reddit"
-      ? {
-          bg: "bg-orange-500/8 border-orange-500/15 text-orange-400",
-          icon: "🔴",
-        }
-      : { bg: "bg-blue-500/8 border-blue-500/15 text-blue-400", icon: "📋" };
+  const configs = {
+    Reddit: {
+      bg: "bg-orange-500/8 border-orange-500/15 text-orange-400",
+      icon: "🔴",
+    },
+    X: {
+      bg: "bg-gray-500/8 border-gray-500/15 text-gray-300",
+      icon: "𝕏",
+    },
+    Craigslist: {
+      bg: "bg-blue-500/8 border-blue-500/15 text-blue-400",
+      icon: "📋",
+    },
+  };
+  const config = configs[platform] || configs.Craigslist;
 
   return (
     <span

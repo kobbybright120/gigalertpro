@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS public.gig_alerts (
   upvotes         INTEGER NOT NULL DEFAULT 0,           -- Reddit upvotes
   flair           TEXT,                                 -- Reddit link flair
   category        TEXT,                                 -- detected gig category
+  source          TEXT NOT NULL DEFAULT 'reddit',       -- source platform: reddit, craigslist, x
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -101,7 +102,12 @@ INSERT INTO public.scanner_state (subreddit) VALUES
   ('YouTubeEditorsForHire'), ('VoiceWork'), ('VideoEditors_forhire'),
   ('VoiceActing'), ('MarketingJobs'), ('hireforgigs'),
   ('ForHireFreelance'), ('DevsForHire'), ('Jobs4Bitcoins'),
-  ('WritingJobBoard')
+  ('WritingJobBoard'),
+  -- X / Nitter search feeds
+  ('x:hiring-developer'), ('x:hiring-designer'), ('x:hiring-freelancer'),
+  ('x:hiring-writer'), ('x:freelance-gig'), ('x:remote-developer-job'),
+  ('x:looking-for-developer'), ('x:need-a-developer'),
+  ('x:need-a-designer'), ('x:looking-for-freelancer')
 ON CONFLICT DO NOTHING;
 
 -- ============================================================
@@ -197,6 +203,7 @@ CREATE POLICY "Authenticated read scanner_state" ON public.scanner_state FOR SEL
 CREATE INDEX IF NOT EXISTS idx_keywords_user ON public.keywords(user_id);
 CREATE INDEX IF NOT EXISTS idx_gig_alerts_created ON public.gig_alerts(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_gig_alerts_subreddit ON public.gig_alerts(subreddit);
+CREATE INDEX IF NOT EXISTS idx_gig_alerts_source ON public.gig_alerts(source);
 CREATE INDEX IF NOT EXISTS idx_user_alerts_user ON public.user_alerts(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_alerts_read ON public.user_alerts(user_id, is_read) WHERE NOT is_read;
 CREATE INDEX IF NOT EXISTS idx_proposals_user ON public.proposals(user_id);
