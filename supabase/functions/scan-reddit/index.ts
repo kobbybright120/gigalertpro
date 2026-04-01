@@ -386,16 +386,14 @@ Deno.serve(async () => {
       subsWithPosts.push(`${sub.name}(${posts.length})`);
 
       // Ensure scanner_state row exists for new subreddits
-      await supabase
-        .from("scanner_state")
-        .upsert(
-          {
-            subreddit: sub.name,
-            last_post_id: lastId || "",
-            last_scanned_at: new Date().toISOString(),
-          },
-          { onConflict: "subreddit" },
-        );
+      await supabase.from("scanner_state").upsert(
+        {
+          subreddit: sub.name,
+          last_post_id: lastId || "",
+          last_scanned_at: new Date().toISOString(),
+        },
+        { onConflict: "subreddit" },
+      );
 
       let newestId = lastId;
 
@@ -422,8 +420,14 @@ Deno.serve(async () => {
         }
 
         // ── Skip deleted / removed ──
-        if (body === "[removed]" || body === "[deleted]") { totalDeletedOrRemoved++; continue; }
-        if (post.author === "[deleted]" || post.author === "AutoModerator") { totalDeletedOrRemoved++; continue; }
+        if (body === "[removed]" || body === "[deleted]") {
+          totalDeletedOrRemoved++;
+          continue;
+        }
+        if (post.author === "[deleted]" || post.author === "AutoModerator") {
+          totalDeletedOrRemoved++;
+          continue;
+        }
 
         // ── Skip self-promotions (freelancer ads) ──
         if (isSelfPromotion(title, body, flair)) {
@@ -435,7 +439,10 @@ Deno.serve(async () => {
 
         // Match keywords
         const matched = allKeywords.filter((kw) => text.includes(kw));
-        if (matched.length === 0) { totalNoKeywordMatch++; continue; }
+        if (matched.length === 0) {
+          totalNoKeywordMatch++;
+          continue;
+        }
 
         // Compute relevance score
         const score = computeScore(
@@ -446,7 +453,10 @@ Deno.serve(async () => {
         );
 
         // Skip very low relevance posts
-        if (score < 10) { totalLowScore++; continue; }
+        if (score < 10) {
+          totalLowScore++;
+          continue;
+        }
 
         // Detect category
         const category = detectCategory(`${title} ${body}`);

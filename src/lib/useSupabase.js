@@ -221,7 +221,8 @@ export function useGigAlerts(keywordList) {
           .from("gig_alerts")
           .upsert(rows, { onConflict: "reddit_post_id" })
           .then(({ error }) => {
-            if (error) console.warn("[GigAlertPro] gig_alerts upsert:", error.message);
+            if (error)
+              console.warn("[GigAlertPro] gig_alerts upsert:", error.message);
           });
       }
 
