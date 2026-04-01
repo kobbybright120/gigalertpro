@@ -195,7 +195,20 @@ export function useGigAlerts(keywordList) {
       .order("reddit_created", { ascending: false })
       .limit(50);
 
-    const results = data || [];
+    // Map DB rows to the shape GigCard expects
+    const results = (data || []).map((row) => ({
+      ...row,
+      source: row.author ? `@${row.author}` : "",
+      source_platform: "Reddit",
+      postedAt: row.reddit_created
+        ? new Date(row.reddit_created).toLocaleDateString()
+        : "",
+      keywords: row.matched_keywords || [],
+      score: null,
+      category: null,
+      flair: null,
+      comment_count: null,
+    }));
     if (pollingRef.current) {
       const newCount = notifyNewGigs(results);
       if (newCount > 0) bump(newCount);
