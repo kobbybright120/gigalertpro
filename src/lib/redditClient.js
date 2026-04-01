@@ -180,6 +180,16 @@ const SELF_PROMO_PATTERNS = [
   /\bI\s+have\s+\d+\+?\s*(?:years?|yrs?)\b/i,
   /\bI\s+am\s+(?:a\s+)?(?:considered|experienced|seasoned|skilled|proficient|senior|lead)\b/i,
   /\bwell\s*[-\s]?versed\s+in\b/i,
+  // ── "Looking to [offer services]" — freelancer pitching, not a client hiring ──
+  /\blooking\s+to\s+(?:compose|create|make|design|build|develop|write|produce|record|edit|offer|provide|do)\b/i,
+  /\blooking\s+to\b.{0,40}\b(?:for\s+(?:indie|small|your|any|game|music|startup))\b/i,
+  // ── Discounted / cheap service pitch ──
+  /\b(?:discounted|affordable|cheap|low[\s-]?cost|budget[\s-]?friendly)\s+(?:services?|rates?|prices?|work|music|design|dev)/i,
+  // ── Credential showcase / featured-in bragging ──
+  /\bfeatured\s+(?:in|on|at|among)\b/i,
+  /\bwith\s+\d[\d,.]*[KkMm]?\+?\s+(?:subscribers?|followers?|views?|downloads?)\b/i,
+  /\bI\s+composed\b/i,
+  /\bI\s+(?:have\s+)?(?:been\s+)?making\b.{0,30}\bfor\s+(?:over\s+)?\d+\s+(?:years?|yrs?)\b/i,
   // ── Job-seeker patterns ("help me get hired", "getting into freelancing") ──
   /\b(?:need|want)\s+(?:assistance|help|advice|tips?)\s+(?:for|with|on|about)\s+(?:getting|finding|landing)\s+(?:hired|a\s+job|work|clients?)\b/i,
   /\b(?:how\s+(?:do|can|to)|help\s+me)\b.{0,30}\b(?:get\s+hired|find\s+(?:a\s+)?(?:job|work|clients?)|land\s+(?:a\s+)?(?:job|gig|role))\b/i,
