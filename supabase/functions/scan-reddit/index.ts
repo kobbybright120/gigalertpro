@@ -88,16 +88,31 @@ const HIRING_SIGNALS: Array<{ rx: RegExp; score: number }> = [
   { rx: /\[task\]/i, score: 25 },
   { rx: /\[paid\]/i, score: 20 },
   { rx: /\bhiring\b/i, score: 15 },
-  { rx: /\blooking\s+for\b.{0,35}\b(?:a|an)?\s*(?:designer|developer|writer|editor|freelanc|coder|programmer|marketer|va|virtual\s?assistant|consultant|someone|contractor|expert|specialist|agency)/i, score: 20 },
-  { rx: /\bneed\b.{0,25}\b(?:a|an)?\s*(?:designer|developer|writer|editor|freelanc|coder|programmer|marketer|consultant|someone|help|person|expert)\b/i, score: 18 },
-  { rx: /\bseeking\b.{0,25}\b(?:a|an)?\s*(?:designer|developer|writer|freelanc|someone|expert|contractor)/i, score: 16 },
+  {
+    rx: /\blooking\s+for\b.{0,35}\b(?:a|an)?\s*(?:designer|developer|writer|editor|freelanc|coder|programmer|marketer|va|virtual\s?assistant|consultant|someone|contractor|expert|specialist|agency)/i,
+    score: 20,
+  },
+  {
+    rx: /\bneed\b.{0,25}\b(?:a|an)?\s*(?:designer|developer|writer|editor|freelanc|coder|programmer|marketer|consultant|someone|help|person|expert)\b/i,
+    score: 18,
+  },
+  {
+    rx: /\bseeking\b.{0,25}\b(?:a|an)?\s*(?:designer|developer|writer|freelanc|someone|expert|contractor)/i,
+    score: 16,
+  },
   { rx: /\bwill\s+pay\b/i, score: 15 },
   { rx: /\bi(?:'ll| will)\s+pay\b/i, score: 15 },
   { rx: /\bpaying\b/i, score: 12 },
   { rx: /\bbudget\b.{0,10}\b\$?\d/i, score: 14 },
   { rx: /\bwe(?:'re|\s+are)\s+looking\b/i, score: 16 },
-  { rx: /\bour\s+(?:team|company|startup|agency|firm)\b.{0,35}\b(?:needs?|looking|seeking|hiring|searching)\b/i, score: 18 },
-  { rx: /\bremote\b.{0,15}\b(?:position|role|job|gig|opportunity|work)\b/i, score: 8 },
+  {
+    rx: /\bour\s+(?:team|company|startup|agency|firm)\b.{0,35}\b(?:needs?|looking|seeking|hiring|searching)\b/i,
+    score: 18,
+  },
+  {
+    rx: /\bremote\b.{0,15}\b(?:position|role|job|gig|opportunity|work)\b/i,
+    score: 8,
+  },
   { rx: /\bcan\s+(?:someone|anyone|anybody)\b/i, score: 12 },
   { rx: /\bhelp\s+(?:me|us|needed|wanted|required)\b/i, score: 10 },
 ];
@@ -116,13 +131,34 @@ const JUNK_PATTERNS = [
 
 // ── Category Detection ──
 const CATEGORIES: Array<{ label: string; rx: RegExp }> = [
-  { label: "Development", rx: /\b(develop|coding|programm|software|web\s?dev|frontend|backend|full.?stack|react|angular|vue|node|python|java|php|ruby|swift|flutter|mobile\s?app|android|ios|api|database|wordpress|shopify|html|css|javascript|typescript)\b/i },
-  { label: "Design", rx: /\b(design|logo|graphic|ui\/?ux|figma|photoshop|illustrat|brand|visual|banner|poster|flyer|infographic|thumbnail|canva)\b/i },
-  { label: "Writing", rx: /\b(writ|copywriting|content|blog|article|seo\s?writ|ghostwrit|technical\s?writ|edit|proofread|translat|transcript)\b/i },
-  { label: "Marketing", rx: /\b(market|seo|social\s?media|ads?\b|advertis|email\s?market|ppc|google\s?ads|facebook\s?ads|growth|funnel|lead\s?gen|influencer)\b/i },
-  { label: "Video & Audio", rx: /\b(video|animation|motion|after\s?effects|premiere|youtube|podcast|audio|voice.?over|narrator)\b/i },
-  { label: "Data & AI", rx: /\b(data|machine\s?learn|ai\b|artificial|scraping|analy|automat|bot|chatbot|gpt|llm|neural|deep\s?learn)\b/i },
-  { label: "Virtual Assistant", rx: /\b(virtual\s?assistant|va\b|admin|data\s?entry|research|customer\s?service|support|bookkeep|scheduling)\b/i },
+  {
+    label: "Development",
+    rx: /\b(develop|coding|programm|software|web\s?dev|frontend|backend|full.?stack|react|angular|vue|node|python|java|php|ruby|swift|flutter|mobile\s?app|android|ios|api|database|wordpress|shopify|html|css|javascript|typescript)\b/i,
+  },
+  {
+    label: "Design",
+    rx: /\b(design|logo|graphic|ui\/?ux|figma|photoshop|illustrat|brand|visual|banner|poster|flyer|infographic|thumbnail|canva)\b/i,
+  },
+  {
+    label: "Writing",
+    rx: /\b(writ|copywriting|content|blog|article|seo\s?writ|ghostwrit|technical\s?writ|edit|proofread|translat|transcript)\b/i,
+  },
+  {
+    label: "Marketing",
+    rx: /\b(market|seo|social\s?media|ads?\b|advertis|email\s?market|ppc|google\s?ads|facebook\s?ads|growth|funnel|lead\s?gen|influencer)\b/i,
+  },
+  {
+    label: "Video & Audio",
+    rx: /\b(video|animation|motion|after\s?effects|premiere|youtube|podcast|audio|voice.?over|narrator)\b/i,
+  },
+  {
+    label: "Data & AI",
+    rx: /\b(data|machine\s?learn|ai\b|artificial|scraping|analy|automat|bot|chatbot|gpt|llm|neural|deep\s?learn)\b/i,
+  },
+  {
+    label: "Virtual Assistant",
+    rx: /\b(virtual\s?assistant|va\b|admin|data\s?entry|research|customer\s?service|support|bookkeep|scheduling)\b/i,
+  },
 ];
 
 // ── Helpers ─────────────────────────────────────────────────
@@ -135,10 +171,14 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 function extractBudget(text: string): string | null {
   // Range: $500-$1000, $1k-5k
-  const range = text.match(/\$\s?[\d,]+(?:\.\d{1,2})?(?:k)?\s*[-–—to]+\s*\$?\s?[\d,]+(?:\.\d{1,2})?(?:k)?/i);
+  const range = text.match(
+    /\$\s?[\d,]+(?:\.\d{1,2})?(?:k)?\s*[-–—to]+\s*\$?\s?[\d,]+(?:\.\d{1,2})?(?:k)?/i,
+  );
   if (range) return range[0].replace(/\s+/g, " ").trim();
   // Hourly: $50/hr, $30 per hour
-  const hourly = text.match(/\$\s?[\d,]+(?:\.\d{1,2})?\s*(?:\/\s*h(?:ou)?r|per\s+h(?:ou)?r)/i);
+  const hourly = text.match(
+    /\$\s?[\d,]+(?:\.\d{1,2})?\s*(?:\/\s*h(?:ou)?r|per\s+h(?:ou)?r)/i,
+  );
   if (hourly) return hourly[0].replace(/\s+/g, " ").trim();
   // "k" shorthand: $5k, $2.5k
   const kMatch = text.match(/\$\s?[\d,.]+\s*k\b/i);
@@ -159,7 +199,11 @@ function isJunk(title: string): boolean {
   return JUNK_PATTERNS.some((rx) => rx.test(title));
 }
 
-function isSelfPromotion(title: string, body: string, flair: string | null): boolean {
+function isSelfPromotion(
+  title: string,
+  body: string,
+  flair: string | null,
+): boolean {
   // Explicit title tags are definitive
   if (/\[for\s?hire\]/i.test(title) || /\[offer\]/i.test(title)) return true;
   if (/\bfor\s?hire\b/i.test(title) && !/\[hiring\]/i.test(title)) return true;
@@ -170,7 +214,13 @@ function isSelfPromotion(title: string, body: string, flair: string | null): boo
   // Flair-based detection
   if (flair) {
     const f = flair.toLowerCase();
-    if (f.includes("for hire") || f.includes("portfolio") || f.includes("seeking") || f.includes("available") || f.includes("looking for work"))
+    if (
+      f.includes("for hire") ||
+      f.includes("portfolio") ||
+      f.includes("seeking") ||
+      f.includes("available") ||
+      f.includes("looking for work")
+    )
       return true;
   }
 
@@ -181,7 +231,12 @@ function isSelfPromotion(title: string, body: string, flair: string | null): boo
   return SELF_PROMO_PATTERNS.some((rx) => rx.test(text));
 }
 
-function computeScore(post: any, matchedKwCount: number, totalKws: number, subWeight: number): number {
+function computeScore(
+  post: any,
+  matchedKwCount: number,
+  totalKws: number,
+  subWeight: number,
+): number {
   let score = 0;
   const text = (post.title || "") + " " + (post.selftext || "");
 
@@ -193,7 +248,10 @@ function computeScore(post: any, matchedKwCount: number, totalKws: number, subWe
   score += Math.min(40, hiringPts);
 
   // Keyword match density (0-25 pts)
-  score += Math.min(25, Math.round((matchedKwCount / Math.max(1, totalKws)) * 25));
+  score += Math.min(
+    25,
+    Math.round((matchedKwCount / Math.max(1, totalKws)) * 25),
+  );
 
   // Budget mentioned (0-10 pts)
   if (/\$\s?\d/.test(text)) score += 10;
@@ -316,10 +374,16 @@ Deno.serve(async () => {
       if (posts.length === 0) continue;
 
       // Ensure scanner_state row exists for new subreddits
-      await supabase.from("scanner_state").upsert(
-        { subreddit: sub.name, last_post_id: lastId || "", last_scanned_at: new Date().toISOString() },
-        { onConflict: "subreddit" },
-      );
+      await supabase
+        .from("scanner_state")
+        .upsert(
+          {
+            subreddit: sub.name,
+            last_post_id: lastId || "",
+            last_scanned_at: new Date().toISOString(),
+          },
+          { onConflict: "subreddit" },
+        );
 
       let newestId = lastId;
 
@@ -346,7 +410,8 @@ Deno.serve(async () => {
 
         // ── Skip deleted / removed ──
         if (body === "[removed]" || body === "[deleted]") continue;
-        if (post.author === "[deleted]" || post.author === "AutoModerator") continue;
+        if (post.author === "[deleted]" || post.author === "AutoModerator")
+          continue;
 
         // ── Skip self-promotions (freelancer ads) ──
         if (isSelfPromotion(title, body, flair)) {
@@ -361,7 +426,12 @@ Deno.serve(async () => {
         if (matched.length === 0) continue;
 
         // Compute relevance score
-        const score = computeScore(post, matched.length, allKeywords.length, sub.weight);
+        const score = computeScore(
+          post,
+          matched.length,
+          allKeywords.length,
+          sub.weight,
+        );
 
         // Skip very low relevance posts
         if (score < 10) continue;
@@ -444,5 +514,14 @@ Deno.serve(async () => {
         userNotifications: totalAlerts,
         skippedSelfPromo: totalSkippedPromo,
         skippedJunk: totalSkippedJunk,
+      }),
+      { headers: { "Content-Type": "application/json" } },
+    );
+  } catch (err) {
+    console.error("Scanner error:", err);
+    return new Response(JSON.stringify({ error: (err as Error).message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 });
