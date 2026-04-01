@@ -574,9 +574,7 @@ export function useProfile() {
 
     // Debug: capture session vs user mismatch which commonly causes RLS failures
     try {
-      const {
-        data: { session } = {},
-      } = await supabase.auth.getSession();
+      const { data: { session } = {} } = await supabase.auth.getSession();
       console.debug(
         "[useProfile] upsert attempt: session.user.id=",
         session?.user?.id,
