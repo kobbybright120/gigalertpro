@@ -109,7 +109,7 @@ export default function GigCard({ gig, onGenerateProposal }) {
             {gig.postedAt}
           </span>
         )}
-        {gig.comment_count != null && (
+        {gig.comment_count != null && gig.comment_count > 0 && (
           <span className="inline-flex items-center gap-1 text-gray-500">
             <MessageSquare className="w-3.5 h-3.5" />
             {gig.comment_count}

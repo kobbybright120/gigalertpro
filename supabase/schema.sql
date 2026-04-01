@@ -51,6 +51,11 @@ CREATE TABLE IF NOT EXISTS public.gig_alerts (
   author          TEXT,
   reddit_created  TIMESTAMPTZ NOT NULL,
   matched_keywords TEXT[] NOT NULL DEFAULT '{}',
+  score           INTEGER NOT NULL DEFAULT 0,           -- relevance score 0-100
+  comment_count   INTEGER NOT NULL DEFAULT 0,           -- Reddit comment count
+  upvotes         INTEGER NOT NULL DEFAULT 0,           -- Reddit upvotes
+  flair           TEXT,                                 -- Reddit link flair
+  category        TEXT,                                 -- detected gig category
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -86,7 +91,17 @@ CREATE TABLE IF NOT EXISTS public.scanner_state (
 -- Seed the subreddits we scan
 INSERT INTO public.scanner_state (subreddit) VALUES
   ('forhire'), ('slavelabour'), ('freelance'), ('hiring'),
-  ('jobbit'), ('remotework')
+  ('jobbit'), ('remotework'), ('freelance_forhire'),
+  ('gameDevClassifieds'), ('DesignJobs'), ('ProgrammingJobs'),
+  ('CodingJobs'), ('Programmers_forhire'), ('SoftwareEngineerJobs'),
+  ('WebDeveloperJobs'), ('techjobs'), ('WebDevJobs'),
+  ('MachineLearningJobs'), ('DeveloperJobs'), ('GraphicDesignJobs'),
+  ('Designers_forhire'), ('HireAnEditor'), ('ContentWriter_forhire'),
+  ('IllustratorsForHire'), ('artistforhire'), ('forhire2'),
+  ('YouTubeEditorsForHire'), ('VoiceWork'), ('VideoEditors_forhire'),
+  ('VoiceActing'), ('MarketingJobs'), ('hireforgigs'),
+  ('ForHireFreelance'), ('DevsForHire'), ('Jobs4Bitcoins'),
+  ('WritingJobBoard')
 ON CONFLICT DO NOTHING;
 
 -- ============================================================

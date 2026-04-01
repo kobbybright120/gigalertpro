@@ -13,6 +13,22 @@ const DISABLE_AUTH =
   VITE_SUPABASE_URL.includes("placeholder") ||
   !VITE_SUPABASE_ANON_KEY;
 
+/** Return "2h ago", "3d ago", etc. from an ISO timestamp or UTC seconds */
+function timeAgo(input) {
+  if (!input) return "";
+  const then =
+    typeof input === "number" ? input * 1000 : new Date(input).getTime();
+  const diff = Math.max(0, Date.now() - then);
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return `${days}d ago`;
+  return `${Math.floor(days / 30)}mo ago`;
+}
+
 // LocalStorage helpers for demo (when auth is disabled)
 function readLS(key, fallback) {
   try {
@@ -181,10 +197,7 @@ export function useGigAlerts(keywordList) {
     const orFilter = kws
       .flatMap((kw) => {
         const safe = kw.replace(/[%_]/g, "\\$&");
-        return [
-          `title.ilike.%${safe}%`,
-          `body_preview.ilike.%${safe}%`,
-        ];
+        return [`title.ilike.%${safe}%`, `body_preview.ilike.%${safe}%`];
       })
       .join(",");
 
@@ -200,14 +213,13 @@ export function useGigAlerts(keywordList) {
       ...row,
       source: row.author ? `@${row.author}` : "",
       source_platform: "Reddit",
-      postedAt: row.reddit_created
-        ? new Date(row.reddit_created).toLocaleDateString()
-        : "",
+      postedAt: row.reddit_created ? timeAgo(row.reddit_created) : "",
       keywords: row.matched_keywords || [],
-      score: null,
-      category: null,
-      flair: null,
-      comment_count: null,
+      score: row.score ?? 0,
+      category: row.category || null,
+      flair: row.flair || null,
+      comment_count: row.comment_count ?? 0,
+      upvotes: row.upvotes ?? 0,
     }));
     if (pollingRef.current) {
       const newCount = notifyNewGigs(results);
