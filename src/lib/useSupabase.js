@@ -565,16 +565,36 @@ export function useProfile() {
       return { data: updated, error: null };
     }
     if (!user) return { data: null, error: { message: "Not authenticated" } };
+
     const payload = {
       id: user.id,
       ...updates,
       updated_at: new Date().toISOString(),
     };
+
+    // Debug: capture session vs user mismatch which commonly causes RLS failures
+    try {
+      const {
+        data: { session } = {},
+      } = await supabase.auth.getSession();
+      console.debug(
+        "[useProfile] upsert attempt: session.user.id=",
+        session?.user?.id,
+        "hook user.id=",
+        user?.id,
+        "payload.id=",
+        payload.id,
+      );
+    } catch (e) {
+      console.debug("[useProfile] getSession() failed:", e?.message || e);
+    }
+
     const { data, error } = await supabase
       .from("profiles")
       .upsert(payload, { onConflict: "id" })
       .select()
-      .single();
+      .maybeSingle();
+
     if (error) {
       console.error("[useProfile] save error:", error);
     } else if (data) {
