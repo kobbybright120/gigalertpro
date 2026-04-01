@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useProfile } from "../lib/useSupabase";
@@ -31,11 +31,6 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { count: newGigCount, reset: resetGigCount } = useNewGigCount();
 
-  useEffect(() => {
-    // eslint-disable-next-line no-console
-    console.info("[Navbar debug] user:", user, "profile:", profile);
-  }, [user, profile]);
-
   const avatarUrl = user?.user_metadata?.avatar_url;
   const initials = (() => {
     const name = profile?.name || user?.email || "U";
@@ -66,6 +61,7 @@ export default function Navbar() {
         </Link>
 
         <div className="flex items-center gap-3">
+          <NotificationBell />
           {user && (
             <Link
               to="/profile"

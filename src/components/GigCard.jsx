@@ -7,6 +7,7 @@ import {
   Tag,
   Globe,
   DollarSign,
+  ArrowBigUp,
 } from "lucide-react";
 
 function ScoreBadge({ score }) {
@@ -107,6 +108,12 @@ export default function GigCard({ gig, onGenerateProposal }) {
           <span className="inline-flex items-center gap-1 text-gray-500">
             <Clock className="w-3.5 h-3.5" />
             {gig.postedAt}
+          </span>
+        )}
+        {gig.upvotes > 0 && (
+          <span className="inline-flex items-center gap-1 text-gray-500">
+            <ArrowBigUp className="w-3.5 h-3.5" />
+            {gig.upvotes}
           </span>
         )}
         {gig.comment_count != null && gig.comment_count > 0 && (

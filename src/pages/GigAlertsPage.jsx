@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Plus,
@@ -9,6 +9,10 @@ import {
   Bell,
   SlidersHorizontal,
   Filter,
+  ArrowUpDown,
+  Clock,
+  TrendingUp,
+  RefreshCw,
 } from "lucide-react";
 import GigCard from "../components/GigCard";
 import { useKeywords, useGigAlerts, useProposals } from "../lib/useSupabase";
@@ -19,11 +23,19 @@ export default function GigAlertsPage() {
   const navigate = useNavigate();
   const [input, setInput] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
+  const [activeCategory, setActiveCategory] = useState("all");
+  const [sortBy, setSortBy] = useState("time"); // "time" | "score"
 
   const { keywords, addKeyword, removeKeyword } = useKeywords();
   const { alerts, loading: alertsLoading } = useGigAlerts(keywords);
   const { saveProposal } = useProposals();
   const { reset: resetGigCount } = useNewGigCount();
+
+  // Derive last-updated time from alert freshness
+  const lastUpdated = useMemo(
+    () => (alerts.length > 0 && !alertsLoading ? new Date() : null),
+    [alerts.length, alertsLoading],
+  );
 
   // Clear the badge whenever the user is on this page
   useEffect(() => {
@@ -48,11 +60,18 @@ export default function GigAlertsPage() {
     navigate("/proposals");
   }
 
-  // Filter alerts by source
-  const filtered =
-    activeFilter === "all"
-      ? alerts
-      : alerts.filter((a) => a.source_platform?.toLowerCase() === activeFilter);
+  // Filter alerts by source + category, then sort
+  let filtered = alerts;
+  if (activeFilter !== "all")
+    filtered = filtered.filter(
+      (a) => a.source_platform?.toLowerCase() === activeFilter,
+    );
+  if (activeCategory !== "all")
+    filtered = filtered.filter(
+      (a) => a.category?.toLowerCase() === activeCategory.toLowerCase(),
+    );
+  if (sortBy === "score")
+    filtered = [...filtered].sort((a, b) => (b.score || 0) - (a.score || 0));
 
   // Count by source
   const redditCount = alerts.filter(
@@ -61,6 +80,10 @@ export default function GigAlertsPage() {
   const craigslistCount = alerts.filter(
     (a) => a.source_platform === "Craigslist",
   ).length;
+
+  // Collect unique categories from current alerts
+  const categorySet = new Set(alerts.map((a) => a.category).filter(Boolean));
+  const categories = [...categorySet].sort();
 
   return (
     <div className="p-5 lg:p-8 space-y-6 max-w-6xl">
@@ -132,30 +155,105 @@ export default function GigAlertsPage() {
         )}
       </div>
 
-      {/* Filter tabs + count */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5">
-          {[
-            { key: "all", label: "All", count: alerts.length },
-            { key: "reddit", label: "Reddit", count: redditCount },
-            { key: "craigslist", label: "Craigslist", count: craigslistCount },
-          ].map(({ key, label, count }) => (
+      {/* Filter tabs + sort + count */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            {[
+              { key: "all", label: "All", count: alerts.length },
+              { key: "reddit", label: "Reddit", count: redditCount },
+              {
+                key: "craigslist",
+                label: "Craigslist",
+                count: craigslistCount,
+              },
+            ].map(({ key, label, count }) => (
+              <button
+                key={key}
+                onClick={() => setActiveFilter(key)}
+                className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 ${
+                  activeFilter === key
+                    ? "bg-[#00F0B5]/[0.08] text-[#00F0B5] border border-[#00F0B5]/15 shadow-[inset_0_0_0_1px_rgba(0,240,181,0.05)]"
+                    : "text-gray-500 hover:text-gray-300 hover:bg-white/[0.03] border border-transparent"
+                }`}
+              >
+                {label} ({count})
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-3">
+            {/* Sort toggle */}
+            <div className="flex items-center gap-1 glass-card rounded-lg p-0.5">
+              <button
+                onClick={() => setSortBy("time")}
+                className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold transition-all duration-200 ${
+                  sortBy === "time"
+                    ? "bg-[#00F0B5]/[0.1] text-[#00F0B5]"
+                    : "text-gray-500 hover:text-gray-300"
+                }`}
+              >
+                <Clock className="w-3 h-3" />
+                Newest
+              </button>
+              <button
+                onClick={() => setSortBy("score")}
+                className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold transition-all duration-200 ${
+                  sortBy === "score"
+                    ? "bg-[#00F0B5]/[0.1] text-[#00F0B5]"
+                    : "text-gray-500 hover:text-gray-300"
+                }`}
+              >
+                <TrendingUp className="w-3 h-3" />
+                Top Score
+              </button>
+            </div>
+            <span className="text-xs text-gray-600 font-medium">
+              {filtered.length} result{filtered.length !== 1 ? "s" : ""}
+            </span>
+          </div>
+        </div>
+
+        {/* Category filter pills */}
+        {categories.length > 1 && (
+          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+            <Filter className="w-3.5 h-3.5 text-gray-600 shrink-0" />
             <button
-              key={key}
-              onClick={() => setActiveFilter(key)}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 ${
-                activeFilter === key
-                  ? "bg-[#00F0B5]/[0.08] text-[#00F0B5] border border-[#00F0B5]/15 shadow-[inset_0_0_0_1px_rgba(0,240,181,0.05)]"
+              onClick={() => setActiveCategory("all")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all duration-200 ${
+                activeCategory === "all"
+                  ? "bg-indigo-500/[0.1] text-indigo-400 border border-indigo-500/15"
                   : "text-gray-500 hover:text-gray-300 hover:bg-white/[0.03] border border-transparent"
               }`}
             >
-              {label} ({count})
+              All Categories
             </button>
-          ))}
-        </div>
-        <span className="text-xs text-gray-600 font-medium">
-          {filtered.length} result{filtered.length !== 1 ? "s" : ""}
-        </span>
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all duration-200 ${
+                  activeCategory === cat
+                    ? "bg-indigo-500/[0.1] text-indigo-400 border border-indigo-500/15"
+                    : "text-gray-500 hover:text-gray-300 hover:bg-white/[0.03] border border-transparent"
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Last updated */}
+        {lastUpdated && !alertsLoading && (
+          <div className="flex items-center gap-2 text-xs text-gray-600">
+            <RefreshCw className="w-3 h-3" />
+            Updated{" "}
+            {lastUpdated.toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </div>
+        )}
       </div>
 
       {/* Results */}
@@ -236,6 +334,7 @@ export default function GigAlertsPage() {
                 category: alert.category,
                 flair: alert.flair,
                 comment_count: alert.comment_count,
+                upvotes: alert.upvotes,
                 source_platform: alert.source_platform || "Reddit",
               }}
               onGenerateProposal={handleGenerateProposal}

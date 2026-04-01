@@ -25,7 +25,7 @@ export default function DashboardPage() {
 
   const { keywords, addKeyword, removeKeyword } = useKeywords();
   const { alerts, loading: alertsLoading } = useGigAlerts(keywords);
-  const { proposals } = useProposals();
+  const { saveProposal } = useProposals();
 
   function handleAddKeyword(e) {
     e.preventDefault();
@@ -36,7 +36,7 @@ export default function DashboardPage() {
 
   async function handleGenerateProposal(gig) {
     const text = generateProposal(gig.title);
-    await proposals.saveProposal?.({
+    await saveProposal({
       gigTitle: gig.title,
       description: gig.budget ? `${gig.source} · ${gig.budget}` : gig.source,
       text,
@@ -241,6 +241,7 @@ export default function DashboardPage() {
                     category: alert.category,
                     flair: alert.flair,
                     comment_count: alert.comment_count,
+                    upvotes: alert.upvotes,
                     source_platform: alert.source_platform || "Reddit",
                   }}
                   onGenerateProposal={handleGenerateProposal}
