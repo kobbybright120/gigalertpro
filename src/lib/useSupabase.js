@@ -449,9 +449,11 @@ export function useProposals() {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
     if (error) {
-      // surface REST / table-not-found issues in the browser console for easier debugging
       // eslint-disable-next-line no-console
-      console.warn("[useProposals] supabase error:", error);
+      console.error(
+        "[useProposals] supabase error:",
+        JSON.stringify({ message: error.message, code: error.code, details: error.details, hint: error.hint, status: error.status }, null, 2),
+      );
       setProposals([]);
     } else {
       setProposals(data || []);

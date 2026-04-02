@@ -233,34 +233,7 @@ CREATE POLICY "Users can delete own proposals"
   ON public.proposals FOR DELETE
   USING (auth.uid() = user_id);
 
--- Profiles: users can read/update their own
-CREATE POLICY "Users read own profile"  ON public.profiles FOR SELECT USING (auth.uid() = id);
-CREATE POLICY "Users update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
-
--- Keywords: users manage their own
-CREATE POLICY "Users read own keywords"  ON public.keywords FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users insert own keywords" ON public.keywords FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users delete own keywords" ON public.keywords FOR DELETE USING (auth.uid() = user_id);
-
--- Gig alerts: all authenticated users can read
-ALTER TABLE public.gig_alerts ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Authenticated read alerts" ON public.gig_alerts FOR SELECT USING (auth.role() = 'authenticated');
-
--- User alerts: users manage their own
-CREATE POLICY "Users read own user_alerts"  ON public.user_alerts FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users insert own user_alerts" ON public.user_alerts FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users update own user_alerts" ON public.user_alerts FOR UPDATE USING (auth.uid() = user_id);
-
--- Proposals: users manage their own
-CREATE POLICY "Users read own proposals"  ON public.proposals FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users insert own proposals" ON public.proposals FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users delete own proposals" ON public.proposals FOR DELETE USING (auth.uid() = user_id);
-
--- Saved gigs: users manage their own
-ALTER TABLE public.saved_gigs ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users read own saved_gigs"  ON public.saved_gigs FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users insert own saved_gigs" ON public.saved_gigs FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users delete own saved_gigs" ON public.saved_gigs FOR DELETE USING (auth.uid() = user_id);
+-- (Duplicate policies removed – see block above for the canonical definitions)
 
 -- Scanner state: only service_role writes; authenticated can read
 ALTER TABLE public.scanner_state ENABLE ROW LEVEL SECURITY;
