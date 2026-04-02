@@ -225,31 +225,21 @@ export default function ProposalModal({ gig, profile, onSave, onClose }) {
                 </p>
                 <ul className="text-xs text-amber-400/70 space-y-1.5 list-disc pl-4">
                   <li>
-                    First 2 sentences are the preview clients see — make them
-                    count
-                  </li>
-                  <li>
-                    Restate the client&apos;s problem to prove you read their
-                    post
-                  </li>
-                  <li>
                     Replace generic lines with specific details about THIS
                     project
                   </li>
+                  <li>Add a concrete result or number from YOUR past work</li>
                   <li>
-                    Add a concrete result or number from YOUR past work
+                    If the client mentioned a specific tool or tech, mirror that
+                    exact word
                   </li>
                   <li>
-                    Mention a rough timeline — even &quot;first draft by
-                    Thursday&quot; shows you&apos;re serious
+                    Keep it under 250 words — shorter proposals get 2x more
+                    replies
                   </li>
                   <li>
-                    End with a smart question or specific CTA, not just
-                    &quot;let me know&quot;
-                  </li>
-                  <li>
-                    Keep it to 3 short paragraphs — clients scan, they
-                    don&apos;t read essays
+                    End with a specific next step, not just &quot;let me
+                    know&quot;
                   </li>
                   <li>
                     Apply within 1 hour of the post for 3x higher response rate
