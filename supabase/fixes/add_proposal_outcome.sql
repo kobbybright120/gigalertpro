@@ -8,3 +8,9 @@ ALTER TABLE proposals
 -- Index for fast few-shot queries (fetch winning proposals by user)
 CREATE INDEX IF NOT EXISTS idx_proposals_outcome
   ON proposals (user_id, outcome, created_at DESC);
+
+-- UPDATE policy so users can set outcome on their own proposals
+CREATE POLICY "Users can update own proposals"
+  ON public.proposals FOR UPDATE
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);

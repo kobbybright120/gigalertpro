@@ -51,9 +51,9 @@ export default function DashboardPage() {
       gigTitle: proposalGig.title,
       description: proposalGig.budget
         ? `${proposalGig.source} · ${proposalGig.budget}`
-        : proposalGig.source,
+        : proposalGig.source || "",
       text,
-      alertId: proposalGig.id,
+      alertId: null, // client-side gig IDs are strings, not DB BIGINT FKs
     });
     navigate("/proposals");
   }
