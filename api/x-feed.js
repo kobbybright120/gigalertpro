@@ -56,7 +56,7 @@ const NITTER_SEARCHES = [
   "remote freelance job",
 ];
 
-const NITTER_UA = "GigAlertPro/1.0 (+https://gigalertpro.vercel.app)";
+const NITTER_UA = "GigAlertPro/1.0 (+https://gigalertpro.com)";
 
 // ── Upstash Redis REST ───────────────────────────────────────────────────────
 

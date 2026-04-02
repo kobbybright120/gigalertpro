@@ -99,7 +99,7 @@ const SEARCH_SUBS = [
   { name: "slavelabour", search: "flair:Task" },
 ];
 const USER_AGENT =
-  "Mozilla/5.0 (compatible; GigAlertPro/1.0; +https://gigalertpro.vercel.app)";
+  "Mozilla/5.0 (compatible; GigAlertPro/1.0; +https://gigalertpro.com)";
 
 function delay(ms) {
   return new Promise((r) => setTimeout(r, ms));

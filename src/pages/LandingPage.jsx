@@ -586,7 +586,9 @@ export default function LandingPage() {
               </div>
               <div className="mb-8">
                 <div className="flex items-end gap-1">
-                  <span className="text-5xl font-extrabold text-white">$20</span>
+                  <span className="text-5xl font-extrabold text-white">
+                    $20
+                  </span>
                   <span className="text-gray-500 text-sm pb-2">/month</span>
                 </div>
               </div>
@@ -627,12 +629,16 @@ export default function LandingPage() {
               </div>
               <div className="mb-8">
                 <div className="flex items-end gap-1">
-                  <span className="text-5xl font-extrabold text-gradient">$16</span>
+                  <span className="text-5xl font-extrabold text-gradient">
+                    $16
+                  </span>
                   <span className="text-gray-500 text-sm pb-2">/month</span>
                 </div>
                 <p className="text-sm text-gray-500 mt-1.5">
                   Billed as{" "}
-                  <span className="text-[#00F0B5] font-semibold">$192/year</span>
+                  <span className="text-[#00F0B5] font-semibold">
+                    $192/year
+                  </span>
                   <span className="ml-2 line-through text-gray-600">$240</span>
                 </p>
               </div>
@@ -640,11 +646,17 @@ export default function LandingPage() {
                 <PricingFeature text="Everything in Monthly" highlighted />
                 <PricingFeature text="2 months free" highlighted />
                 <PricingFeature text="Unlimited keyword alerts" highlighted />
-                <PricingFeature text="Reddit, Craigslist & X/Twitter" highlighted />
+                <PricingFeature
+                  text="Reddit, Craigslist & X/Twitter"
+                  highlighted
+                />
                 <PricingFeature text="Real-time gig scanning" highlighted />
                 <PricingFeature text="Gig quality scoring" highlighted />
                 <PricingFeature text="50 AI proposals per day" highlighted />
-                <PricingFeature text="Browser + email notifications" highlighted />
+                <PricingFeature
+                  text="Browser + email notifications"
+                  highlighted
+                />
                 <PricingFeature text="Freelancer profile hub" highlighted />
               </ul>
               <button

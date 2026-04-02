@@ -59,7 +59,7 @@ const SEARCH_SUBS = [
 ];
 
 const USER_AGENT =
-  "Mozilla/5.0 (compatible; GigAlertPro/1.0; +https://gigalertpro.vercel.app)";
+  "Mozilla/5.0 (compatible; GigAlertPro/1.0; +https://gigalertpro.com)";
 
 const REDIS_KEY = "gigalertpro:latest";
 const REDIS_TTL = 3600; // 1 hour TTL (cron refreshes every 2 min, this is just a safety net)

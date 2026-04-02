@@ -139,7 +139,7 @@ const NITTER_SEARCHES = (
   .filter(Boolean);
 
 const NITTER_MAX_POSTS = parseInt(process.env.NITTER_MAX_POSTS || "200", 10);
-const NITTER_UA = "GigAlertPro/1.0 (+https://gigalertpro.vercel.app)";
+const NITTER_UA = "GigAlertPro/1.0 (+https://gigalertpro.com)";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 

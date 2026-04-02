@@ -9,15 +9,16 @@
 //   STRIPE_SECRET_KEY          — sk_live_... or sk_test_...
 //   STRIPE_PRICE_MONTHLY       — price_xxx  (Monthly $20 price ID from Stripe)
 //   STRIPE_PRICE_YEARLY        — price_xxx  (Yearly $192 price ID from Stripe)
-//   APP_URL                    — https://gigalertpro.vercel.app (no trailing slash)
+//   APP_URL                    — https://gigalertpro.com (no trailing slash)
 // ─────────────────────────────────────────────────────────────────────────────
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 const STRIPE_PRICE_MONTHLY = process.env.STRIPE_PRICE_MONTHLY;
 const STRIPE_PRICE_YEARLY = process.env.STRIPE_PRICE_YEARLY;
-const APP_URL = (
-  process.env.APP_URL || "https://gigalertpro.vercel.app"
-).replace(/\/$/, "");
+const APP_URL = (process.env.APP_URL || "https://gigalertpro.com").replace(
+  /\/$/,
+  "",
+);
 
 export default async function handler(req, res) {
   // CORS preflight
