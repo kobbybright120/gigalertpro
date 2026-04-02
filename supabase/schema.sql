@@ -151,7 +151,9 @@ INSERT INTO public.scanner_state (subreddit) VALUES
   ('VoiceActing'), ('MarketingJobs'), ('hireforgigs'),
   ('ForHireFreelance'), ('DevsForHire'), ('Jobs4Bitcoins'),
   ('WritingJobBoard'),
+  ('RecruitingHiringPH'), ('VancouverJobs'),
   -- X / Nitter search feeds
+  ('remotelegaljobs'),
   ('x:hiring-developer'), ('x:hiring-designer'), ('x:hiring-freelancer'),
   ('x:hiring-writer'), ('x:freelance-gig'), ('x:remote-developer-job'),
   ('x:looking-for-developer'), ('x:need-a-developer'),

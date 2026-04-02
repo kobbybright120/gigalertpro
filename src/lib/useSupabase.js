@@ -416,7 +416,40 @@ export function useNotifications() {
       .update({ dismissed: true })
       .eq("id", notifId);
     setNotifications((prev) => prev.filter((n) => n.id !== notifId));
-    setUnreadCount((c) => Math.max(0, c - 1));
+      CREATE OR REPLACE FUNCTION public.upsert_profile(
+      p_name TEXT DEFAULT '',
+      p_bio TEXT DEFAULT '',
+      p_skills TEXT[] DEFAULT '{}',
+      p_testimonials TEXT[] DEFAULT '{}',
+      p_portfolio_links TEXT[] DEFAULT '{}'
+    )
+    RETURNS SETOF public.profiles
+    LANGUAGE plpgsql
+    SECURITY DEFINER
+    SET search_path = public
+    AS $$
+    BEGIN
+      RETURN QUERY
+      INSERT INTO profiles (id, name, bio, skills, testimonials, portfolio_links, updated_at)
+      VALUES (
+        auth.uid(),
+        p_name,
+        p_bio,
+        p_skills,
+        p_testimonials,
+        p_portfolio_links,
+        NOW()
+      )
+      ON CONFLICT (id) DO UPDATE SET
+        name = EXCLUDED.name,
+        bio = EXCLUDED.bio,
+        skills = EXCLUDED.skills,
+        testimonials = EXCLUDED.testimonials,
+        portfolio_links = EXCLUDED.portfolio_links,
+        updated_at = NOW()
+      RETURNING *;
+    END;
+    $$;  setUnreadCount((c) => Math.max(0, c - 1));
   }
 
   return {

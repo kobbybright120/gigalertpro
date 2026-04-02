@@ -52,9 +52,12 @@ const SUBREDDITS: SubConfig[] = [
   { name: "DevsForHire", mode: "new", weight: 1.1 },
   { name: "Jobs4Bitcoins", mode: "new", weight: 0.9 },
   { name: "WritingJobBoard", mode: "new", weight: 1.0 },
+  { name: "RecruitingHiringPH", mode: "new", weight: 1.0 },
+  { name: "VancouverJobs", mode: "new", weight: 1.0 },
   { name: "freelance", mode: "new", weight: 0.8 },
   { name: "jobbit", mode: "new", weight: 1.0 },
   { name: "remotework", mode: "new", weight: 0.9 },
+  { name: "remotelegaljobs", mode: "new", weight: 1.0 },
 ];
 
 const USER_AGENT =
