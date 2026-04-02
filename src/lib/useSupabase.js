@@ -518,11 +518,27 @@ export function useProposals() {
     setProposals((prev) => prev.filter((p) => p.id !== id));
   }
 
+  async function saveOutcome(id, outcome) {
+    if (DISABLE_AUTH) {
+      const updated = proposals.map((p) =>
+        p.id === id ? { ...p, outcome } : p,
+      );
+      setProposals(updated);
+      writeLS("gigalertpro_demo_proposals", updated);
+      return;
+    }
+    await supabase.from("proposals").update({ outcome }).eq("id", id);
+    setProposals((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, outcome } : p)),
+    );
+  }
+
   return {
     proposals,
     loading,
     saveProposal,
     deleteProposal,
+    saveOutcome,
     refetch: fetchProposals,
   };
 }

@@ -60,6 +60,8 @@ export default function ProposalModal({ gig, profile, onSave, onClose }) {
           userBio: profile?.bio || "",
           portfolioLinks: profile?.portfolio_links || [],
           tone,
+          upvotes: gig.upvotes || 0,
+          commentCount: gig.comment_count || 0,
         }),
       });
 

@@ -143,7 +143,7 @@ export default function ProfilePage() {
                     setDraft((d) => ({ ...d, bio: e.target.value }))
                   }
                   rows={4}
-                  placeholder="Tell clients about yourself..."
+                  placeholder="Tell clients about yourself. Include specific tools, platforms, and your niche..."
                   className="w-full px-4 py-3 bg-[#020617]/60 border border-white/[0.06] rounded-xl text-white placeholder-gray-600 focus:ring-2 focus:ring-[#00F0B5]/30 focus:border-[#00F0B5]/20 outline-none transition-all duration-200 resize-y text-sm"
                 />
               </div>
@@ -191,9 +191,9 @@ export default function ProfilePage() {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wider">
-                    Testimonials{" "}
+                    Past Wins & Testimonials{" "}
                     <span className="text-[#00F0B5] font-normal normal-case tracking-normal">
-                      (One per line)
+                      (One per line — include real numbers!)
                     </span>
                   </label>
                   <textarea
@@ -204,10 +204,13 @@ export default function ProfilePage() {
                         testimonials: e.target.value,
                       }))
                     }
-                    rows={4}
-                    placeholder={"alex is a good dev\nfast"}
+                    rows={5}
+                    placeholder={"Built React checkout → 40% conversion lift\nCut page load from 8s to 1.2s\n\"Best dev I've hired\" — startup founder\nDelivered logo rebrand in 48h, client rehired 3x"}
                     className="w-full px-4 py-3 bg-[#020617]/60 border border-white/[0.06] rounded-xl text-white placeholder-gray-600 font-mono text-sm focus:ring-2 focus:ring-[#00F0B5]/30 focus:border-[#00F0B5]/20 outline-none transition-all duration-200 resize-y"
                   />
+                  <p className="text-[11px] text-gray-600 mt-1.5">
+                    The AI uses these as social proof in proposals. Real numbers win gigs.
+                  </p>
                 </div>
               </div>
 

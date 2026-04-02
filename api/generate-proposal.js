@@ -160,6 +160,8 @@ export default async function handler(req, res) {
     userBio = "",
     portfolioLinks = [],
     tone = "professional", // professional | conversational | bold
+    upvotes = 0,
+    commentCount = 0,
   } = req.body || {};
 
   if (!gigTitle || typeof gigTitle !== "string") {
@@ -252,6 +254,53 @@ If the gig is from X/Twitter, be direct and punchy.
 Match the client's energy. If they're casual, be casual. If they're buttoned up, match that.
 End with a question or a specific next step. Never end passively.`;
 
+  // ── 4b. Fetch user's past winning proposals for few-shot learning ─────────────
+  let fewShotSection = "";
+  const baseUrl = process.env.VITE_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (baseUrl && serviceKey) {
+    try {
+      const wonRes = await fetch(
+        `${baseUrl}/rest/v1/proposals?user_id=eq.${supabaseUser.id}&outcome=eq.won&select=gig_title,text&order=created_at.desc&limit=3`,
+        { headers: supabaseHeaders() },
+      );
+      const wonProposals = await wonRes.json().catch(() => []);
+      if (Array.isArray(wonProposals) && wonProposals.length > 0) {
+        const examples = wonProposals
+          .map(
+            (w, i) =>
+              `--- WINNING EXAMPLE ${i + 1} ---\nGig: ${w.gig_title}\nProposal:\n${w.text}`,
+          )
+          .join("\n\n");
+        fewShotSection = `\n\n═══ THIS FREELANCER'S PAST WINNING PROPOSALS ═══
+These are real proposals this person sent that won the gig. Study the voice, the style, the phrasing. Write the new proposal in the same voice — personalized to the new gig.
+
+${examples}
+
+════════════════════════════════════════════`;
+      }
+    } catch {
+      // non-blocking — proceed without few-shot examples
+    }
+  }
+
+  // ── 4c. Competition signal ────────────────────────────────────────────────────
+  const competitionLevel =
+    upvotes > 50 || commentCount > 20
+      ? "high"
+      : upvotes > 15 || commentCount > 8
+        ? "medium"
+        : "low";
+
+  const competitionNote =
+    competitionLevel === "high"
+      ? "\n\n⚠️ HIGH COMPETITION (many upvotes/replies on this gig): Open with something completely unexpected. Be hyper-specific about THEIR exact problem. Every other freelancer will write a generic opener — yours must not."
+      : competitionLevel === "medium"
+        ? "\n\nMEDIUM COMPETITION: Several people have seen this. Open with something concrete and specific. Avoid anything that sounds like a template."
+        : "";
+
+  const systemPromptFull = systemPrompt + fewShotSection + competitionNote;
+
   const skillsList =
     Array.isArray(userSkills) && userSkills.length > 0
       ? userSkills.join(", ")
@@ -294,7 +343,7 @@ Write a winning proposal that will get me hired for this gig.`;
       body: JSON.stringify({
         model,
         messages: [
-          { role: "system", content: systemPrompt },
+          { role: "system", content: systemPromptFull },
           { role: "user", content: userPrompt },
         ],
         temperature: 0.45,

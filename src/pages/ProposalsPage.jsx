@@ -1,9 +1,33 @@
 import { useState } from "react";
-import { Bot, Trash2, Copy, Check, Loader2, FileText } from "lucide-react";
+import { Bot, Trash2, Copy, Check, Loader2, FileText, Trophy, MessageSquare, MinusCircle } from "lucide-react";
 import { useProposals } from "../lib/useSupabase";
 
+const OUTCOMES = [
+  {
+    key: "won",
+    label: "Won",
+    icon: Trophy,
+    active: "bg-emerald-500/10 border-emerald-500/25 text-emerald-400",
+    hover: "hover:bg-emerald-500/[0.06] hover:text-emerald-400",
+  },
+  {
+    key: "replied",
+    label: "Got Reply",
+    icon: MessageSquare,
+    active: "bg-blue-500/10 border-blue-500/25 text-blue-400",
+    hover: "hover:bg-blue-500/[0.06] hover:text-blue-400",
+  },
+  {
+    key: "no_response",
+    label: "No Reply",
+    icon: MinusCircle,
+    active: "bg-white/[0.06] border-white/[0.12] text-gray-400",
+    hover: "hover:bg-white/[0.06] hover:text-gray-400",
+  },
+];
+
 export default function ProposalsPage() {
-  const { proposals, loading, deleteProposal } = useProposals();
+  const { proposals, loading, deleteProposal, saveOutcome } = useProposals();
   const [copiedId, setCopiedId] = useState(null);
 
   function handleCopy(id, text) {
@@ -78,8 +102,34 @@ export default function ProposalsPage() {
                 </p>
               </div>
 
+              {/* Outcome tracker — trains the AI */}
+              <div className="mb-3">
+                <p className="text-[10px] text-gray-600 uppercase tracking-widest font-semibold mb-2">
+                  How did it go? <span className="normal-case text-[#00F0B5]/60">(helps the AI write better proposals)</span>
+                </p>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {OUTCOMES.map(({ key, label, icon: Icon, active, hover }) => {
+                    const isActive = p.outcome === key;
+                    return (
+                      <button
+                        key={key}
+                        onClick={() => saveOutcome(p.id, isActive ? null : key)}
+                        className={`inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all duration-200 ${
+                          isActive
+                            ? active
+                            : `bg-white/[0.03] border-white/[0.07] text-gray-600 ${hover}`
+                        }`}
+                      >
+                        <Icon className="w-3 h-3" />
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* Action buttons */}
-              <div className="flex items-center gap-2.5 mt-auto">
+              <div className="flex items-center gap-2.5 mt-auto pt-3 border-t border-white/[0.04]">
                 <button
                   onClick={() => handleCopy(p.id, p.text)}
                   className="inline-flex items-center gap-1.5 px-4 py-2 bg-white/[0.04] border border-white/[0.08] text-gray-300 text-sm font-semibold rounded-xl hover:bg-white/[0.08] hover:border-white/[0.12] transition-all duration-200"
