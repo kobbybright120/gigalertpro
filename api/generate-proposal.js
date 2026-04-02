@@ -146,14 +146,20 @@ export default async function handler(req, res) {
   }
 
   // ── 3. Validate body ─────────────────────────────────────────────────────────
+  // (body fields extracted in step 4 below)
+
+  // ── 4. Build prompt ──────────────────────────────────────────────────────────
   const {
     gigTitle,
     bodyPreview = "",
     budget = "",
     source = "",
+    category = "",
+    matchedKeywords = [],
     userSkills = [],
     userBio = "",
     portfolioLinks = [],
+    tone = "professional", // professional | conversational | bold
   } = req.body || {};
 
   if (!gigTitle || typeof gigTitle !== "string") {
@@ -167,40 +173,81 @@ export default async function handler(req, res) {
 
   const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
 
-  // ── 4. Build prompt ──────────────────────────────────────────────────────────
-  const systemPrompt = `You are an expert freelance proposal writer who helps freelancers win clients.
-Write a concise, tailored, and persuasive proposal. Rules:
-- Opening hook (1 sentence): show you read their post and understand the goal.
-- Fit section (2–3 bullet points): reference the specific skills and experience that match this job.
-- Approach (2 sentences): briefly explain HOW you will deliver — methodology, tools, timeline hints.
-- Portfolio reference: mention one relevant portfolio link if provided, otherwise skip this section.
-- Call-to-action (1 sentence): invite a reply or short call.
-- Total length: 150–200 words max.
-- Never use cliché phrases like "I am an expert", "I have extensive experience", "I would love to help".
-- Write in first person, professional yet warm tone.
-- Output the proposal text only — no titles, no labels.`;
+  // Tone instructions
+  const toneGuide = {
+    professional: "Write in a polished, professional tone. Confident but not arrogant. Business-appropriate.",
+    conversational: "Write in a friendly, conversational tone. Like chatting with a colleague. Still professional but relaxed and human.",
+    bold: "Write in a bold, high-energy tone. Stand out from the crowd. Confident, direct, slightly provocative. Show personality.",
+  };
+
+  const systemPrompt = `You are an elite freelance proposal writer. You have studied thousands of winning proposals on Upwork, Fiverr, Reddit, and freelance job boards. Your proposals have a 40%+ response rate because you follow these proven patterns:
+
+═══ WINNING PROPOSAL STRUCTURE ═══
+
+1. HOOK (1-2 sentences):
+   - Reference something SPECIFIC from the job post (a detail, pain point, or goal)
+   - Show you actually READ the post — never start with "I saw your post" or "I'd love to help"
+   - Example: "Migrating from WordPress to a custom React app while preserving 200+ blog posts and SEO rankings — I've done exactly this for 3 e-commerce clients."
+
+2. PROOF OF FIT (2-3 bullet points):
+   - Each bullet connects ONE of their needs to YOUR specific experience
+   - Use concrete numbers/results when possible ("increased page speed by 60%", "delivered in 5 days")
+   - Match their exact terminology — if they say "landing page", don't say "web page"
+
+3. APPROACH (2-3 sentences):
+   - Briefly explain your process/methodology for THIS specific project
+   - Mention tools, frameworks, or deliverables relevant to their request
+   - Give a realistic timeline hint if appropriate
+
+4. SOCIAL PROOF (1 sentence, optional):
+   - One relevant portfolio piece or past result
+   - Only include if the freelancer provided portfolio links
+
+5. CALL TO ACTION (1 sentence):
+   - Specific next step — NOT "let me know if interested"
+   - Good: "Happy to share a quick Loom walkthrough of a similar project" or "Want me to sketch a rough wireframe this week?"
+
+═══ CRITICAL RULES ═══
+- Total length: 150-250 words. Clients skip long proposals.
+- NEVER use these dead phrases: "I am an expert", "I have extensive experience", "I would love to help", "I am confident I can", "As a seasoned professional", "I bring X years of experience"
+- NEVER start with "Dear", "Hello", "Hi there", or "I hope this finds you well"
+- First person, ${toneGuide[tone] || toneGuide.professional}
+- Mirror the client's language and energy — formal job post = formal proposal, casual Reddit post = casual proposal
+- If the gig is from Reddit, keep it short and Reddit-appropriate (no corporate speak)
+- If the gig is from X/Twitter, be concise and direct
+- If no portfolio or bio is provided, focus entirely on the approach and deliverables
+- Output the proposal text ONLY — no titles, no labels, no "Subject:" lines
+- DO NOT make up fake portfolio links, fake client names, or fake results`;
 
   const skillsList =
     Array.isArray(userSkills) && userSkills.length > 0
       ? userSkills.join(", ")
-      : "freelance services";
+      : "";
 
   const portfolioNote =
     Array.isArray(portfolioLinks) && portfolioLinks.length > 0
-      ? `Portfolio links: ${portfolioLinks.slice(0, 2).join(", ")}`
+      ? `My portfolio: ${portfolioLinks.slice(0, 3).join(", ")}`
       : "";
 
-  const userPrompt = `Job title: ${gigTitle.slice(0, 200)}
-${bodyPreview ? `Job details: ${bodyPreview.slice(0, 600)}` : ""}
-${budget ? `Stated budget: ${budget}` : ""}
-${source ? `Platform: ${source}` : ""}
+  const keywordsNote =
+    Array.isArray(matchedKeywords) && matchedKeywords.length > 0
+      ? `Matched keywords: ${matchedKeywords.join(", ")}`
+      : "";
 
-Freelancer profile:
-${userBio ? `About me: ${userBio.slice(0, 400)}` : ""}
-My skills: ${skillsList}
+  const userPrompt = `═══ GIG DETAILS ═══
+Title: ${gigTitle.slice(0, 300)}
+${bodyPreview ? `Description: ${bodyPreview.slice(0, 800)}` : ""}
+${budget ? `Budget: ${budget}` : ""}
+${source ? `Platform: ${source}` : ""}
+${category ? `Category: ${category}` : ""}
+${keywordsNote}
+
+═══ MY FREELANCER PROFILE ═══
+${userBio ? `About me: ${userBio.slice(0, 500)}` : "No bio provided — focus on the approach and deliverables."}
+${skillsList ? `Skills: ${skillsList}` : ""}
 ${portfolioNote}
 
-Write a winning proposal for this job.`;
+Write a winning proposal that will get me hired for this gig.`;
 
   // ── 5. Call OpenAI ───────────────────────────────────────────────────────────
   let openaiData;
@@ -217,10 +264,10 @@ Write a winning proposal for this job.`;
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        temperature: 0.35,
-        max_tokens: 450,
-        frequency_penalty: 0.25,
-        presence_penalty: 0.1,
+        temperature: 0.45,
+        max_tokens: 600,
+        frequency_penalty: 0.4,
+        presence_penalty: 0.2,
       }),
     });
 

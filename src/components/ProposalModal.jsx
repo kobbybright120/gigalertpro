@@ -8,14 +8,23 @@ import {
   Loader2,
   AlertCircle,
   RefreshCw,
+  Lightbulb,
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
+
+const TONES = [
+  { value: "professional", label: "Professional", emoji: "💼" },
+  { value: "conversational", label: "Conversational", emoji: "💬" },
+  { value: "bold", label: "Bold", emoji: "🔥" },
+];
 
 export default function ProposalModal({ gig, profile, onSave, onClose }) {
   const [proposal, setProposal] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [tone, setTone] = useState("professional");
+  const [showTips, setShowTips] = useState(false);
 
   // Auto-generate as soon as modal opens
   useEffect(() => {
@@ -44,10 +53,13 @@ export default function ProposalModal({ gig, profile, onSave, onClose }) {
           gigTitle: gig.title,
           bodyPreview: gig.body_preview || "",
           budget: gig.budget || "",
-          source: gig.source || "",
+          source: gig.source_platform || gig.source || "",
+          category: gig.category || "",
+          matchedKeywords: gig.matched_keywords || [],
           userSkills: profile?.skills || [],
           userBio: profile?.bio || "",
           portfolioLinks: profile?.portfolio_links || [],
+          tone,
         }),
       });
 
@@ -113,14 +125,19 @@ export default function ProposalModal({ gig, profile, onSave, onClose }) {
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
           {/* Gig info chip */}
           <div className="flex flex-wrap items-center gap-2">
-            {gig.source && (
+            {gig.source_platform && (
               <span className="px-2.5 py-1 bg-white/[0.04] border border-white/[0.07] text-gray-400 text-xs rounded-lg">
-                {gig.source}
+                {gig.source_platform}
               </span>
             )}
             {gig.budget && (
               <span className="px-2.5 py-1 bg-[#00F0B5]/[0.06] border border-[#00F0B5]/10 text-[#00F0B5] text-xs font-semibold rounded-lg">
                 {gig.budget}
+              </span>
+            )}
+            {gig.category && (
+              <span className="px-2.5 py-1 bg-purple-500/[0.07] border border-purple-500/15 text-purple-400 text-xs rounded-lg">
+                {gig.category}
               </span>
             )}
             {profile?.skills?.slice(0, 3).map((s) => (
@@ -130,6 +147,24 @@ export default function ProposalModal({ gig, profile, onSave, onClose }) {
               >
                 {s}
               </span>
+            ))}
+          </div>
+
+          {/* Tone selector */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-500 font-medium">Tone:</span>
+            {TONES.map((t) => (
+              <button
+                key={t.value}
+                onClick={() => setTone(t.value)}
+                className={`px-3 py-1.5 text-xs rounded-lg border transition-all ${
+                  tone === t.value
+                    ? "bg-[#00F0B5]/10 border-[#00F0B5]/30 text-[#00F0B5] font-semibold"
+                    : "bg-white/[0.03] border-white/[0.08] text-gray-500 hover:text-gray-300 hover:border-white/[0.15]"
+                }`}
+              >
+                {t.emoji} {t.label}
+              </button>
             ))}
           </div>
 
@@ -169,6 +204,27 @@ export default function ProposalModal({ gig, profile, onSave, onClose }) {
                 className="w-full h-64 bg-white/[0.03] border border-white/[0.08] rounded-xl p-4 text-sm text-gray-200 leading-relaxed resize-y focus:outline-none focus:border-[#00F0B5]/30 focus:bg-white/[0.05] transition-all placeholder-gray-600"
                 spellCheck
               />
+              {/* Pro Tips Toggle */}
+              <button
+                onClick={() => setShowTips(!showTips)}
+                className="inline-flex items-center gap-1.5 text-xs text-amber-400/80 hover:text-amber-400 transition-colors"
+              >
+                <Lightbulb className="w-3.5 h-3.5" />
+                {showTips ? "Hide tips" : "Pro tips to win this gig"}
+              </button>
+              {showTips && (
+                <div className="bg-amber-500/[0.05] border border-amber-500/15 rounded-xl p-4 space-y-2">
+                  <p className="text-xs font-semibold text-amber-400">Before you send:</p>
+                  <ul className="text-xs text-amber-400/70 space-y-1.5 list-disc pl-4">
+                    <li>Replace generic lines with specific details about THIS project</li>
+                    <li>Add a concrete result or number from YOUR past work</li>
+                    <li>If the client mentioned a specific tool or tech, mirror that exact word</li>
+                    <li>Keep it under 250 words — shorter proposals get 2x more replies</li>
+                    <li>End with a specific next step, not just &quot;let me know&quot;</li>
+                    <li>Apply within 1 hour of the post for 3x higher response rate</li>
+                  </ul>
+                </div>
+              )}
             </>
           )}
         </div>
