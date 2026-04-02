@@ -571,28 +571,25 @@ export function useProfile() {
       updated_at: new Date().toISOString(),
     };
 
-    // Try UPDATE without .select() — RLS can block the chained SELECT
-    const { error } = await supabase
-      .from("profiles")
-      .update(payload)
-      .eq("id", user.id);
+    // Use RPC (SECURITY DEFINER) so RLS cannot silently block the write
+    const { data, error } = await supabase.rpc("upsert_profile", {
+      p_name: payload.name ?? "",
+      p_bio: payload.bio ?? "",
+      p_skills: payload.skills ?? [],
+      p_testimonials: payload.testimonials ?? [],
+      p_portfolio_links: payload.portfolio_links ?? [],
+    });
 
     if (error) {
-      console.error("[useProfile] update failed:", error);
+      console.error("[useProfile] rpc upsert_profile failed:", error);
       return { data: null, error };
     }
 
-    // Re-fetch the profile to get the updated data
-    const { data: fresh, error: fetchErr } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    if (fresh) {
-      setProfile(fresh);
+    const row = Array.isArray(data) ? data[0] : data;
+    if (row) {
+      setProfile(row);
     }
-    return { data: fresh, error: fetchErr };
+    return { data: row, error: null };
   }
 
   return { profile, loading, updateProfile, refetch: fetchProfile };

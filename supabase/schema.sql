@@ -32,6 +32,43 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
+-- Upsert profile – called from the client via supabase.rpc('upsert_profile', ...)
+-- SECURITY DEFINER bypasses RLS so it always works.
+CREATE OR REPLACE FUNCTION public.upsert_profile(
+  p_name TEXT DEFAULT '',
+  p_bio TEXT DEFAULT '',
+  p_skills TEXT[] DEFAULT '{}',
+  p_testimonials TEXT[] DEFAULT '{}',
+  p_portfolio_links TEXT[] DEFAULT '{}'
+)
+RETURNS SETOF public.profiles
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  RETURN QUERY
+  INSERT INTO profiles (id, name, bio, skills, testimonials, portfolio_links, updated_at)
+  VALUES (
+    auth.uid(),
+    p_name,
+    p_bio,
+    p_skills,
+    p_testimonials,
+    p_portfolio_links,
+    NOW()
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    name = EXCLUDED.name,
+    bio = EXCLUDED.bio,
+    skills = EXCLUDED.skills,
+    testimonials = EXCLUDED.testimonials,
+    portfolio_links = EXCLUDED.portfolio_links,
+    updated_at = NOW()
+  RETURNING *;
+END;
+$$;
+
 -- 2. Keywords tracked by each user
 CREATE TABLE IF NOT EXISTS public.keywords (
   id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
