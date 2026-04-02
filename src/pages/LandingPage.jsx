@@ -935,13 +935,14 @@ function LiveDemo() {
       setTimeout(
         () => {
           setVisibleGigs((prev) => [...prev, gig]);
-          if (i === 0) setSelectedGig(gig);
         },
         800 + i * 600,
       );
     });
 
-    setTimeout(() => setScanning(false), 800 + DEMO_GIGS.length * 600 + 200);
+    const scanEnd = 800 + DEMO_GIGS.length * 600 + 200;
+    setTimeout(() => setScanning(false), scanEnd);
+    setTimeout(() => setSelectedGig(DEMO_GIGS[0]), scanEnd + 300);
   }
 
   function handleSelectGig(gig) {
