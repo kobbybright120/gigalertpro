@@ -212,7 +212,9 @@ async function classifyBatch(batch) {
     }
   } catch (err) {
     if (err.name === "AbortError") {
-      console.warn(`[classifier] Timeout on batch of ${batch.length} — skipping`);
+      console.warn(
+        `[classifier] Timeout on batch of ${batch.length} — skipping`,
+      );
     } else {
       console.warn(`[classifier] Error: ${err.message}`);
     }

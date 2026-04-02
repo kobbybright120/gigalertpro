@@ -822,27 +822,34 @@ function matchAndScore(posts, lowerKws) {
 
     // ── AI Classification gate (set by cron fetch scripts via GPT-4o-mini) ──
     // Posts tagged `_ai_is_gig: false` are confirmed non-gigs — always skip.
-    // Posts with `_ai_is_gig: true` or `undefined` pass through to regex checks.
+    // Posts tagged `_ai_is_gig: true` are confirmed real gigs — SKIP regex filters.
+    // Posts with `_ai_is_gig: undefined` (unclassified) fall through to regex checks.
     if (p._ai_is_gig === false) continue;
+    const aiApproved = p._ai_is_gig === true;
 
-    // ── Skip self-promotions (freelancer ads) — skip for X/Nitter posts
-    //    (tweets are pre-screened by search query and have different norms) ──
+    // ── Regex filters (ONLY for posts the AI hasn't classified) ──
+    // If the AI already approved a post, trust it — don't second-guess with regex.
     const isXPost = p._sub === "nitter" || p._source_platform === "X";
-    if (
-      !isXPost &&
-      isSelfPromotion(p.title || "", p.selftext || "", p.link_flair_text)
-    )
-      continue;
 
-    // ── X/Tweet: strict quality gate ─ only show actionable job/gig posts ──
-    if (isXPost) {
-      const tweetText = (p.title || "") + " " + (p.selftext || "");
-      // Reject non-tech "developer" (real estate, housing, etc.)
-      if (NON_TECH_DEVELOPER_RX.test(tweetText)) continue;
-      // Reject replies, retweets, stories, negations, commentary
-      if (X_REJECT_PATTERNS.some((rx) => rx.test(tweetText))) continue;
-      // Tweet body must contain at least one STRONG hiring signal
-      if (!X_HIRING_SIGNALS.some((rx) => rx.test(tweetText))) continue;
+    if (!aiApproved) {
+      // ── Skip self-promotions (freelancer ads) — skip for X/Nitter posts
+      //    (tweets are pre-screened by search query and have different norms) ──
+      if (
+        !isXPost &&
+        isSelfPromotion(p.title || "", p.selftext || "", p.link_flair_text)
+      )
+        continue;
+
+      // ── X/Tweet: strict quality gate ─ only show actionable job/gig posts ──
+      if (isXPost) {
+        const tweetText = (p.title || "") + " " + (p.selftext || "");
+        // Reject non-tech "developer" (real estate, housing, etc.)
+        if (NON_TECH_DEVELOPER_RX.test(tweetText)) continue;
+        // Reject replies, retweets, stories, negations, commentary
+        if (X_REJECT_PATTERNS.some((rx) => rx.test(tweetText))) continue;
+        // Tweet body must contain at least one STRONG hiring signal
+        if (!X_HIRING_SIGNALS.some((rx) => rx.test(tweetText))) continue;
+      }
     }
 
     // ── Keyword matching — title matches weighted higher ──
