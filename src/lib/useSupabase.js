@@ -452,7 +452,17 @@ export function useProposals() {
       // eslint-disable-next-line no-console
       console.error(
         "[useProposals] supabase error:",
-        JSON.stringify({ message: error.message, code: error.code, details: error.details, hint: error.hint, status: error.status }, null, 2),
+        JSON.stringify(
+          {
+            message: error.message,
+            code: error.code,
+            details: error.details,
+            hint: error.hint,
+            status: error.status,
+          },
+          null,
+          2,
+        ),
       );
       setProposals([]);
     } else {

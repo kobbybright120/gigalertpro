@@ -16,16 +16,23 @@ import {
 } from "lucide-react";
 import GigCard from "../components/GigCard";
 import NotificationToggle from "../components/NotificationToggle";
-import { useKeywords, useGigAlerts, useProposals } from "../lib/useSupabase";
-import { generateProposal } from "../lib/mockData";
+import ProposalModal from "../components/ProposalModal";
+import {
+  useKeywords,
+  useGigAlerts,
+  useProposals,
+  useProfile,
+} from "../lib/useSupabase";
 
 export default function DashboardPage() {
   const navigate = useNavigate();
   const [input, setInput] = useState("");
+  const [proposalGig, setProposalGig] = useState(null);
 
   const { keywords, addKeyword, removeKeyword } = useKeywords();
   const { alerts, loading: alertsLoading } = useGigAlerts(keywords);
   const { saveProposal } = useProposals();
+  const { profile } = useProfile();
 
   function handleAddKeyword(e) {
     e.preventDefault();
@@ -34,13 +41,19 @@ export default function DashboardPage() {
     setInput("");
   }
 
-  async function handleGenerateProposal(gig) {
-    const text = generateProposal(gig.title);
+  function handleGenerateProposal(gig) {
+    setProposalGig(gig);
+  }
+
+  async function handleSaveProposal(text) {
+    if (!proposalGig) return;
     await saveProposal({
-      gigTitle: gig.title,
-      description: gig.budget ? `${gig.source} · ${gig.budget}` : gig.source,
+      gigTitle: proposalGig.title,
+      description: proposalGig.budget
+        ? `${proposalGig.source} · ${proposalGig.budget}`
+        : proposalGig.source,
       text,
-      alertId: gig.id,
+      alertId: proposalGig.id,
     });
     navigate("/proposals");
   }
@@ -51,6 +64,14 @@ export default function DashboardPage() {
 
   return (
     <div className="p-5 lg:p-8 space-y-6 max-w-6xl">
+      {proposalGig && (
+        <ProposalModal
+          gig={proposalGig}
+          profile={profile}
+          onSave={handleSaveProposal}
+          onClose={() => setProposalGig(null)}
+        />
+      )}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
