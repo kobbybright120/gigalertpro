@@ -860,23 +860,38 @@ function matchAndScore(posts, lowerKws) {
     const combined =
       titleLower + " " + bodyLower + (flairLower ? " " + flairLower : "");
 
+    // For single-word body-only matches, only check the first 300 chars
+    // of the body (where the actual job description is — not the links,
+    // portfolio, or "about me" sections that come later).
+    const bodyHead = bodyLower.slice(0, 300);
+
     let titleHits = 0;
     const matched = lowerKws.filter((kw) => {
-      let inTitle = false;
-      let found = false;
       if (kw.includes(" ")) {
-        // Multi-word: exact phrase match
-        found = combined.includes(kw);
-        inTitle = titleLower.includes(kw);
+        // Multi-word: exact phrase match — specific enough to match anywhere
+        const inTitle = titleLower.includes(kw);
+        const inBody =
+          bodyLower.includes(kw) ||
+          (flairLower ? flairLower.includes(kw) : false);
+        if (inTitle) titleHits++;
+        return inTitle || inBody;
       } else {
         // Single word: word boundary
         const escaped = kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         const rx = new RegExp(`\\b${escaped}\\b`, "i");
-        found = rx.test(combined);
-        inTitle = rx.test(titleLower);
+        const inTitle = rx.test(titleLower);
+        if (inTitle) {
+          titleHits++;
+          return true;
+        }
+        // Body-only single-word match: only count if the keyword appears
+        // in the first 300 chars of the body (the actual job description).
+        // This filters out casual mentions like "Website: www.example.com"
+        // or "check my portfolio at..." that appear later in the post.
+        const inFlair = flairLower ? rx.test(flairLower) : false;
+        if (inFlair) return true;
+        return rx.test(bodyHead);
       }
-      if (found && inTitle) titleHits++;
-      return found;
     });
 
     // All posts (Reddit + Craigslist) require at least one keyword match
