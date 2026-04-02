@@ -204,30 +204,51 @@ export default function ProposalModal({ gig, profile, onSave, onClose }) {
                 className="w-full h-64 bg-white/[0.03] border border-white/[0.08] rounded-xl p-4 text-sm text-gray-200 leading-relaxed resize-y focus:outline-none focus:border-[#00F0B5]/30 focus:bg-white/[0.05] transition-all placeholder-gray-600"
                 spellCheck
               />
-              {/* Pro Tips Toggle */}
-              <button
-                onClick={() => setShowTips(!showTips)}
-                className="inline-flex items-center gap-1.5 text-xs text-amber-400/80 hover:text-amber-400 transition-colors"
-              >
-                <Lightbulb className="w-3.5 h-3.5" />
-                {showTips ? "Hide tips" : "Pro tips to win this gig"}
-              </button>
-              {showTips && (
-                <div className="bg-amber-500/[0.05] border border-amber-500/15 rounded-xl p-4 space-y-2">
-                  <p className="text-xs font-semibold text-amber-400">Before you send:</p>
-                  <ul className="text-xs text-amber-400/70 space-y-1.5 list-disc pl-4">
-                    <li>Replace generic lines with specific details about THIS project</li>
-                    <li>Add a concrete result or number from YOUR past work</li>
-                    <li>If the client mentioned a specific tool or tech, mirror that exact word</li>
-                    <li>Keep it under 250 words — shorter proposals get 2x more replies</li>
-                    <li>End with a specific next step, not just &quot;let me know&quot;</li>
-                    <li>Apply within 1 hour of the post for 3x higher response rate</li>
-                  </ul>
-                </div>
-              )}
             </>
           )}
         </div>
+
+        {/* ── Pro Tips (fixed section above footer) ── */}
+        {!loading && proposal && (
+          <div className="px-5 pb-3 pt-2 border-t border-white/[0.06] shrink-0 space-y-2">
+            <button
+              onClick={() => setShowTips(!showTips)}
+              className="inline-flex items-center gap-1.5 text-xs text-amber-400/80 hover:text-amber-400 transition-colors"
+            >
+              <Lightbulb className="w-3.5 h-3.5" />
+              {showTips ? "Hide tips" : "Pro tips to win this gig"}
+            </button>
+            {showTips && (
+              <div className="bg-amber-500/[0.05] border border-amber-500/15 rounded-xl p-4 space-y-2">
+                <p className="text-xs font-semibold text-amber-400">
+                  Before you send:
+                </p>
+                <ul className="text-xs text-amber-400/70 space-y-1.5 list-disc pl-4">
+                  <li>
+                    Replace generic lines with specific details about THIS
+                    project
+                  </li>
+                  <li>Add a concrete result or number from YOUR past work</li>
+                  <li>
+                    If the client mentioned a specific tool or tech, mirror that
+                    exact word
+                  </li>
+                  <li>
+                    Keep it under 250 words — shorter proposals get 2x more
+                    replies
+                  </li>
+                  <li>
+                    End with a specific next step, not just &quot;let me
+                    know&quot;
+                  </li>
+                  <li>
+                    Apply within 1 hour of the post for 3x higher response rate
+                  </li>
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ── Footer ── */}
         <div className="flex items-center justify-between gap-3 px-5 py-4 border-t border-white/[0.06] shrink-0">
