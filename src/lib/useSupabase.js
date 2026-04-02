@@ -575,7 +575,7 @@ export function useProfile() {
     // Debug: capture session vs user mismatch which commonly causes RLS failures
     try {
       const { data: { session } = {} } = await supabase.auth.getSession();
-      console.debug(
+      console.log(
         "[useProfile] upsert attempt: session.user.id=",
         session?.user?.id,
         "hook user.id=",
@@ -584,21 +584,40 @@ export function useProfile() {
         payload.id,
       );
     } catch (e) {
-      console.debug("[useProfile] getSession() failed:", e?.message || e);
+      console.log("[useProfile] getSession() failed:", e?.message || e);
     }
 
-    const { data, error } = await supabase
+    // Try to upsert and return the row. The returned SELECT can be blocked by RLS USING policies,
+    // so if that happens we attempt a fallback upsert without requesting the returned row.
+    const res = await supabase
       .from("profiles")
       .upsert(payload, { onConflict: "id" })
       .select()
       .maybeSingle();
 
-    if (error) {
-      console.error("[useProfile] save error:", error);
-    } else if (data) {
-      setProfile(data);
+    if (res.error) {
+      console.log("[useProfile] upsert+select failed:", res.error);
+
+      // If RLS blocks the SELECT (typical Postgres 42501), try a fallback upsert without .select()
+      const isRls = String(res.error.code || "").includes("42501") ||
+        String(res.error.message || "").toLowerCase().includes("row-level security");
+      if (isRls) {
+        console.log("[useProfile] attempting fallback upsert without .select() to avoid SELECT/RLS failure");
+        const fallback = await supabase.from("profiles").upsert(payload, { onConflict: "id" });
+        if (fallback.error) {
+          console.error("[useProfile] fallback upsert failed:", fallback.error);
+          return { data: null, error: fallback.error };
+        }
+        // Update UI state locally so the user sees their changes even if returning the row was blocked
+        setProfile({ ...profile, ...payload });
+        return { data: payload, error: null };
+      }
+
+      return { data: null, error: res.error };
     }
-    return { data, error };
+
+    if (res.data) setProfile(res.data);
+    return { data: res.data, error: res.error };
   }
 
   return { profile, loading, updateProfile, refetch: fetchProfile };

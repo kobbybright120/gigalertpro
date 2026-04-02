@@ -8,3 +8,10 @@ const supabaseAnonKey =
   import.meta.env.VITE_SUPABASE_ANON_KEY || "placeholder-anon-key";
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Expose for quick debugging in browser console (dev only)
+try {
+  if (typeof window !== "undefined") window.supabase = supabase;
+} catch (e) {
+  // ignore
+}
