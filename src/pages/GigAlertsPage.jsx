@@ -32,7 +32,6 @@ export default function GigAlertsPage() {
   const [activeCategory, setActiveCategory] = useState("all");
   const [sortBy, setSortBy] = useState("time"); // "time" | "score"
   const [proposalGig, setProposalGig] = useState(null); // gig selected for AI proposal
-  const [showSuggestions, setShowSuggestions] = useState(false);
 
   const { keywords, addKeyword, removeKeyword } = useKeywords();
   const { alerts, loading: alertsLoading } = useGigAlerts(keywords);
@@ -158,68 +157,6 @@ export default function GigAlertsPage() {
             Track
           </button>
         </form>
-
-        {/* Keyword tips + suggestions */}
-        {keywords.length === 0 && !showSuggestions && (
-          <div className="mt-3 flex items-center gap-2">
-            <p className="text-xs text-gray-500">
-              💡 Use specific job titles or skills for best results.
-            </p>
-            <button
-              onClick={() => setShowSuggestions(true)}
-              className="text-xs text-[#00F0B5]/70 hover:text-[#00F0B5] transition-colors underline underline-offset-2"
-            >
-              Show examples
-            </button>
-          </div>
-        )}
-
-        {(showSuggestions || (keywords.length === 0 && !showSuggestions)) && showSuggestions && (
-          <div className="mt-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                Tap to add
-              </p>
-              <button
-                onClick={() => setShowSuggestions(false)}
-                className="text-xs text-gray-600 hover:text-gray-400 transition-colors"
-              >
-                Hide
-              </button>
-            </div>
-            {[
-              { label: "🖥 Development", keywords: ["react developer", "wordpress developer", "shopify developer", "mobile app developer", "full stack developer", "build a website", "web developer", "python developer", "fix my website"] },
-              { label: "🎨 Design", keywords: ["logo design", "ui ux designer", "graphic designer", "brand identity", "thumbnail designer", "figma designer", "web design"] },
-              { label: "✍️ Writing", keywords: ["blog writer", "seo writer", "copywriter", "content writer", "ghostwriter", "technical writer", "email copywriter"] },
-              { label: "📹 Video & Audio", keywords: ["video editor", "youtube editor", "motion graphics", "voice over", "podcast editor", "animation"] },
-              { label: "📈 Marketing", keywords: ["social media manager", "seo specialist", "email marketing", "facebook ads", "google ads", "marketing strategist"] },
-              { label: "🤖 Data & AI", keywords: ["data entry", "web scraping", "chatbot developer", "data analyst", "machine learning", "automation"] },
-              { label: "💼 Business", keywords: ["virtual assistant", "project manager", "bookkeeper", "data entry", "customer support", "lead generation"] },
-            ].map((group) => (
-              <div key={group.label}>
-                <p className="text-xs text-gray-500 mb-1.5">{group.label}</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {group.keywords
-                    .filter(
-                      (kw) =>
-                        !keywords.some((k) => k.keyword === kw.toLowerCase()),
-                    )
-                    .map((kw) => (
-                      <button
-                        key={kw}
-                        onClick={() => {
-                          addKeyword(kw);
-                        }}
-                        className="px-2.5 py-1 bg-white/[0.03] border border-white/[0.08] rounded-lg text-xs text-gray-400 hover:text-[#00F0B5] hover:border-[#00F0B5]/20 hover:bg-[#00F0B5]/[0.04] transition-all"
-                      >
-                        + {kw}
-                      </button>
-                    ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
 
         {/* Active keyword pills */}
         {keywords.length > 0 && (
@@ -393,22 +330,10 @@ export default function GigAlertsPage() {
             <h3 className="text-lg font-bold text-white mb-2">
               Start tracking gigs
             </h3>
-            <p className="text-gray-500 text-sm max-w-md mx-auto mb-4">
-              Add specific job titles or skills to find matching gigs from
+            <p className="text-gray-500 text-sm max-w-md mx-auto">
+              Type a keyword or skill above to start finding matching gigs from
               Reddit, Craigslist & X/Twitter. Be the first to apply!
             </p>
-            <div className="text-xs text-gray-600 max-w-sm mx-auto space-y-1">
-              <p>✅ Good: <span className="text-gray-400">"react developer"</span>, <span className="text-gray-400">"logo design"</span>, <span className="text-gray-400">"video editor"</span></p>
-              <p>❌ Avoid: <span className="text-gray-400">"website"</span>, <span className="text-gray-400">"design"</span>, <span className="text-gray-400">"code"</span> (too broad)</p>
-            </div>
-            {!showSuggestions && (
-              <button
-                onClick={() => setShowSuggestions(true)}
-                className="mt-4 text-xs text-[#00F0B5]/70 hover:text-[#00F0B5] transition-colors underline underline-offset-2"
-              >
-                Browse keyword suggestions
-              </button>
-            )}
           </div>
         ) : filtered.length > 0 ? (
           filtered.map((alert) => (

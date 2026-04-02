@@ -865,10 +865,7 @@ function isKeywordRelevantInBody(keyword, bodyLower) {
   let match;
   while ((match = kwRx.exec(bodyLower)) !== null) {
     const start = Math.max(0, match.index - contextWindow);
-    const end = Math.min(
-      bodyLower.length,
-      match.index + keyword.length + contextWindow,
-    );
+    const end = Math.min(bodyLower.length, match.index + keyword.length + contextWindow);
     const surrounding = bodyLower.slice(start, end);
 
     for (const rx of RELEVANT_CONTEXT_RX) {
