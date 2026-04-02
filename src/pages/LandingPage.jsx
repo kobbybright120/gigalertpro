@@ -76,8 +76,8 @@ export default function LandingPage() {
 
           <p className="mt-7 text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
             We scan Reddit, Craigslist & X/Twitter every 2 minutes for your
-            keywords, then alert you instantly. Be the first to apply — win
-            more projects.
+            keywords, then alert you instantly. Be the first to apply — win more
+            projects.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-12">

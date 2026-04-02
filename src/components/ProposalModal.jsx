@@ -1,0 +1,214 @@
+import { useState, useEffect } from "react";
+import {
+  X,
+  Sparkles,
+  Copy,
+  Check,
+  Save,
+  Loader2,
+  AlertCircle,
+  RefreshCw,
+} from "lucide-react";
+import { supabase } from "../lib/supabase";
+
+export default function ProposalModal({ gig, profile, onSave, onClose }) {
+  const [proposal, setProposal] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  // Auto-generate as soon as modal opens
+  useEffect(() => {
+    generate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function generate() {
+    setLoading(true);
+    setError("");
+    setProposal("");
+    try {
+      // Get the current Supabase session token
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      const res = await fetch("/api/generate-proposal", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          gigTitle: gig.title,
+          bodyPreview: gig.body_preview || "",
+          budget: gig.budget || "",
+          source: gig.source || "",
+          userSkills: profile?.skills || [],
+          userBio: profile?.bio || "",
+          portfolioLinks: profile?.portfolio_links || [],
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to generate proposal.");
+      setProposal(data.proposal);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleCopy() {
+    if (!proposal) return;
+    await navigator.clipboard.writeText(proposal);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  }
+
+  function handleSave() {
+    onSave(proposal);
+    onClose();
+  }
+
+  // Close on backdrop click
+  function handleBackdrop(e) {
+    if (e.target === e.currentTarget) onClose();
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      onClick={handleBackdrop}
+    >
+      <div className="w-full max-w-2xl flex flex-col bg-[#0d1117] border border-white/[0.08] rounded-2xl shadow-2xl overflow-hidden max-h-[90vh]">
+        {/* ── Header ── */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06] shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#00F0B5]/15 to-[#00D4FF]/10 flex items-center justify-center shrink-0">
+              <Sparkles className="w-4 h-4 text-[#00F0B5]" />
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-sm font-bold text-white leading-none">
+                AI Proposal Generator
+              </h2>
+              <p className="text-xs text-gray-500 mt-1 line-clamp-1">
+                {gig.title}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-gray-500 hover:text-gray-300 hover:bg-white/[0.06] transition-colors shrink-0"
+            aria-label="Close"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* ── Body ── */}
+        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+          {/* Gig info chip */}
+          <div className="flex flex-wrap items-center gap-2">
+            {gig.source && (
+              <span className="px-2.5 py-1 bg-white/[0.04] border border-white/[0.07] text-gray-400 text-xs rounded-lg">
+                {gig.source}
+              </span>
+            )}
+            {gig.budget && (
+              <span className="px-2.5 py-1 bg-[#00F0B5]/[0.06] border border-[#00F0B5]/10 text-[#00F0B5] text-xs font-semibold rounded-lg">
+                {gig.budget}
+              </span>
+            )}
+            {profile?.skills?.slice(0, 3).map((s) => (
+              <span
+                key={s}
+                className="px-2.5 py-1 bg-indigo-500/[0.07] border border-indigo-500/15 text-indigo-400 text-xs rounded-lg"
+              >
+                {s}
+              </span>
+            ))}
+          </div>
+
+          {/* Loading */}
+          {loading && (
+            <div className="flex flex-col items-center justify-center py-14 gap-3">
+              <Loader2 className="w-8 h-8 text-[#00F0B5] animate-spin" />
+              <p className="text-sm text-gray-400">Writing your proposal…</p>
+              <p className="text-xs text-gray-600">
+                Personalising with your profile
+              </p>
+            </div>
+          )}
+
+          {/* Error */}
+          {error && !loading && (
+            <div className="flex items-start gap-3 p-4 bg-red-500/[0.07] border border-red-500/20 rounded-xl">
+              <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-red-400">
+                  Generation failed
+                </p>
+                <p className="text-xs text-red-400/70 mt-0.5">{error}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Editable proposal text */}
+          {!loading && proposal && (
+            <>
+              <p className="text-xs text-gray-600 uppercase tracking-widest font-semibold">
+                Edit before sending
+              </p>
+              <textarea
+                value={proposal}
+                onChange={(e) => setProposal(e.target.value)}
+                className="w-full h-64 bg-white/[0.03] border border-white/[0.08] rounded-xl p-4 text-sm text-gray-200 leading-relaxed resize-y focus:outline-none focus:border-[#00F0B5]/30 focus:bg-white/[0.05] transition-all placeholder-gray-600"
+                spellCheck
+              />
+            </>
+          )}
+        </div>
+
+        {/* ── Footer ── */}
+        <div className="flex items-center justify-between gap-3 px-5 py-4 border-t border-white/[0.06] shrink-0">
+          <button
+            onClick={generate}
+            disabled={loading}
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-white/[0.04] border border-white/[0.08] text-gray-400 text-sm font-semibold rounded-xl hover:bg-white/[0.08] hover:text-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+            Regenerate
+          </button>
+
+          <div className="flex items-center gap-2">
+            {proposal && !loading && (
+              <button
+                onClick={handleCopy}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-white/[0.04] border border-white/[0.08] text-gray-300 text-sm font-semibold rounded-xl hover:bg-white/[0.08] transition-all"
+              >
+                {copied ? (
+                  <Check className="w-3.5 h-3.5 text-[#00F0B5]" />
+                ) : (
+                  <Copy className="w-3.5 h-3.5" />
+                )}
+                {copied ? "Copied!" : "Copy"}
+              </button>
+            )}
+            {proposal && !loading && (
+              <button
+                onClick={handleSave}
+                className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-[#00F0B5] text-[#020617] text-sm font-bold rounded-xl hover:bg-[#00dba5] hover:shadow-[0_0_16px_rgba(0,240,181,0.2)] transition-all"
+              >
+                <Save className="w-3.5 h-3.5" />
+                Save Proposal
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -282,3 +282,32 @@ CREATE INDEX IF NOT EXISTS idx_saved_gigs_alert ON public.saved_gigs(alert_id);
 -- Enable Realtime on tables that the frontend subscribes to
 ALTER PUBLICATION supabase_realtime ADD TABLE public.user_alerts;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.gig_alerts;
+
+-- ============================================================
+-- AI Usage Tracking
+-- Records every OpenAI call per user for cost control & quotas.
+-- Run this block in the Supabase SQL Editor.
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.ai_usage (
+  id                BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id           UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  model             TEXT NOT NULL DEFAULT 'gpt-4o-mini',
+  prompt_tokens     INTEGER NOT NULL DEFAULT 0,
+  completion_tokens INTEGER NOT NULL DEFAULT 0,
+  total_tokens      INTEGER NOT NULL DEFAULT 0,
+  cost_estimate     NUMERIC(12, 8) NOT NULL DEFAULT 0,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.ai_usage ENABLE ROW LEVEL SECURITY;
+
+-- Users can read their own usage (for a future "Usage" dashboard)
+CREATE POLICY "Users read own ai_usage"
+  ON public.ai_usage FOR SELECT
+  USING (auth.uid() = user_id);
+
+-- Only the service_role backend can insert (api/generate-proposal.js writes via service key)
+-- No INSERT policy for authenticated role — inserts are done server-side via service_role.
+
+CREATE INDEX IF NOT EXISTS idx_ai_usage_user ON public.ai_usage(user_id);
+CREATE INDEX IF NOT EXISTS idx_ai_usage_created ON public.ai_usage(created_at DESC);

@@ -213,7 +213,8 @@ export default function DashboardPage() {
                 Scanning Sources...
               </h3>
               <p className="text-gray-500 text-sm mt-1">
-                Searching Reddit, Craigslist & X/Twitter for gigs matching your keywords
+                Searching Reddit, Craigslist & X/Twitter for gigs matching your
+                keywords
               </p>
             </div>
           ) : topAlerts.length > 0 ? (

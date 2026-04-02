@@ -15,14 +15,15 @@ import {
   RefreshCw,
 } from "lucide-react";
 import GigCard from "../components/GigCard";
+import ProposalModal from "../components/ProposalModal";
 import {
   useKeywords,
   useGigAlerts,
   useProposals,
   useSavedGigs,
+  useProfile,
 } from "../lib/useSupabase";
 import { useNewGigCount } from "../context/NewGigCountContext";
-import { generateProposal } from "../lib/mockData";
 
 export default function GigAlertsPage() {
   const navigate = useNavigate();
@@ -30,12 +31,14 @@ export default function GigAlertsPage() {
   const [activeFilter, setActiveFilter] = useState("all");
   const [activeCategory, setActiveCategory] = useState("all");
   const [sortBy, setSortBy] = useState("time"); // "time" | "score"
+  const [proposalGig, setProposalGig] = useState(null); // gig selected for AI proposal
 
   const { keywords, addKeyword, removeKeyword } = useKeywords();
   const { alerts, loading: alertsLoading } = useGigAlerts(keywords);
   const { saveProposal } = useProposals();
   const { savedIds, toggleSave } = useSavedGigs();
   const { reset: resetGigCount } = useNewGigCount();
+  const { profile } = useProfile();
 
   // Derive last-updated time from alert freshness
   const lastUpdated = useMemo(
@@ -55,13 +58,19 @@ export default function GigAlertsPage() {
     setInput("");
   }
 
-  async function handleGenerateProposal(gig) {
-    const text = generateProposal(gig.title);
+  function handleGenerateProposal(gig) {
+    setProposalGig(gig);
+  }
+
+  async function handleSaveProposal(text) {
+    if (!proposalGig) return;
     await saveProposal({
-      gigTitle: gig.title,
-      description: gig.budget ? `${gig.source} · ${gig.budget}` : gig.source,
+      gigTitle: proposalGig.title,
+      description: proposalGig.budget
+        ? `${proposalGig.source} · ${proposalGig.budget}`
+        : proposalGig.source || "",
       text,
-      alertId: gig.id,
+      alertId: proposalGig.id,
     });
     navigate("/proposals");
   }
@@ -94,6 +103,15 @@ export default function GigAlertsPage() {
 
   return (
     <div className="p-5 lg:p-8 space-y-6 max-w-6xl">
+      {/* AI Proposal Modal */}
+      {proposalGig && (
+        <ProposalModal
+          gig={proposalGig}
+          profile={profile}
+          onSave={handleSaveProposal}
+          onClose={() => setProposalGig(null)}
+        />
+      )}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
