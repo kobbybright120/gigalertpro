@@ -84,11 +84,13 @@ const DEMO_GIGS = [
     source: "Reddit",
     sourceColor: "text-orange-400",
     sub: "r/forhire",
-    budget: "$4,000 – $6,000",
+    budget: "$4,000 \u2013 $6,000",
     score: 92,
     time: "2 min ago",
     keywords: ["React", "TypeScript", "API"],
     upvotes: 8,
+    proposal:
+      "Your analytics dashboard needs to do more than render charts \u2014 it needs to help your team act on data in real time. I\u2019ve built three SaaS dashboards with live Stripe and Segment integrations, and the last one cut manual reporting by 80%.\n\nHere\u2019s how I\u2019d approach yours:\n\n\u2022 React + TypeScript frontend with type-safe API models\n\u2022 WebSocket-powered real-time charts \u2014 no page refreshes\n\u2022 Role-based user management with granular permissions\n\u2022 Fully responsive, delivered in 3 weeks with a recorded walkthrough\n\nA fintech client\u2019s dashboard I built handles 50K+ daily events \u2014 their team ditched spreadsheets within a week.\n\nWhat\u2019s your timeline for getting this in front of your team?",
   },
   {
     id: 2,
@@ -96,11 +98,13 @@ const DEMO_GIGS = [
     source: "Craigslist",
     sourceColor: "text-violet-400",
     sub: "New York",
-    budget: "$800 – $1,200",
+    budget: "$800 \u2013 $1,200",
     score: 78,
     time: "5 min ago",
     keywords: ["Logo Design", "Branding"],
     upvotes: 3,
+    proposal:
+      "A heartbeat motif can either feel generic or become the visual hook people instantly associate with FitPulse. The difference is in how you abstract it.\n\nI\u2019ve designed logos for three health & wellness apps. The best-performing one used a dynamic pulse wave built into the lettermark itself \u2014 it read as \u201cenergy\u201d without being obvious.\n\nHere\u2019s what I\u2019d deliver:\n\n\u2022 3 distinct concepts \u2014 minimal to bold\n\u2022 App-store-optimized icon version\n\u2022 Dark/light variants + one-color for merch\n\u2022 Brand guideline PDF with spacing & color codes\n\nWant to start with a quick 15-min call to nail the vibe?",
   },
   {
     id: 3,
@@ -108,11 +112,13 @@ const DEMO_GIGS = [
     source: "Reddit",
     sourceColor: "text-orange-400",
     sub: "r/freelance",
-    budget: "$6,000 – $10,000",
+    budget: "$6,000 \u2013 $10,000",
     score: 95,
     time: "8 min ago",
     keywords: ["Shopify", "Next.js", "Performance"],
     upvotes: 24,
+    proposal:
+      "Your checkout flow is likely losing more customers than analytics show. I rebuilt a similar Shopify store headless with Next.js last quarter \u2014 Lighthouse went from 34 to 96, and conversions jumped 42% in month one.\n\nMy approach:\n\n\u2022 Audit your Shopify analytics to find exact drop-off points\n\u2022 Next.js storefront with ISR \u2014 product pages under 1 second\n\u2022 Single-page checkout with Apple Pay & Google Pay\n\u2022 A/B testing baked in so you measure the lift with real data\n\nI can have a working prototype in 10 days.\n\nShould we start with a call to look at your current analytics together?",
   },
   {
     id: 4,
@@ -125,6 +131,8 @@ const DEMO_GIGS = [
     time: "12 min ago",
     keywords: ["Video Editing", "YouTube"],
     upvotes: 5,
+    proposal:
+      "The first 8 seconds of a YouTube video decide whether someone stays or bounces. I edit with that in mind \u2014 punchy cold opens, tight cuts, and on-brand motion graphics that keep viewers watching.\n\nI\u2019ve edited 120+ videos for tech and lifestyle channels, averaging 65%+ audience retention.\n\nWhat I\u2019d deliver per video:\n\n\u2022 Jump-cut editing with dynamic pacing\n\u2022 Custom lower-thirds, transitions & thumbnails\n\u2022 Color grading + audio cleanup\n\u2022 48-hour turnaround on first drafts\n\nWant to send me a raw clip so I can show you a sample edit?",
   },
   {
     id: 5,
@@ -132,11 +140,13 @@ const DEMO_GIGS = [
     source: "Reddit",
     sourceColor: "text-orange-400",
     sub: "r/hiring",
-    budget: "$2,000 – $3,500",
+    budget: "$2,000 \u2013 $3,500",
     score: 84,
     time: "15 min ago",
     keywords: ["WordPress", "PHP"],
     upvotes: 11,
+    proposal:
+      "Agency sites need to do two things well: load fast and convert visitors into booked calls. Most WordPress builds fail at both.\n\nI\u2019ve built 15+ agency sites on WordPress \u2014 the last one cut page load from 4.2s to 1.1s and increased contact form submissions by 35%.\n\nHere\u2019s my plan:\n\n\u2022 Custom theme built on a lightweight starter \u2014 no bloated page builders\n\u2022 Mobile-first responsive design\n\u2022 SEO-optimized with schema markup and Core Web Vitals in the green\n\u2022 Delivered in 2 weeks with a CMS training walkthrough\n\nCan we hop on a quick call to look at your current site and discuss goals?",
   },
 ];
 
@@ -808,37 +818,73 @@ export default function LandingPage() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   LIVE DEMO — simulates the gig scanning / discovery feed
+   LIVE DEMO — full flow: scan → feed → details → generate proposal
    ═══════════════════════════════════════════════════════════════════════ */
 function LiveDemo() {
   const [scanning, setScanning] = useState(false);
   const [visibleGigs, setVisibleGigs] = useState([]);
   const [selectedGig, setSelectedGig] = useState(null);
+  const [proposalPhase, setProposalPhase] = useState("idle");
+  const [proposalText, setProposalText] = useState("");
+  const [typingDone, setTypingDone] = useState(false);
 
   function handleScan() {
     if (scanning) return;
     setScanning(true);
     setVisibleGigs([]);
     setSelectedGig(null);
+    setProposalPhase("idle");
+    setProposalText("");
+    setTypingDone(false);
 
-    // Stream gigs in one-by-one
     DEMO_GIGS.forEach((gig, i) => {
-      setTimeout(
-        () => {
-          setVisibleGigs((prev) => [...prev, gig]);
-          if (i === 0) setSelectedGig(gig);
-        },
-        800 + i * 600,
-      );
+      setTimeout(() => {
+        setVisibleGigs((prev) => [...prev, gig]);
+        if (i === 0) setSelectedGig(gig);
+      }, 800 + i * 600);
     });
 
     setTimeout(() => setScanning(false), 800 + DEMO_GIGS.length * 600 + 200);
   }
 
-  const active = selectedGig || DEMO_GIGS[0];
+  function handleSelectGig(gig) {
+    setSelectedGig(gig);
+    setProposalPhase("idle");
+    setProposalText("");
+    setTypingDone(false);
+  }
+
+  // Typing effect for proposal
+  useEffect(() => {
+    if (proposalPhase !== "done" || !selectedGig) return;
+    setTypingDone(false);
+    let i = 0;
+    const text = selectedGig.proposal;
+    setProposalText("");
+    const id = setInterval(() => {
+      i += 2;
+      if (i >= text.length) {
+        setProposalText(text);
+        setTypingDone(true);
+        clearInterval(id);
+      } else {
+        setProposalText(text.slice(0, i));
+      }
+    }, 10);
+    return () => clearInterval(id);
+  }, [proposalPhase, selectedGig]);
+
+  function handleGenerate() {
+    if (!selectedGig) return;
+    setProposalPhase("generating");
+    setTimeout(() => setProposalPhase("done"), 1500);
+  }
+
+  const active = selectedGig;
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="max-w-7xl mx-auto">
+      {/* Row 1: Keywords + Gig Feed + Gig Details */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* Panel 1: Keywords & Scan */}
         <div className="lg:col-span-3 glass-card rounded-2xl p-5 flex flex-col">
@@ -913,7 +959,7 @@ function LiveDemo() {
               {visibleGigs.map((gig) => (
                 <button
                   key={gig.id}
-                  onClick={() => setSelectedGig(gig)}
+                  onClick={() => handleSelectGig(gig)}
                   className={`w-full text-left p-3 rounded-xl border transition-all duration-200 animate-slideIn ${
                     selectedGig?.id === gig.id
                       ? "bg-[#00F0B5]/[0.06] border-[#00F0B5]/20"
@@ -949,19 +995,19 @@ function LiveDemo() {
           )}
         </div>
 
-        {/* Panel 3: Gig Details */}
+        {/* Panel 3: Gig Details + Generate Proposal */}
         <div className="lg:col-span-4 glass-card rounded-2xl p-5 flex flex-col min-h-[380px]">
           <div className="flex items-center gap-2 mb-4">
             <TrendingUp className="w-4 h-4 text-yellow-400" />
             <h3 className="text-sm font-bold text-white">Gig Details</h3>
           </div>
 
-          {!selectedGig ? (
+          {!active ? (
             <div className="flex-1 flex items-center justify-center text-gray-600 text-sm">
               Select a gig to see details
             </div>
           ) : (
-            <div className="space-y-5 flex-1">
+            <div className="space-y-4 flex-1 flex flex-col">
               <div>
                 <h4 className="text-sm font-bold text-white leading-snug mb-1">
                   {active.title}
@@ -977,7 +1023,7 @@ function LiveDemo() {
                 </div>
               </div>
 
-              {/* Quality Score */}
+              {/* Match Score */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-[11px] text-gray-500 font-semibold uppercase tracking-wider">
@@ -1007,7 +1053,7 @@ function LiveDemo() {
 
               {/* Keywords */}
               <div>
-                <span className="text-[11px] text-gray-500 font-semibold uppercase tracking-wider mb-2 block">
+                <span className="text-[11px] text-gray-500 font-semibold uppercase tracking-wider mb-1.5 block">
                   Matched Keywords
                 </span>
                 <div className="flex flex-wrap gap-1.5">
@@ -1028,10 +1074,93 @@ function LiveDemo() {
                   <TrendingUp className="w-3 h-3" /> {active.upvotes} upvotes
                 </span>
               </div>
+
+              {/* Generate Proposal Button */}
+              <div className="flex-1" />
+              <button
+                onClick={handleGenerate}
+                disabled={proposalPhase !== "idle"}
+                className="w-full py-3 bg-gradient-to-r from-[#7c3aed] to-[#a78bfa] text-white text-sm font-bold rounded-xl hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+              >
+                <Sparkles className="w-4 h-4" />
+                {proposalPhase === "idle"
+                  ? "Generate Proposal"
+                  : proposalPhase === "generating"
+                    ? "Generating..."
+                    : "Proposal Ready ✓"}
+              </button>
             </div>
           )}
         </div>
       </div>
+
+      {/* Row 2: Generated Proposal (slides in after generation) */}
+      {proposalPhase !== "idle" && (
+        <div className="mt-5 animate-slideIn">
+          <div className="glass-card rounded-2xl p-6 border-[#7c3aed]/20">
+            <div className="flex items-center gap-2 mb-4">
+              <Sparkles className="w-4 h-4 text-purple-400" />
+              <h3 className="text-sm font-bold text-white">
+                Your Ready-to-Send Proposal
+              </h3>
+              <span className="ml-auto px-2.5 py-0.5 bg-purple-500/10 text-purple-400 text-[10px] font-semibold rounded-md uppercase tracking-wider border border-purple-500/20">
+                AI Generated
+              </span>
+            </div>
+
+            {proposalPhase === "generating" ? (
+              <div className="flex items-center justify-center py-8 gap-3">
+                <div className="w-5 h-5 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
+                <p className="text-sm text-gray-400">
+                  Crafting your personalized proposal...
+                </p>
+              </div>
+            ) : (
+              <div>
+                <div className="bg-[#020617]/60 border border-white/[0.06] rounded-xl p-5">
+                  <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-line">
+                    {proposalText}
+                    {!typingDone && (
+                      <span className="inline-block w-0.5 h-4 bg-purple-400 animate-pulse ml-0.5 align-text-bottom" />
+                    )}
+                  </p>
+                </div>
+                {typingDone && (
+                  <div className="flex items-center justify-between mt-4">
+                    <div className="flex items-center gap-4 text-[11px] text-gray-500">
+                      <span>
+                        Tone:{" "}
+                        <span className="text-gray-300">Professional</span>
+                      </span>
+                      <span>
+                        Words:{" "}
+                        <span className="text-gray-300">
+                          {selectedGig.proposal.split(/\s+/).length}
+                        </span>
+                      </span>
+                    </div>
+                    <span className="px-3 py-1.5 bg-[#00F0B5]/10 text-[#00F0B5] text-xs font-semibold rounded-lg border border-[#00F0B5]/20">
+                      Copy &amp; DM the client
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {typingDone && (
+              <div className="mt-5 pt-4 border-t border-white/[0.04]">
+                <p className="text-xs text-gray-500 text-center">
+                  <span className="text-[#00F0B5] font-semibold">
+                    This is what you send.
+                  </span>{" "}
+                  Find the gig, generate a proposal, copy it, and DM the client
+                  — all in under 60 seconds.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
