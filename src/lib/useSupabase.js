@@ -571,40 +571,28 @@ export function useProfile() {
       updated_at: new Date().toISOString(),
     };
 
-    // Step 1: Try UPDATE (works when profile row already exists from the signup trigger)
-    const { data, error } = await supabase
+    // Try UPDATE without .select() — RLS can block the chained SELECT
+    const { error } = await supabase
       .from("profiles")
       .update(payload)
-      .eq("id", user.id)
-      .select()
-      .maybeSingle();
-
-    if (!error && data) {
-      setProfile(data);
-      return { data, error: null };
-    }
-
-    // Step 2: If UPDATE returned nothing (row doesn't exist yet), INSERT
-    if (!error && !data) {
-      const { data: inserted, error: insertErr } = await supabase
-        .from("profiles")
-        .insert({ id: user.id, ...payload })
-        .select()
-        .maybeSingle();
-      if (!insertErr && inserted) {
-        setProfile(inserted);
-        return { data: inserted, error: null };
-      }
-      if (insertErr) {
-        console.error("[useProfile] insert fallback failed:", insertErr);
-        return { data: null, error: insertErr };
-      }
-    }
+      .eq("id", user.id);
 
     if (error) {
       console.error("[useProfile] update failed:", error);
+      return { data: null, error };
     }
-    return { data, error };
+
+    // Re-fetch the profile to get the updated data
+    const { data: fresh, error: fetchErr } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (fresh) {
+      setProfile(fresh);
+    }
+    return { data: fresh, error: fetchErr };
   }
 
   return { profile, loading, updateProfile, refetch: fetchProfile };
