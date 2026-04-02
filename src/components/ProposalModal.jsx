@@ -81,8 +81,8 @@ export default function ProposalModal({ gig, profile, onSave, onClose }) {
     setTimeout(() => setCopied(false), 2500);
   }
 
-  function handleSave() {
-    onSave(proposal);
+  async function handleSave() {
+    await onSave(proposal);
     onClose();
   }
 
