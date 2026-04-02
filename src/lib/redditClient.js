@@ -177,6 +177,9 @@ const SELF_PROMO_PATTERNS = [
   /\ba\s+video\s+I\s+(?:found|made|created|recorded)\b/i,
   /\byou(?:'re|\s+are)\s+not\s+alone\b/i,
   /\bthe\s+market\s+(?:feels?|is|looks?|seems?)\s+(?:brutal|tough|rough|bad|terrible|dead|horrible)\b/i,
+  // ── "Available" in title — freelancer availability post, not a gig ──
+  /\bavailable\b.{0,30}\b(?:portfolio|react|node|mongodb|resume|cv|github|samples?|work\s+samples?)\b/i,
+  /\bportfolio\s+inside\b/i,
   // ── YOE / resume-style self-promo patterns ──
   /\b\d+\+?\s*(?:years?|yrs?)\s+(?:of\s+)?(?:experience|exp)\b/i,
   /\b(?:senior|lead|junior|mid|staff)\s+(?:level\s+)?(?:developer|engineer|designer|writer|editor|programmer|freelancer|consultant)\b.{0,50}\b(?:here|available|looking|seeking|open)\b/i,
@@ -357,6 +360,13 @@ const X_REJECT_PATTERNS = [
   /\ba\s+true\s+developer\b/i,
   /\bwhat\s+do\s+you\s+(?:think|recommend|suggest|prefer)\b/i,
   /\bhow\s+(?:do|did|can|should)\s+(?:you|we|I|they)\b.{0,30}\b(?:find|get|start|learn|choose|pick)\b/i,
+  // ── Rants / complaints about hiring (not actual jobs) ──
+  /\bdo\s+you\s+(?:feel|think)\s+(?:like\s+)?(?:this|that|it)\s+is\s+(?:a\s+)?problem\b/i,
+  /\bI\s+(?:am|'m)\s+(?:so\s+)?(?:tired|sick|fu)/i,
+  /\bplease\s+specify\s+your\s+requirement/i,
+  /\bI\s+come\s+across\s+(?:many|so\s+many|a\s+lot|tons?\s+of)\b/i,
+  /\bthere\s+is\s+no\s+(?:reference|clear\s+requirement|detail)/i,
+  /\bwhat\s+(?:do|tf)\s+(?:you|u)\s+mean\s+by\s+that\b/i,
 ];
 
 // ── X/Tweet: STRONG hiring signals (tweet body must contain at least one) ──
@@ -809,6 +819,11 @@ function matchAndScore(posts, lowerKws) {
     // ── Skip deleted / removed ──
     if (p.selftext === "[removed]" || p.selftext === "[deleted]") continue;
     if (p.author === "[deleted]" || p.author === "AutoModerator") continue;
+
+    // ── AI Classification gate (set by cron fetch scripts via GPT-4o-mini) ──
+    // Posts tagged `_ai_is_gig: false` are confirmed non-gigs — always skip.
+    // Posts with `_ai_is_gig: true` or `undefined` pass through to regex checks.
+    if (p._ai_is_gig === false) continue;
 
     // ── Skip self-promotions (freelancer ads) — skip for X/Nitter posts
     //    (tweets are pre-screened by search query and have different norms) ──

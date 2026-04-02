@@ -6,9 +6,13 @@
 //   1. Craigslist gigs section (computer, creative, writing, all gigs)
 //   2. X (Twitter) via Nitter RSS search feeds
 //
-// 100% free, no API keys required.
+// AI FILTER: Uses GPT-4o-mini to classify posts as real gigs vs noise
+// before storing. Self-promos, rants, discussions, and spam never reach users.
+//
 // Stores results in Upstash Redis for the API endpoint to serve.
 // ─────────────────────────────────────────────────────────────────────────────
+
+import { classifyAndFilter } from "./gig-classifier.js";
 
 const UPSTASH_REDIS_REST_URL = process.env.UPSTASH_REDIS_REST_URL;
 const UPSTASH_REDIS_REST_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
@@ -706,10 +710,18 @@ async function main() {
     }
   }
 
+  // ── AI Classification: filter out non-gig posts before storing ──
+  const filteredPosts = await classifyAndFilter(allPosts);
+
+  if (filteredPosts.length === 0) {
+    console.warn("[fetcher] 0 posts after AI filter — skipping Redis write");
+    process.exit(0);
+  }
+
   const payload = JSON.stringify({
-    posts: allPosts,
+    posts: filteredPosts,
     cached_at: new Date().toISOString(),
-    post_count: allPosts.length,
+    post_count: filteredPosts.length,
     feed: "x-cached",
     diagnostics,
   });
@@ -720,7 +732,7 @@ async function main() {
   await redisSet(REDIS_KEY, payload, REDIS_TTL);
 
   console.log(
-    `[fetcher] ✅ Done. ${allPosts.length} posts stored (TTL ${REDIS_TTL}s)`,
+    `[fetcher] ✅ Done. ${filteredPosts.length} real gigs stored (${allPosts.length - filteredPosts.length} filtered out, TTL ${REDIS_TTL}s)`,
   );
 }
 
