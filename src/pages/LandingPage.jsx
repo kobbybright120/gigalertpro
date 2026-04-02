@@ -156,8 +156,6 @@ const DEMO_GIGS = [
    MAIN COMPONENT
    ═══════════════════════════════════════════════════════════════════════ */
 export default function LandingPage() {
-  const [billingPeriod, setBillingPeriod] = useState("monthly");
-
   async function handleCheckout(period) {
     try {
       const res = await fetch("/api/create-checkout", {
@@ -562,124 +560,102 @@ export default function LandingPage() {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div
-            className={`text-center mb-12 transition-all duration-700 ease-out ${priceVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+            className={`text-center mb-16 transition-all duration-700 ease-out ${priceVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
           >
             <p className="text-sm font-semibold text-[#00F0B5] uppercase tracking-widest mb-3">
               Pricing
             </p>
             <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-              One plan.{" "}
+              Simple pricing.{" "}
               <span className="text-gradient">Everything included.</span>
             </h2>
             <p className="mt-4 text-gray-400 text-lg max-w-xl mx-auto">
               Start your 7-day free trial today. No credit card required.
             </p>
-
-            {/* Monthly / Yearly toggle */}
-            <div className="inline-flex items-center gap-1 mt-8 p-1 glass-card rounded-full border border-white/[0.08]">
-              <button
-                onClick={() => setBillingPeriod("monthly")}
-                className={`px-5 py-2 text-sm font-semibold rounded-full transition-all duration-200 ${billingPeriod === "monthly" ? "bg-white/10 text-white" : "text-gray-500 hover:text-gray-300"}`}
-              >
-                Monthly
-              </button>
-              <button
-                onClick={() => setBillingPeriod("yearly")}
-                className={`px-5 py-2 text-sm font-semibold rounded-full transition-all duration-200 flex items-center gap-2 ${billingPeriod === "yearly" ? "bg-white/10 text-white" : "text-gray-500 hover:text-gray-300"}`}
-              >
-                Yearly
-                <span className="px-2 py-0.5 bg-[#00F0B5] text-[#020617] text-[10px] font-bold rounded-full">
-                  SAVE 20%
-                </span>
-              </button>
-            </div>
           </div>
 
-          {/* Single plan card */}
-          <div className="max-w-md mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+            {/* Monthly */}
             <div
-              className={`relative glass-card rounded-2xl p-8 border-[#00F0B5]/20 hover:border-[#00F0B5]/30 glow-green flex flex-col transition-all duration-700 ease-out ${priceVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+              className={`glass-card rounded-2xl p-8 hover:border-white/10 flex flex-col transition-all duration-700 ease-out ${priceVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+              style={stagger(0)}
             >
-              {billingPeriod === "yearly" && (
-                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-[#00F0B5] text-[#020617] text-xs font-bold rounded-full">
-                    <Star className="w-3 h-3" /> Save $48 a year
-                  </span>
-                </div>
-              )}
-
               <div className="mb-6">
-                <h3 className="text-xl font-bold text-white">GigAlertPro</h3>
-                <p className="text-gray-500 text-sm mt-1">
-                  Everything you need to land more freelance gigs
-                </p>
+                <h3 className="text-lg font-bold text-white">Monthly</h3>
+                <p className="text-gray-500 text-sm mt-1">Billed every month</p>
               </div>
-
-              <div className="mb-2">
+              <div className="mb-8">
                 <div className="flex items-end gap-1">
-                  <span className="text-5xl font-extrabold text-gradient">
-                    {billingPeriod === "monthly" ? "$20" : "$16"}
-                  </span>
+                  <span className="text-5xl font-extrabold text-white">$20</span>
                   <span className="text-gray-500 text-sm pb-2">/month</span>
                 </div>
-                {billingPeriod === "yearly" ? (
-                  <p className="text-sm text-gray-500 mt-1">
-                    Billed as{" "}
-                    <span className="text-[#00F0B5] font-semibold">
-                      $192/year
-                    </span>
-                    <span className="ml-2 line-through text-gray-600">
-                      $240
-                    </span>
-                  </p>
-                ) : (
-                  <p className="text-sm text-gray-500 mt-1">
-                    Switch to yearly and save{" "}
-                    <span className="text-[#00F0B5] font-semibold">$48</span>
-                  </p>
-                )}
               </div>
-
-              <div className="h-px bg-white/[0.06] my-6" />
-
-              <ul className="space-y-3.5 mb-8 flex-1">
-                <PricingFeature text="Unlimited keyword alerts" highlighted />
-                <PricingFeature text="Reddit scanning (34+ subs)" highlighted />
-                <PricingFeature
-                  text="Craigslist scanning (10 cities)"
-                  highlighted
-                />
-                <PricingFeature text="X/Twitter source included" highlighted />
-                <PricingFeature
-                  text="Real-time scanning (every 2 min)"
-                  highlighted
-                />
-                <PricingFeature
-                  text="Gig quality scoring (0 to 100)"
-                  highlighted
-                />
-                <PricingFeature text="50 AI proposals per day" highlighted />
-                <PricingFeature
-                  text="Win rate learning (AI improves over time)"
-                  highlighted
-                />
-                <PricingFeature
-                  text="Browser + email notifications"
-                  highlighted
-                />
-                <PricingFeature text="Freelancer profile hub" highlighted />
+              <ul className="space-y-3 mb-8 flex-1">
+                <PricingFeature text="Unlimited keyword alerts" />
+                <PricingFeature text="Reddit, Craigslist & X/Twitter" />
+                <PricingFeature text="Real-time gig scanning" />
+                <PricingFeature text="Gig quality scoring" />
+                <PricingFeature text="50 AI proposals per day" />
+                <PricingFeature text="Browser + email notifications" />
+                <PricingFeature text="Freelancer profile hub" />
               </ul>
-
               <button
-                onClick={() => handleCheckout(billingPeriod)}
-                className="w-full py-4 bg-[#00F0B5] text-[#020617] font-bold rounded-xl hover:bg-[#00dba5] hover:shadow-[0_0_20px_rgba(0,240,181,0.25)] transition-all duration-300 text-base flex items-center justify-center gap-2"
+                onClick={() => handleCheckout("monthly")}
+                className="w-full py-3.5 border border-white/10 text-gray-300 font-semibold rounded-xl hover:bg-white/[0.04] hover:border-white/20 transition-all duration-300 flex items-center justify-center gap-2"
               >
                 Start 7-Day Free Trial
                 <ArrowRight className="w-4 h-4" />
               </button>
-
               <p className="text-xs text-gray-600 text-center mt-3">
-                7-day free trial. Cancel anytime. No questions asked.
+                Cancel anytime
+              </p>
+            </div>
+
+            {/* Yearly */}
+            <div
+              className={`relative glass-card rounded-2xl p-8 border-[#00F0B5]/20 hover:border-[#00F0B5]/30 glow-green flex flex-col transition-all duration-700 ease-out ${priceVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+              style={stagger(1)}
+            >
+              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-[#00F0B5] text-[#020617] text-xs font-bold rounded-full">
+                  <Star className="w-3 h-3" /> Save $48 a year
+                </span>
+              </div>
+              <div className="mb-6">
+                <h3 className="text-lg font-bold text-white">Yearly</h3>
+                <p className="text-gray-500 text-sm mt-1">Billed once a year</p>
+              </div>
+              <div className="mb-8">
+                <div className="flex items-end gap-1">
+                  <span className="text-5xl font-extrabold text-gradient">$16</span>
+                  <span className="text-gray-500 text-sm pb-2">/month</span>
+                </div>
+                <p className="text-sm text-gray-500 mt-1.5">
+                  Billed as{" "}
+                  <span className="text-[#00F0B5] font-semibold">$192/year</span>
+                  <span className="ml-2 line-through text-gray-600">$240</span>
+                </p>
+              </div>
+              <ul className="space-y-3 mb-8 flex-1">
+                <PricingFeature text="Everything in Monthly" highlighted />
+                <PricingFeature text="2 months free" highlighted />
+                <PricingFeature text="Unlimited keyword alerts" highlighted />
+                <PricingFeature text="Reddit, Craigslist & X/Twitter" highlighted />
+                <PricingFeature text="Real-time gig scanning" highlighted />
+                <PricingFeature text="Gig quality scoring" highlighted />
+                <PricingFeature text="50 AI proposals per day" highlighted />
+                <PricingFeature text="Browser + email notifications" highlighted />
+                <PricingFeature text="Freelancer profile hub" highlighted />
+              </ul>
+              <button
+                onClick={() => handleCheckout("yearly")}
+                className="w-full py-3.5 bg-[#00F0B5] text-[#020617] font-bold rounded-xl hover:bg-[#00dba5] hover:shadow-[0_0_20px_rgba(0,240,181,0.25)] transition-all duration-300 flex items-center justify-center gap-2"
+              >
+                Start 7-Day Free Trial
+                <ArrowRight className="w-4 h-4" />
+              </button>
+              <p className="text-xs text-gray-600 text-center mt-3">
+                Cancel anytime
               </p>
             </div>
           </div>
