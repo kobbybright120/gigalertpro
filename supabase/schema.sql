@@ -14,6 +14,12 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   hourly_rate    NUMERIC,
   availability   TEXT NOT NULL DEFAULT 'available' CHECK (availability IN ('available', 'busy', 'unavailable')),
   plan        TEXT NOT NULL DEFAULT 'free' CHECK (plan IN ('free', 'pro')),
+  -- Stripe subscription fields
+  stripe_customer_id       TEXT,
+  stripe_subscription_id   TEXT,
+  subscription_status      TEXT,   -- trialing, active, past_due, cancelled
+  billing_period           TEXT,   -- monthly, yearly
+  cancel_at_period_end     BOOLEAN NOT NULL DEFAULT false,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
