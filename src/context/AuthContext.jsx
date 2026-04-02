@@ -146,6 +146,9 @@ export function AuthProvider({ children }) {
     setUser(null);
   }
 
+  // exposed so callers can await full sign-out before navigating
+  // (navigation handled by the caller, e.g. Navbar)
+
   return (
     <AuthContext.Provider
       value={{ user, loading, signIn, signUp, signInWithGoogle, signOut }}

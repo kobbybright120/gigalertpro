@@ -39,8 +39,8 @@ export default function Navbar() {
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   })();
 
-  function handleSignOut() {
-    signOut();
+  async function handleSignOut() {
+    await signOut();
     navigate("/");
   }
 
