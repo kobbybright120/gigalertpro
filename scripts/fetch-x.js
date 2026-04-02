@@ -27,6 +27,8 @@ if (!UPSTASH_REDIS_REST_URL || !UPSTASH_REDIS_REST_TOKEN) {
 const REDIS_KEY = process.env.X_REDIS_KEY || "gigalertpro:x:latest";
 const REDIS_TTL = parseInt(process.env.X_REDIS_TTL || "3600", 10); // 1 hour safety net
 const MAX_POSTS = parseInt(process.env.X_MAX_POSTS || "300", 10);
+const SEEN_KEY = "gigalertpro:seen:x"; // dedup set — tracks classified post IDs
+const SEEN_TTL = 86400; // 24 hours
 
 // Craigslist cities to scan (subdomain format)
 const CL_CITIES = (
@@ -677,6 +679,78 @@ async function redisSet(key, value, ttlSeconds) {
   return resp.json();
 }
 
+// ── Dedup helpers — avoid re-classifying posts already seen ──────────────────
+
+function redisUrl() {
+  return UPSTASH_REDIS_REST_URL.trim()
+    .replace(/^["']+|["']+$/g, "")
+    .replace(/\/+$/, "");
+}
+function redisToken() {
+  return UPSTASH_REDIS_REST_TOKEN.trim().replace(/^["']+|["']+$/g, "");
+}
+
+async function redisPipeline(commands) {
+  const resp = await fetch(`${redisUrl()}/pipeline`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${redisToken()}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(commands),
+  });
+  if (!resp.ok) return null;
+  return resp.json();
+}
+
+async function getSeenIds() {
+  try {
+    const resp = await fetch(redisUrl(), {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${redisToken()}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(["SMEMBERS", SEEN_KEY]),
+    });
+    if (!resp.ok) return new Set();
+    const data = await resp.json();
+    return new Set(data.result || []);
+  } catch {
+    return new Set();
+  }
+}
+
+async function markSeen(ids) {
+  if (ids.length === 0) return;
+  try {
+    await redisPipeline([
+      ["SADD", SEEN_KEY, ...ids],
+      ["EXPIRE", SEEN_KEY, SEEN_TTL],
+    ]);
+  } catch {
+    /* best effort */
+  }
+}
+
+async function redisGet(key) {
+  try {
+    const resp = await fetch(redisUrl(), {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${redisToken()}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(["GET", key]),
+    });
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return data.result || null;
+  } catch {
+    return null;
+  }
+}
+
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -710,11 +784,46 @@ async function main() {
     }
   }
 
-  // ── AI Classification: filter out non-gig posts before storing ──
-  const filteredPosts = await classifyAndFilter(allPosts);
+  // ── Dedup: skip posts already classified in a previous run ──
+  const seenIds = await getSeenIds();
+  const newPosts = allPosts.filter((p) => !seenIds.has(p.id));
+  const skipped = allPosts.length - newPosts.length;
+
+  console.log(
+    `[fetcher] Dedup: ${skipped} already seen, ${newPosts.length} new posts to classify`,
+  );
+
+  // ── AI Classification: only classify NEW posts ──
+  let freshGigs = [];
+  if (newPosts.length > 0) {
+    freshGigs = await classifyAndFilter(newPosts);
+    // Mark all fetched new IDs as seen (both gigs and non-gigs)
+    await markSeen(newPosts.map((p) => p.id));
+  }
+
+  // ── Merge: read existing stored gigs and merge with fresh ones ──
+  let existingGigs = [];
+  try {
+    const existingRaw = await redisGet(REDIS_KEY);
+    if (existingRaw) {
+      const parsed = JSON.parse(existingRaw);
+      existingGigs = parsed.posts || [];
+    }
+  } catch {
+    /* start fresh if read fails */
+  }
+
+  // Merge: fresh gigs + existing, dedup by ID, sort newest first, cap
+  const mergedMap = new Map();
+  for (const g of [...freshGigs, ...existingGigs]) {
+    if (!mergedMap.has(g.id)) mergedMap.set(g.id, g);
+  }
+  const filteredPosts = [...mergedMap.values()]
+    .sort((a, b) => (b.created_utc || 0) - (a.created_utc || 0))
+    .slice(0, MAX_POSTS);
 
   if (filteredPosts.length === 0) {
-    console.warn("[fetcher] 0 posts after AI filter — skipping Redis write");
+    console.warn("[fetcher] 0 posts after merge — skipping Redis write");
     process.exit(0);
   }
 
@@ -732,7 +841,7 @@ async function main() {
   await redisSet(REDIS_KEY, payload, REDIS_TTL);
 
   console.log(
-    `[fetcher] ✅ Done. ${filteredPosts.length} real gigs stored (${allPosts.length - filteredPosts.length} filtered out, TTL ${REDIS_TTL}s)`,
+    `[fetcher] ✅ Done. ${filteredPosts.length} gigs stored (${freshGigs.length} new, ${skipped} skipped, TTL ${REDIS_TTL}s).`,
   );
 }
 

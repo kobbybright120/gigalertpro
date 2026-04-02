@@ -63,6 +63,8 @@ const USER_AGENT =
 
 const REDIS_KEY = "gigalertpro:latest";
 const REDIS_TTL = 3600; // 1 hour TTL (cron refreshes every 2 min, this is just a safety net)
+const SEEN_KEY = "gigalertpro:seen:reddit"; // dedup set — tracks classified post IDs
+const SEEN_TTL = 86400; // 24 hours
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -270,6 +272,51 @@ async function redisSet(key, value, ttlSeconds) {
   return resp.json();
 }
 
+// ── Dedup helpers — avoid re-classifying posts already seen ──────────────────
+
+async function redisPipeline(commands) {
+  const resp = await fetch(`${UPSTASH_REDIS_REST_URL}/pipeline`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${UPSTASH_REDIS_REST_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(commands),
+  });
+  if (!resp.ok) return null;
+  return resp.json();
+}
+
+async function getSeenIds() {
+  try {
+    const resp = await fetch(`${UPSTASH_REDIS_REST_URL}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${UPSTASH_REDIS_REST_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(["SMEMBERS", SEEN_KEY]),
+    });
+    if (!resp.ok) return new Set();
+    const data = await resp.json();
+    return new Set(data.result || []);
+  } catch {
+    return new Set();
+  }
+}
+
+async function markSeen(ids) {
+  if (ids.length === 0) return;
+  try {
+    await redisPipeline([
+      ["SADD", SEEN_KEY, ...ids],
+      ["EXPIRE", SEEN_KEY, SEEN_TTL],
+    ]);
+  } catch {
+    /* best effort */
+  }
+}
+
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -289,12 +336,57 @@ async function main() {
     process.exit(0);
   }
 
-  // ── AI Classification: filter out non-gig posts before storing ──
-  const filteredPosts = await classifyAndFilter(allPosts);
+  // ── Dedup: skip posts already classified in a previous run ──
+  const seenIds = await getSeenIds();
+  const newPosts = allPosts.filter((p) => !seenIds.has(p.id));
+  const skipped = allPosts.length - newPosts.length;
+
+  console.log(
+    `[fetcher] Dedup: ${skipped} already seen, ${newPosts.length} new posts to classify`,
+  );
+
+  // ── AI Classification: only classify NEW posts ──
+  let freshGigs = [];
+  if (newPosts.length > 0) {
+    freshGigs = await classifyAndFilter(newPosts);
+    // Mark all fetched new IDs as seen (both gigs and non-gigs)
+    await markSeen(newPosts.map((p) => p.id));
+  }
+
+  // ── Merge: read existing stored gigs and merge with fresh ones ──
+  let existingGigs = [];
+  try {
+    const existingRaw = await fetch(`${UPSTASH_REDIS_REST_URL}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${UPSTASH_REDIS_REST_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(["GET", REDIS_KEY]),
+    });
+    if (existingRaw.ok) {
+      const data = await existingRaw.json();
+      if (data.result) {
+        const parsed = JSON.parse(data.result);
+        existingGigs = parsed.posts || [];
+      }
+    }
+  } catch {
+    /* start fresh if read fails */
+  }
+
+  // Merge: fresh gigs + existing, dedup by ID, sort newest first
+  const mergedMap = new Map();
+  for (const g of [...freshGigs, ...existingGigs]) {
+    if (!mergedMap.has(g.id)) mergedMap.set(g.id, g);
+  }
+  const filteredPosts = [...mergedMap.values()].sort(
+    (a, b) => (b.created_utc || 0) - (a.created_utc || 0),
+  );
 
   if (filteredPosts.length === 0) {
     console.warn(
-      "[fetcher] 0 posts after AI filter — skipping Redis write to preserve last-good data",
+      "[fetcher] 0 posts after merge — skipping Redis write to preserve last-good data",
     );
     process.exit(0);
   }
@@ -315,7 +407,7 @@ async function main() {
   await redisSet(REDIS_KEY, payload, REDIS_TTL);
 
   console.log(
-    `[fetcher] ✅ Done. ${filteredPosts.length} real gigs stored (${allPosts.length - filteredPosts.length} filtered out, TTL ${REDIS_TTL}s).`,
+    `[fetcher] ✅ Done. ${filteredPosts.length} gigs stored (${freshGigs.length} new, ${skipped} skipped, TTL ${REDIS_TTL}s).`,
   );
 }
 
