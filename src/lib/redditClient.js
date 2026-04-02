@@ -802,6 +802,81 @@ export function clearCache() {
   }
 }
 
+// ── Context-aware body keyword matching ──────────────────────────────────────
+// When a keyword only appears in the body (not the title), we check if it's
+// actually relevant to the gig or just a casual/incidental mention.
+// e.g. "website" in "Website: www.example.com" is NOT a website gig.
+//      "website" in "I need someone to build a website" IS a website gig.
+
+// Patterns near the keyword that indicate it's just a casual/incidental mention
+const INCIDENTAL_CONTEXT_RX = [
+  // "Website: www..." or "my website:" — just linking their own site
+  /website\s*:\s*(?:https?:\/\/|www\.)/i,
+  // "check my website" / "visit my website" / "see my website"
+  /(?:check|visit|see|view|browse)\s+(?:my|our|the)\s+website/i,
+  // "on my website" / "on our website" / "on the website"
+  /on\s+(?:my|our|the)\s+website/i,
+  // "my website is" — describing their own site, not asking for one to be built
+  /(?:my|our)\s+website\s+is\b/i,
+  // "website for reference" / "website for more info"
+  /website\s+for\s+(?:reference|more\s+info|details)/i,
+];
+
+// Patterns near the keyword that indicate the gig IS about this keyword
+const RELEVANT_CONTEXT_RX = [
+  // "need/want/looking for [a] <keyword>"
+  /(?:need|want|looking\s+for|seeking|hiring\s+(?:for|a|someone))\b.{0,30}/i,
+  // "build/create/design/develop [a] <keyword>"
+  /(?:build|create|design|develop|make|set\s*up|fix|update|redesign|rebuild|improve|launch)\b.{0,20}/i,
+  // "<keyword> developer/designer/expert/specialist"
+  /(?:developer|designer|builder|expert|specialist|freelancer|consultant|agency)/i,
+  // "help with <keyword>" / "help me <keyword>"
+  /(?:help\s+(?:with|me|us)|assist\s+(?:with|in))\b.{0,20}/i,
+  // "<keyword> from scratch"
+  /from\s+scratch/i,
+  // "<keyword> project" / "<keyword> work"
+  /(?:project|work|job|gig|task|contract)\b/i,
+];
+
+function isKeywordRelevantInBody(keyword, bodyLower) {
+  const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  // Check if the keyword appears in a clearly incidental context
+  for (const rx of INCIDENTAL_CONTEXT_RX) {
+    if (rx.test(bodyLower)) {
+      // Count total occurrences of the keyword in the body
+      const kwRx = new RegExp(`\\b${escaped}\\b`, "gi");
+      const allMatches = bodyLower.match(kwRx) || [];
+      // Count how many are in incidental context (near URLs, "my website", etc.)
+      // If ALL occurrences are incidental, reject. If some are standalone, allow.
+      const incidentalRx = new RegExp(
+        `(?:website\\s*:\\s*(?:https?:\\/\\/|www\\.)|(?:check|visit|see|view|browse)\\s+(?:my|our|the)\\s+${escaped}|on\\s+(?:my|our|the)\\s+${escaped}|(?:my|our)\\s+${escaped}\\s+is\\b|${escaped}\\s+for\\s+(?:reference|more\\s+info|details))`,
+        "gi",
+      );
+      const incidentalCount = (bodyLower.match(incidentalRx) || []).length;
+      if (incidentalCount >= allMatches.length) return false;
+    }
+  }
+
+  // Check if the keyword appears within 60 chars of a relevant hiring context
+  // This catches: "need someone to build a website", "looking for a website developer"
+  const contextWindow = 60;
+  const kwRx = new RegExp(`\\b${escaped}\\b`, "gi");
+  let match;
+  while ((match = kwRx.exec(bodyLower)) !== null) {
+    const start = Math.max(0, match.index - contextWindow);
+    const end = Math.min(bodyLower.length, match.index + keyword.length + contextWindow);
+    const surrounding = bodyLower.slice(start, end);
+
+    for (const rx of RELEVANT_CONTEXT_RX) {
+      if (rx.test(surrounding)) return true;
+    }
+  }
+
+  // If we found no strong relevant context, reject the body-only match
+  return false;
+}
+
 // ── Matching, Scoring & Ranking ──────────────────────────────────────────────
 function matchAndScore(posts, lowerKws) {
   const seen = new Set();
@@ -857,26 +932,39 @@ function matchAndScore(posts, lowerKws) {
     const bodyLower = (p.selftext || "").toLowerCase();
     // For X posts, also match against the Nitter search query (stored in flair)
     const flairLower = isXPost ? (p.link_flair_text || "").toLowerCase() : "";
-    const combined =
-      titleLower + " " + bodyLower + (flairLower ? " " + flairLower : "");
 
     let titleHits = 0;
     const matched = lowerKws.filter((kw) => {
       let inTitle = false;
-      let found = false;
+      let inBody = false;
       if (kw.includes(" ")) {
         // Multi-word: exact phrase match
-        found = combined.includes(kw);
         inTitle = titleLower.includes(kw);
+        inBody =
+          bodyLower.includes(kw) ||
+          (flairLower ? flairLower.includes(kw) : false);
       } else {
         // Single word: word boundary
         const escaped = kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         const rx = new RegExp(`\\b${escaped}\\b`, "i");
-        found = rx.test(combined);
         inTitle = rx.test(titleLower);
+        inBody =
+          rx.test(bodyLower) || (flairLower ? rx.test(flairLower) : false);
       }
-      if (found && inTitle) titleHits++;
-      return found;
+
+      // Title match = always relevant (the title describes what the gig IS)
+      if (inTitle) {
+        titleHits++;
+        return true;
+      }
+
+      // Body-only match = only count if the keyword appears in a meaningful context,
+      // not as a casual mention like "Website: www.example.com" or "check my website"
+      if (inBody) {
+        return isKeywordRelevantInBody(kw, bodyLower);
+      }
+
+      return false;
     });
 
     // All posts (Reddit + Craigslist) require at least one keyword match
@@ -895,6 +983,8 @@ function matchAndScore(posts, lowerKws) {
     if (score < 10) continue;
 
     // ── Category ──
+    const combined =
+      titleLower + " " + bodyLower + (flairLower ? " " + flairLower : "");
     const category = detectCategory(combined);
 
     // ── Budget ──
