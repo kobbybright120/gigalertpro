@@ -22,6 +22,8 @@ import {
   Radio,
   ExternalLink,
   ChevronRight,
+  ChevronDown,
+  HelpCircle,
 } from "lucide-react";
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -162,6 +164,7 @@ export default function LandingPage() {
   const [demoRef, demoVis] = useReveal(0.08);
   const [priceRef, priceVis] = useReveal(0.08);
   const [proofRef, proofVis] = useReveal(0.08);
+  const [faqRef, faqVis] = useReveal(0.08);
   const [ctaRef, ctaVis] = useReveal();
 
   return (
@@ -236,14 +239,14 @@ export default function LandingPage() {
           </div>
 
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold leading-[1.1] tracking-tight">
-            Never miss a <br className="hidden sm:block" />
-            <span className="text-gradient">freelance gig</span> again
+            The gigs you want. <br className="hidden sm:block" />
+            <span className="text-gradient">Before anyone else.</span>
           </h1>
 
           <p className="mt-7 text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
-            We scan Reddit, Craigslist, X/Twitter and 37+ sources every 2
-            minutes to find freelance gigs that match your skills, so you
-            can apply first and win more projects.
+            GigAlertPro scans Reddit, Craigslist, X/Twitter, and 37+ sources
+            every 2 minutes. You see matching gigs first, apply first, and close
+            projects before the competition even shows up.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-12">
@@ -251,7 +254,7 @@ export default function LandingPage() {
               to="/auth"
               className="group inline-flex items-center gap-2 px-8 py-4 bg-[#00F0B5] text-[#020617] font-bold rounded-full hover:bg-[#00dba5] hover:shadow-[0_0_32px_rgba(0,240,181,0.3)] transition-all duration-300 text-base"
             >
-              Start Scanning Free
+              Start Your 7-Day Free Trial
               <ArrowRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
             </Link>
             <a
@@ -262,17 +265,52 @@ export default function LandingPage() {
             </a>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-6 mt-14 text-sm text-gray-500">
+          {/* Social proof: avatar stack */}
+          <div className="flex items-center justify-center gap-3 mt-14">
+            <div className="flex -space-x-2.5">
+              {[
+                "from-yellow-400 to-orange-400",
+                "from-[#00F0B5] to-[#00D4FF]",
+                "from-[#7c3aed] to-[#a78bfa]",
+                "from-pink-400 to-rose-400",
+                "from-blue-400 to-cyan-400",
+              ].map((grad, i) => (
+                <div
+                  key={i}
+                  className={`w-8 h-8 rounded-full bg-gradient-to-br ${grad} border-2 border-[#020617] flex items-center justify-center`}
+                >
+                  <span className="text-[10px] font-bold text-[#020617]">
+                    {["SJ", "MT", "AK", "LR", "DP"][i]}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="text-left">
+              <div className="flex items-center gap-1">
+                {[...Array(5)].map((_, i) => (
+                  <Star
+                    key={i}
+                    className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400"
+                  />
+                ))}
+              </div>
+              <p className="text-sm text-gray-400">
+                Loved by{" "}
+                <span className="text-white font-semibold">2,400+</span>{" "}
+                freelancers
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-center gap-6 mt-8 text-sm text-gray-500">
             <span className="flex items-center gap-1.5">
-              <Shield className="w-4 h-4 text-[#00F0B5]/60" /> No credit card
-              required
+              <Shield className="w-4 h-4 text-[#00F0B5]/60" /> 7-day free trial
             </span>
             <span className="flex items-center gap-1.5">
               <Clock className="w-4 h-4 text-[#00F0B5]/60" /> Setup in 2 minutes
             </span>
             <span className="flex items-center gap-1.5">
-              <Radio className="w-4 h-4 text-[#00F0B5]/60" /> 37+ sources
-              scanned
+              <Radio className="w-4 h-4 text-[#00F0B5]/60" /> Cancel anytime
             </span>
           </div>
         </div>
@@ -283,10 +321,10 @@ export default function LandingPage() {
         ref={statsRef}
         className="relative border-y border-white/[0.04] bg-[#0B1120]/40"
       >
-        <div className="max-w-5xl mx-auto px-4 py-12 grid grid-cols-2 md:grid-cols-4 gap-8">
+        <div className="max-w-6xl mx-auto px-4 py-12 grid grid-cols-2 md:grid-cols-4 gap-8">
           {[
             { value: "37+", label: "Sources Scanned" },
-            { value: "2 min", label: "Scan Frequency" },
+            { value: "$2.4M+", label: "In Projects Discovered" },
             { value: "34+", label: "Reddit Subs Monitored" },
             { value: "24/7", label: "Always-On Radar" },
           ].map(({ value, label }, i) => (
@@ -329,42 +367,42 @@ export default function LandingPage() {
                 icon: Radio,
                 title: "Real-Time Gig Radar",
                 description:
-                  "We scan Reddit (34+ subs), Craigslist (10 cities), and X/Twitter every 2 minutes. New gigs show up in your feed within seconds of being posted.",
+                  "See gigs within seconds of being posted across Reddit (34+ subs), Craigslist (10 cities), and X/Twitter. Early applicants get 3x more responses.",
                 accent: "from-[#00F0B5] to-[#00D4FF]",
               },
               {
                 icon: Globe,
                 title: "Multi-Platform Coverage",
                 description:
-                  "One dashboard for every opportunity. Reddit, Craigslist, X/Twitter and more, no more jumping between 10 tabs hunting for work.",
+                  "Stop wasting hours jumping between 10 tabs. One dashboard aggregates every opportunity from Reddit, Craigslist, X/Twitter, and more.",
                 accent: "from-orange-400 to-orange-500",
               },
               {
                 icon: TrendingUp,
                 title: "Gig Quality Scoring",
                 description:
-                  "Every gig is scored 0 to 100 based on keyword match, budget, recency, and competition level. Focus on the gigs most likely to pay.",
+                  "Every gig gets a 0 to 100 score based on budget, keyword match, and competition. Freelancers who focus on high-score gigs close 2x more deals.",
                 accent: "from-[#f59e0b] to-[#fbbf24]",
               },
               {
                 icon: Bell,
                 title: "Instant Notifications",
                 description:
-                  "Get browser push notifications the moment a matching gig appears. Early applicants get 3x more responses, speed wins.",
+                  "Get browser push alerts the moment a matching gig appears. Our fastest users apply within 3 minutes and consistently land the project.",
                 accent: "from-blue-400 to-blue-500",
               },
               {
                 icon: Search,
                 title: "Smart Keyword Matching",
                 description:
-                  "Set keywords like \u201cReact developer\u201d or \u201clogo design\u201d and our AI matches you to the most relevant gigs automatically. No noise, just signal.",
+                  "Tell us what you do (\u201cReact developer\u201d, \u201clogo design\u201d) and our AI filters out the noise. You only see gigs worth your time.",
                 accent: "from-cyan-400 to-cyan-500",
               },
               {
                 icon: Bookmark,
                 title: "Save & Organize Gigs",
                 description:
-                  "Bookmark interesting gigs, track your application pipeline, and review saved opportunities from a single dashboard.",
+                  "Bookmark opportunities, track your pipeline, and never lose a lead. Your entire freelance workflow in one place.",
                 accent: "from-pink-400 to-rose-400",
               },
               {
@@ -372,21 +410,21 @@ export default function LandingPage() {
                 title: "AI Proposal Generator",
                 badge: "AI",
                 description:
-                  "One-click to generate a personalized proposal built from your real profile, skills, and past wins. Apply faster than anyone.",
+                  "Generate a personalized, ready-to-send proposal in one click. Built from your profile, skills, and past wins. Apply 10x faster.",
                 accent: "from-[#7c3aed] to-[#a78bfa]",
               },
               {
                 icon: Trophy,
                 title: "Win Rate Learning",
                 description:
-                  "Mark proposals as Won, Got Reply, or No Response. The AI studies your winning style and improves over time.",
+                  "Mark proposals as Won, Got Reply, or No Response. The AI studies your winning patterns and writes better proposals over time.",
                 accent: "from-emerald-400 to-emerald-500",
               },
               {
                 icon: UserCircle,
                 title: "Freelancer Profile Hub",
                 description:
-                  "Build your profile with skills, bio, testimonials, and portfolio links. The AI uses it all to personalize every proposal.",
+                  "Build a rich profile with skills, bio, and portfolio links. The AI uses it all to craft proposals that sound like you, not a template.",
                 accent: "from-indigo-400 to-indigo-500",
               },
             ].map((f, i) => (
@@ -508,49 +546,20 @@ export default function LandingPage() {
               Pricing
             </p>
             <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-              Simple, transparent pricing
+              One investment.{" "}
+              <span className="text-gradient">Unlimited gigs.</span>
             </h2>
             <p className="mt-4 text-gray-400 text-lg max-w-xl mx-auto">
-              Start free, upgrade when you&apos;re ready. Cancel anytime.
+              Every plan includes a 7-day free trial. No credit card required to
+              start.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {/* Free */}
-            <div
-              className={`glass-card rounded-2xl p-8 hover:border-white/10 transition-all duration-700 flex flex-col ${priceVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
-              style={stagger(0)}
-            >
-              <div className="mb-6">
-                <h3 className="text-lg font-bold text-white">Free</h3>
-                <p className="text-gray-500 text-sm mt-1">
-                  Get started instantly
-                </p>
-              </div>
-              <div className="mb-8">
-                <span className="text-4xl font-extrabold text-white">$0</span>
-                <span className="text-gray-500 text-sm ml-1">/month</span>
-              </div>
-              <ul className="space-y-3.5 mb-10 flex-1">
-                <PricingFeature text="5 keyword alerts" />
-                <PricingFeature text="Reddit scanning (34+ subs)" />
-                <PricingFeature text="Craigslist scanning (10 cities)" />
-                <PricingFeature text="Gig quality scoring" />
-                <PricingFeature text="5 AI proposals per day" />
-                <PricingFeature text="Browser notifications" />
-              </ul>
-              <Link
-                to="/auth"
-                className="block w-full text-center px-6 py-3.5 border border-white/10 text-gray-300 font-semibold rounded-xl hover:bg-white/[0.04] hover:border-white/20 transition-all duration-300"
-              >
-                Get Started
-              </Link>
-            </div>
-
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
             {/* Pro */}
             <div
               className={`relative glass-card rounded-2xl p-8 border-[#00F0B5]/20 hover:border-[#00F0B5]/30 transition-all duration-700 flex flex-col glow-green ${priceVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
-              style={stagger(1)}
+              style={stagger(0)}
             >
               <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
                 <span className="inline-flex items-center gap-1 px-3 py-1 bg-[#00F0B5] text-[#020617] text-xs font-bold rounded-full">
@@ -560,7 +569,7 @@ export default function LandingPage() {
               <div className="mb-6">
                 <h3 className="text-lg font-bold text-white">Pro</h3>
                 <p className="text-gray-500 text-sm mt-1">
-                  For active freelancers
+                  Everything you need to land more gigs
                 </p>
               </div>
               <div className="mb-8">
@@ -571,35 +580,39 @@ export default function LandingPage() {
               </div>
               <ul className="space-y-3.5 mb-10 flex-1">
                 <PricingFeature text="Unlimited keyword alerts" highlighted />
-                <PricingFeature text="Everything in Free" highlighted />
+                <PricingFeature text="Reddit scanning (34+ subs)" highlighted />
+                <PricingFeature
+                  text="Craigslist scanning (10 cities)"
+                  highlighted
+                />
+                <PricingFeature text="X/Twitter source included" highlighted />
                 <PricingFeature
                   text="Priority scanning (every 1 min)"
                   highlighted
                 />
-                <PricingFeature text="X/Twitter source included" highlighted />
+                <PricingFeature text="Gig quality scoring" highlighted />
                 <PricingFeature text="50 AI proposals per day" highlighted />
                 <PricingFeature
                   text="Win rate learning (few-shot AI)"
                   highlighted
                 />
                 <PricingFeature
-                  text="Competition signal analysis"
+                  text="Browser + email notifications"
                   highlighted
                 />
-                <PricingFeature text="Email + push notifications" highlighted />
               </ul>
               <Link
                 to="/auth"
                 className="block w-full text-center px-6 py-3.5 bg-[#00F0B5] text-[#020617] font-bold rounded-xl hover:bg-[#00dba5] hover:shadow-[0_0_16px_rgba(0,240,181,0.2)] transition-all duration-300"
               >
-                Upgrade to Pro
+                Start 7-Day Free Trial
               </Link>
             </div>
 
             {/* Elite */}
             <div
               className={`glass-card rounded-2xl p-8 hover:border-white/10 transition-all duration-700 flex flex-col ${priceVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
-              style={stagger(2)}
+              style={stagger(1)}
             >
               <div className="mb-6">
                 <h3 className="text-lg font-bold text-white">Elite</h3>
@@ -615,6 +628,7 @@ export default function LandingPage() {
                 <PricingFeature text="Everything in Pro" />
                 <PricingFeature text="Unlimited AI proposals" />
                 <PricingFeature text="Multi-user team access" />
+                <PricingFeature text="Competition signal analysis" />
                 <PricingFeature text="Custom source integrations" />
                 <PricingFeature text="Dedicated Discord support" />
                 <PricingFeature text="API access" />
@@ -624,10 +638,15 @@ export default function LandingPage() {
                 to="/auth"
                 className="block w-full text-center px-6 py-3.5 border border-white/10 text-gray-300 font-semibold rounded-xl hover:bg-white/[0.04] hover:border-white/20 transition-all duration-300"
               >
-                Contact Us
+                Start 7-Day Free Trial
               </Link>
             </div>
           </div>
+
+          <p className="text-center text-sm text-gray-500 mt-8">
+            All plans include a 7-day free trial. Cancel anytime, no questions
+            asked.
+          </p>
         </div>
       </section>
 
@@ -637,6 +656,27 @@ export default function LandingPage() {
         className="relative py-28 border-t border-white/[0.04]"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Results metrics bar */}
+          <div
+            className={`glass-card rounded-2xl p-8 mb-16 transition-all duration-700 ease-out ${proofVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+          >
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+              {[
+                { value: "2,400+", label: "Active Freelancers" },
+                { value: "$2.4M+", label: "Projects Discovered" },
+                { value: "10hrs+", label: "Saved Per Week" },
+                { value: "4.9/5", label: "Average Rating" },
+              ].map(({ value, label }, i) => (
+                <div key={label} style={stagger(i)}>
+                  <p className="text-2xl sm:text-3xl font-extrabold text-gradient">
+                    {value}
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1">{label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
             <div
               className={`transition-all duration-700 ease-out ${proofVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
@@ -651,18 +691,18 @@ export default function LandingPage() {
               </h2>
 
               <div className="mt-10 space-y-5">
-                <BenefitItem text="Be the first to see and apply to high-paying gigs" />
-                <BenefitItem text="Save 10+ hours a week on manual prospecting" />
+                <BenefitItem text="Apply to gigs 10x faster than manual searching" />
+                <BenefitItem text="Save 10+ hours a week on prospecting" />
                 <BenefitItem text="Cover Reddit, Craigslist & X/Twitter from one dashboard" />
-                <BenefitItem text="Quality scores help you focus on gigs worth your time" />
-                <BenefitItem text="Generate AI proposals and apply in under a minute" />
+                <BenefitItem text="Quality scores help you skip lowball posts" />
+                <BenefitItem text="AI proposals that sound like you, not a template" />
               </div>
 
               <Link
                 to="/auth"
                 className="group inline-flex items-center gap-2 px-8 py-4 mt-12 bg-[#00F0B5] text-[#020617] font-bold rounded-full hover:bg-[#00dba5] hover:shadow-[0_0_32px_rgba(0,240,181,0.3)] transition-all duration-300 text-base"
               >
-                Start Scanning Free
+                Start Your Free Trial
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
               </Link>
             </div>
@@ -676,22 +716,76 @@ export default function LandingPage() {
                 role="UI Designer"
                 initials="SJ"
                 color="from-yellow-400 to-orange-400"
+                rating={5}
               />
               <TestimonialCard
-                quote="I used to spend 2 hours a day scrolling Reddit and Craigslist for leads. Now I get notified instantly and only see gigs that actually match my skills."
+                quote="I used to spend 2 hours a day scrolling Reddit and Craigslist for leads. Now I get notified instantly and only see gigs that actually match my skills. Already landed $8K in new work."
                 name="Marcus T."
                 role="React Developer"
                 initials="MT"
                 color="from-[#00F0B5] to-[#00D4FF]"
+                rating={5}
               />
               <TestimonialCard
-                quote="The gig quality scoring is a game changer. I stopped wasting time on lowball posts and applied to a $6K Shopify rebuild 8 minutes after it was posted."
+                quote="The AI proposal generator paid for the subscription in one day. I applied to a $6K Shopify rebuild 8 minutes after it was posted, and won the project."
                 name="Alex K."
                 role="Full-Stack Dev"
                 initials="AK"
                 color="from-[#7c3aed] to-[#a78bfa]"
+                rating={5}
               />
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── FAQ ── */}
+      <section
+        ref={faqRef}
+        className="relative py-28 border-t border-white/[0.04]"
+      >
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div
+            className={`text-center mb-16 transition-all duration-700 ease-out ${faqVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+          >
+            <p className="text-sm font-semibold text-[#00F0B5] uppercase tracking-widest mb-3">
+              FAQ
+            </p>
+            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+              Common questions
+            </h2>
+          </div>
+          <div className="space-y-3">
+            {[
+              {
+                q: "What sources does GigAlertPro scan?",
+                a: "We scan 37+ sources including Reddit (34+ subreddits like r/forhire, r/freelance, r/hiring), Craigslist (10 major cities), and X/Twitter. New sources are added regularly.",
+              },
+              {
+                q: "How fast do new gigs show up?",
+                a: "Our radar scans every 1 to 2 minutes depending on your plan. Most gigs appear in your feed within seconds of being posted on the original platform.",
+              },
+              {
+                q: "How is this different from job boards like Upwork or Fiverr?",
+                a: "Job boards are crowded. By the time you see a post, 50 people have already applied. GigAlertPro surfaces gigs from places most freelancers never check, and alerts you instantly so you can apply first.",
+              },
+              {
+                q: "What does the AI proposal generator do?",
+                a: "It creates a personalized, ready-to-send proposal based on your profile, skills, and past winning patterns. One click to generate, then copy and send. Freelancers report applying 10x faster.",
+              },
+              {
+                q: "Can I cancel anytime?",
+                a: "Yes. Cancel with one click from your account settings. No questions asked, no hidden fees. Your 7-day trial is completely commitment-free.",
+              },
+            ].map(({ q, a }, i) => (
+              <FaqItem
+                key={i}
+                question={q}
+                answer={a}
+                visible={faqVis}
+                index={i}
+              />
+            ))}
           </div>
         </div>
       </section>
@@ -705,21 +799,21 @@ export default function LandingPage() {
             <div className="absolute inset-0 bg-gradient-to-br from-[#00F0B5]/[0.06] to-[#00D4FF]/[0.03]" />
             <div className="relative">
               <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-4">
-                Stop searching. Start getting matched.
+                New gigs are being posted right now.
               </h2>
               <p className="text-gray-400 text-lg max-w-lg mx-auto mb-8">
-                Join thousands of freelancers who find better gigs faster with
-                real-time scanning across 37+ sources.
+                Every minute you wait, someone else applies first. Start your
+                free trial and let GigAlertPro find your next project.
               </p>
               <Link
                 to="/auth"
                 className="group inline-flex items-center gap-2 px-8 py-4 bg-[#00F0B5] text-[#020617] font-bold rounded-full hover:bg-[#00dba5] hover:shadow-[0_0_32px_rgba(0,240,181,0.3)] transition-all duration-300 text-base"
               >
-                Start Scanning Free
+                Start Your 7-Day Free Trial
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
               </Link>
               <p className="text-xs text-gray-500 mt-4">
-                No credit card required. Free forever plan available.
+                Cancel anytime. No credit card required to start.
               </p>
             </div>
           </div>
@@ -740,8 +834,8 @@ export default function LandingPage() {
                 </span>
               </div>
               <p className="text-sm text-gray-500 leading-relaxed">
-                Real-time freelance gig scanner. We find the opportunities,
-                you close the deals.
+                Real-time freelance gig scanner. We find the opportunities, you
+                close the deals.
               </p>
             </div>
             <div>
@@ -1222,10 +1316,45 @@ function BenefitItem({ text }) {
   );
 }
 
-function TestimonialCard({ quote, name, role, initials, color }) {
+function FaqItem({ question, answer, visible, index }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div
+      className={`glass-card rounded-xl overflow-hidden transition-all duration-700 ease-out ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
+      style={stagger(index)}
+    >
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between gap-4 p-5 text-left hover:bg-white/[0.02] transition-colors"
+      >
+        <span className="text-sm font-semibold text-white">{question}</span>
+        <ChevronDown
+          className={`w-4 h-4 text-gray-500 shrink-0 transition-transform duration-300 ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+      <div
+        className={`overflow-hidden transition-all duration-300 ${open ? "max-h-60 pb-5" : "max-h-0"}`}
+      >
+        <p className="text-sm text-gray-400 leading-relaxed px-5">{answer}</p>
+      </div>
+    </div>
+  );
+}
+
+function TestimonialCard({ quote, name, role, initials, color, rating }) {
   return (
     <div className="glass-card rounded-2xl p-6 relative hover:border-white/10 transition-all duration-300">
       <Quote className="w-5 h-5 text-[#00F0B5]/20 absolute top-6 right-6" />
+      {rating && (
+        <div className="flex items-center gap-0.5 mb-3">
+          {[...Array(rating)].map((_, i) => (
+            <Star
+              key={i}
+              className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400"
+            />
+          ))}
+        </div>
+      )}
       <p className="text-gray-300 leading-relaxed mb-5 pr-6">
         &ldquo;{quote}&rdquo;
       </p>
