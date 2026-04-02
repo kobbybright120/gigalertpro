@@ -70,7 +70,7 @@ export default function GigAlertsPage() {
         ? `${proposalGig.source} · ${proposalGig.budget}`
         : proposalGig.source || "",
       text,
-      alertId: proposalGig.id,
+      alertId: null, // client-side gig IDs don't map to DB gig_alerts.id
     });
     navigate("/proposals");
   }
