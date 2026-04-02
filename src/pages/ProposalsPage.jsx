@@ -44,14 +44,14 @@ export default function ProposalsPage() {
           </p>
         </div>
       ) : (
-        <div className="grid gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {proposals.map((p) => (
             <div
               key={p.id}
-              className="glass-card rounded-2xl p-6 hover:border-white/10 transition-all duration-300"
+              className="glass-card rounded-2xl p-5 hover:border-white/10 transition-all duration-300 flex flex-col"
             >
               {/* Date */}
-              <p className="text-xs font-semibold text-[#00F0B5] mb-2.5 uppercase tracking-wider">
+              <p className="text-xs font-semibold text-[#00F0B5] mb-2 uppercase tracking-wider">
                 {new Date(p.created_at).toLocaleDateString("en-US", {
                   year: "numeric",
                   month: "short",
@@ -60,42 +60,42 @@ export default function ProposalsPage() {
               </p>
 
               {/* Gig Title */}
-              <h3 className="text-lg font-bold text-white mb-1.5">
+              <h3 className="text-base font-bold text-white mb-1 line-clamp-2">
                 {p.gig_title}
               </h3>
 
               {/* Short description */}
               {p.description && (
-                <p className="text-sm text-gray-500 mb-4 line-clamp-2">
+                <p className="text-xs text-gray-500 mb-3 line-clamp-1">
                   {p.description}
                 </p>
               )}
 
               {/* Proposal text */}
-              <div className="bg-[#020617]/50 border border-white/[0.04] rounded-xl p-5 mb-5">
-                <p className="text-sm text-gray-400 font-mono whitespace-pre-line line-clamp-6 leading-relaxed">
+              <div className="bg-[#020617]/50 border border-white/[0.04] rounded-xl p-4 mb-4 flex-1">
+                <p className="text-sm text-gray-400 font-mono whitespace-pre-line line-clamp-8 leading-relaxed">
                   {p.text}
                 </p>
               </div>
 
               {/* Action buttons */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2.5 mt-auto">
                 <button
                   onClick={() => handleCopy(p.id, p.text)}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/[0.04] border border-white/[0.08] text-gray-300 text-sm font-semibold rounded-xl hover:bg-white/[0.08] hover:border-white/[0.12] transition-all duration-200"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-white/[0.04] border border-white/[0.08] text-gray-300 text-sm font-semibold rounded-xl hover:bg-white/[0.08] hover:border-white/[0.12] transition-all duration-200"
                 >
                   {copiedId === p.id ? (
-                    <Check className="w-4 h-4 text-[#00F0B5]" />
+                    <Check className="w-3.5 h-3.5 text-[#00F0B5]" />
                   ) : (
-                    <Copy className="w-4 h-4" />
+                    <Copy className="w-3.5 h-3.5" />
                   )}
-                  {copiedId === p.id ? "Copied!" : "Copy Full Text"}
+                  {copiedId === p.id ? "Copied!" : "Copy"}
                 </button>
                 <button
                   onClick={() => deleteProposal(p.id)}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 text-gray-500 hover:text-red-400 hover:bg-red-500/[0.06] rounded-xl transition-all duration-200 text-sm"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 text-gray-500 hover:text-red-400 hover:bg-red-500/[0.06] rounded-xl transition-all duration-200 text-sm"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-3.5 h-3.5" />
                   Delete
                 </button>
               </div>
