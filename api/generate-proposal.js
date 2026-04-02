@@ -44,11 +44,55 @@ async function getSupabaseUser(token) {
   return res.json().catch(() => null);
 }
 
+// ── Supabase helpers (service-role) ────────────────────────────────────────────
+function supabaseHeaders() {
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+  return {
+    apikey: serviceKey,
+    Authorization: `Bearer ${serviceKey}`,
+    "Content-Type": "application/json",
+  };
+}
+
+// ── Daily quota check (free = 5/day, pro = 50/day) ───────────────────────────
+const DAILY_LIMITS = { free: 5, pro: 50 };
+
+async function checkDailyQuota(userId) {
+  const baseUrl = process.env.VITE_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!baseUrl || !serviceKey) return { allowed: true }; // skip if not configured
+
+  // Fetch user plan
+  const profileRes = await fetch(
+    `${baseUrl}/rest/v1/profiles?id=eq.${userId}&select=plan`,
+    { headers: supabaseHeaders() },
+  );
+  const profiles = await profileRes.json().catch(() => []);
+  const plan = profiles?.[0]?.plan || "free";
+  const limit = DAILY_LIMITS[plan] || DAILY_LIMITS.free;
+
+  // Count today's usage
+  const todayStart = new Date();
+  todayStart.setUTCHours(0, 0, 0, 0);
+  const countRes = await fetch(
+    `${baseUrl}/rest/v1/ai_usage?user_id=eq.${userId}&created_at=gte.${todayStart.toISOString()}&select=id`,
+    { headers: { ...supabaseHeaders(), Prefer: "count=exact" } },
+  );
+  const countHeader = countRes.headers.get("content-range") || "";
+  const total = parseInt(countHeader.split("/")[1] || "0", 10);
+
+  return {
+    allowed: total < limit,
+    used: total,
+    limit,
+    plan,
+  };
+}
+
 // ── Log usage to Supabase (fire-and-forget) ───────────────────────────────────
 async function logUsage(userId, model, usage) {
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const baseUrl = process.env.VITE_SUPABASE_URL;
-  if (!serviceKey || !baseUrl) return;
+  if (!baseUrl || !process.env.SUPABASE_SERVICE_ROLE_KEY) return;
 
   const costEstimate =
     (usage.prompt_tokens || 0) * 0.00000075 +
@@ -56,12 +100,7 @@ async function logUsage(userId, model, usage) {
 
   await fetch(`${baseUrl}/rest/v1/ai_usage`, {
     method: "POST",
-    headers: {
-      apikey: serviceKey,
-      Authorization: `Bearer ${serviceKey}`,
-      "Content-Type": "application/json",
-      Prefer: "return=minimal",
-    },
+    headers: { ...supabaseHeaders(), Prefer: "return=minimal" },
     body: JSON.stringify({
       user_id: userId,
       model,
@@ -96,6 +135,14 @@ export default async function handler(req, res) {
     return res
       .status(429)
       .json({ error: "Too many requests. Please wait a moment." });
+  }
+
+  // ── 2b. Daily quota (free: 5/day, pro: 50/day) ─────────────────────────────
+  const quota = await checkDailyQuota(supabaseUser.id);
+  if (!quota.allowed) {
+    return res.status(429).json({
+      error: `Daily limit reached (${quota.used}/${quota.limit}). ${quota.plan === "free" ? "Upgrade to Pro for 50 proposals/day." : "Try again tomorrow."}`,
+    });
   }
 
   // ── 3. Validate body ─────────────────────────────────────────────────────────
@@ -193,8 +240,7 @@ Write a winning proposal for this job.`;
     return res.status(500).json({ error: "Failed to reach AI service." });
   }
 
-  const proposal =
-    openaiData.choices?.[0]?.message?.content?.trim() || "";
+  const proposal = openaiData.choices?.[0]?.message?.content?.trim() || "";
   if (!proposal) {
     return res.status(502).json({ error: "AI returned an empty response." });
   }

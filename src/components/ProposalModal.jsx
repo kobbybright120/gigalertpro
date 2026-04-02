@@ -52,7 +52,8 @@ export default function ProposalModal({ gig, profile, onSave, onClose }) {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to generate proposal.");
+      if (!res.ok)
+        throw new Error(data.error || "Failed to generate proposal.");
       setProposal(data.proposal);
     } catch (err) {
       setError(err.message);
@@ -179,7 +180,9 @@ export default function ProposalModal({ gig, profile, onSave, onClose }) {
             disabled={loading}
             className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-white/[0.04] border border-white/[0.08] text-gray-400 text-sm font-semibold rounded-xl hover:bg-white/[0.08] hover:text-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`}
+            />
             Regenerate
           </button>
 
