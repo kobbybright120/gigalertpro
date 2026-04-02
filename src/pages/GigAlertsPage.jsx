@@ -25,187 +25,6 @@ import {
 } from "../lib/useSupabase";
 import { useNewGigCount } from "../context/NewGigCountContext";
 
-// ── Skill-to-keyword mapping ─────────────────────────────────────────────────
-// Maps profile skills to specific, high-quality search keywords that actually
-// find gigs (not vague words that match random posts).
-const SKILL_KEYWORD_MAP = {
-  // Development
-  react: ["react developer", "react native developer", "frontend developer", "next.js developer"],
-  "react native": ["react native developer", "mobile app developer", "cross platform app"],
-  javascript: ["javascript developer", "frontend developer", "node.js developer", "web developer"],
-  typescript: ["typescript developer", "frontend developer", "full stack developer"],
-  python: ["python developer", "python script", "django developer", "flask developer", "python automation"],
-  node: ["node.js developer", "backend developer", "express developer", "api developer"],
-  "node.js": ["node.js developer", "backend developer", "express developer"],
-  php: ["php developer", "laravel developer", "wordpress developer"],
-  laravel: ["laravel developer", "php developer", "backend developer"],
-  wordpress: ["wordpress developer", "wordpress customization", "wordpress site", "woocommerce developer"],
-  shopify: ["shopify developer", "shopify store setup", "shopify theme", "shopify expert"],
-  wix: ["wix developer", "wix website", "wix designer"],
-  squarespace: ["squarespace developer", "squarespace website"],
-  html: ["web developer", "frontend developer", "html email developer"],
-  css: ["frontend developer", "web developer", "css developer"],
-  java: ["java developer", "android developer", "spring developer"],
-  swift: ["ios developer", "swift developer", "iphone app developer"],
-  flutter: ["flutter developer", "mobile app developer", "cross platform app"],
-  angular: ["angular developer", "frontend developer"],
-  vue: ["vue.js developer", "frontend developer"],
-  "full stack": ["full stack developer", "web developer", "mern developer"],
-  fullstack: ["full stack developer", "web developer"],
-  backend: ["backend developer", "api developer", "server developer"],
-  frontend: ["frontend developer", "ui developer", "web developer"],
-  mobile: ["mobile app developer", "ios developer", "android developer"],
-  android: ["android developer", "kotlin developer", "mobile app developer"],
-  ios: ["ios developer", "swift developer", "iphone app developer"],
-  api: ["api developer", "backend developer", "rest api developer"],
-  blockchain: ["blockchain developer", "smart contract developer", "web3 developer", "solidity developer"],
-  solidity: ["solidity developer", "smart contract developer", "web3 developer"],
-  unity: ["unity developer", "game developer", "unity 3d"],
-  unreal: ["unreal engine developer", "game developer"],
-  godot: ["godot developer", "game developer"],
-  rust: ["rust developer", "systems developer"],
-  go: ["golang developer", "go developer", "backend developer"],
-  ruby: ["ruby developer", "rails developer"],
-  sql: ["database developer", "sql developer", "data analyst"],
-  mongodb: ["mongodb developer", "nosql developer", "backend developer"],
-  aws: ["aws developer", "cloud engineer", "devops engineer"],
-  docker: ["devops engineer", "docker developer", "cloud engineer"],
-  devops: ["devops engineer", "ci cd engineer", "cloud engineer"],
-
-  // Design
-  design: ["graphic designer", "ui ux designer", "web designer", "logo design"],
-  "graphic design": ["graphic designer", "brand designer", "flyer design", "poster design"],
-  "ui/ux": ["ui ux designer", "product designer", "app designer", "figma designer"],
-  "ui ux": ["ui ux designer", "product designer", "figma designer"],
-  ux: ["ux designer", "ux researcher", "product designer"],
-  ui: ["ui designer", "figma designer", "app designer"],
-  figma: ["figma designer", "ui ux designer", "app designer", "prototype designer"],
-  photoshop: ["photoshop editor", "photo retoucher", "graphic designer", "image editing"],
-  illustrator: ["illustrator designer", "vector artist", "logo design", "illustration"],
-  canva: ["canva designer", "social media designer", "graphic designer"],
-  logo: ["logo design", "brand identity", "logo designer"],
-  branding: ["brand identity", "brand designer", "logo design", "brand guidelines"],
-  "3d": ["3d artist", "3d modeler", "blender artist", "3d rendering"],
-  blender: ["blender artist", "3d modeler", "3d animation"],
-
-  // Writing
-  writing: ["content writer", "blog writer", "copywriter", "seo writer"],
-  copywriting: ["copywriter", "email copywriter", "sales copywriter", "ad copywriter"],
-  "content writing": ["content writer", "blog writer", "article writer"],
-  blogging: ["blog writer", "content writer", "seo writer"],
-  seo: ["seo specialist", "seo writer", "seo consultant", "seo audit"],
-  editing: ["editor", "proofreader", "copy editor", "content editor"],
-  proofreading: ["proofreader", "copy editor", "editor"],
-  translation: ["translator", "language translator", "localization"],
-  ghostwriting: ["ghostwriter", "ebook writer", "blog ghostwriter"],
-  "technical writing": ["technical writer", "documentation writer", "api docs writer"],
-
-  // Video & Audio
-  "video editing": ["video editor", "youtube editor", "short form editor", "reels editor"],
-  "after effects": ["motion graphics", "after effects editor", "animation"],
-  premiere: ["video editor", "premiere editor", "youtube editor"],
-  animation: ["animator", "motion graphics", "2d animation", "explainer video"],
-  "motion graphics": ["motion graphics", "after effects editor", "animated video"],
-  youtube: ["youtube editor", "youtube thumbnail", "youtube manager", "short form editor"],
-  podcast: ["podcast editor", "audio editor", "podcast producer"],
-  "voice over": ["voice over artist", "narrator", "voice actor"],
-
-  // Marketing
-  marketing: ["digital marketing", "social media manager", "marketing strategist", "email marketing"],
-  "social media": ["social media manager", "social media marketing", "instagram manager", "tiktok manager"],
-  "email marketing": ["email marketing", "email copywriter", "mailchimp expert", "email automation"],
-  "google ads": ["google ads manager", "ppc specialist", "sem expert"],
-  "facebook ads": ["facebook ads manager", "meta ads specialist", "paid social"],
-  ads: ["facebook ads manager", "google ads manager", "ppc specialist"],
-  ppc: ["ppc specialist", "google ads manager", "paid search"],
-  "lead generation": ["lead generation", "cold email", "outbound sales", "lead gen specialist"],
-
-  // Data & AI
-  "data entry": ["data entry", "data entry clerk", "spreadsheet work"],
-  "web scraping": ["web scraping", "data scraping", "python scraping"],
-  scraping: ["web scraping", "data scraping", "python scraping"],
-  chatbot: ["chatbot developer", "ai chatbot", "customer service bot"],
-  ai: ["ai developer", "machine learning engineer", "chatbot developer", "ai automation"],
-  "machine learning": ["machine learning engineer", "data scientist", "ml developer"],
-  "data analysis": ["data analyst", "excel analyst", "business intelligence"],
-  automation: ["automation developer", "zapier expert", "workflow automation", "python automation"],
-
-  // Business & Admin
-  "virtual assistant": ["virtual assistant", "executive assistant", "admin support"],
-  "project management": ["project manager", "scrum master", "project coordinator"],
-  bookkeeping: ["bookkeeper", "quickbooks expert", "accounting"],
-  "customer support": ["customer support", "customer service", "help desk"],
-};
-
-// Fallback generic groups for users with no profile skills
-const GENERIC_GROUPS = [
-  { label: "🖥 Development", keywords: ["react developer", "wordpress developer", "shopify developer", "mobile app developer", "full stack developer", "web developer", "python developer"] },
-  { label: "🎨 Design", keywords: ["logo design", "ui ux designer", "graphic designer", "brand identity", "thumbnail designer", "figma designer"] },
-  { label: "✍️ Writing", keywords: ["blog writer", "seo writer", "copywriter", "content writer", "ghostwriter", "technical writer"] },
-  { label: "📹 Video & Audio", keywords: ["video editor", "youtube editor", "motion graphics", "voice over", "podcast editor"] },
-  { label: "📈 Marketing", keywords: ["social media manager", "seo specialist", "email marketing", "facebook ads", "google ads"] },
-  { label: "🤖 Data & AI", keywords: ["data entry", "web scraping", "chatbot developer", "data analyst", "automation"] },
-  { label: "💼 Business", keywords: ["virtual assistant", "project manager", "bookkeeper", "customer support", "lead generation"] },
-];
-
-function getSuggestionGroups(profile, existingKeywords) {
-  const skills = profile?.skills;
-  if (!skills || skills.length === 0) return GENERIC_GROUPS;
-
-  // Build personalized suggestions from profile skills
-  const seen = new Set(existingKeywords.map((k) => k.keyword?.toLowerCase()));
-  const groups = [];
-
-  // Group 1: Direct skill-based suggestions ("For you")
-  const personalKws = new Set();
-  for (const skill of skills) {
-    const key = skill.toLowerCase().trim();
-    const mapped = SKILL_KEYWORD_MAP[key];
-    if (mapped) {
-      for (const kw of mapped) {
-        if (!seen.has(kw.toLowerCase())) personalKws.add(kw);
-      }
-    } else {
-      // Skill not in map — use the skill itself as a keyword suggestion
-      // plus common patterns like "{skill} developer", "{skill} designer"
-      const base = key;
-      if (!seen.has(base)) personalKws.add(skill.trim());
-      const withDev = `${base} developer`;
-      const withDesigner = `${base} designer`;
-      const withFreelancer = `${base} freelancer`;
-      if (!seen.has(withDev)) personalKws.add(withDev);
-      if (!seen.has(withDesigner)) personalKws.add(withDesigner);
-      if (!seen.has(withFreelancer)) personalKws.add(withFreelancer);
-    }
-  }
-
-  if (personalKws.size > 0) {
-    groups.push({
-      label: `⚡ Based on your skills (${skills.slice(0, 4).join(", ")}${skills.length > 4 ? "..." : ""})`,
-      keywords: [...personalKws].slice(0, 15),
-    });
-  }
-
-  // Group 2: Add a couple of generic groups the user might also want
-  // Pick groups that don't overlap much with their skills
-  const skillsLower = skills.map((s) => s.toLowerCase());
-  const devSkills = ["react", "javascript", "python", "node", "php", "java", "swift", "flutter", "angular", "vue", "html", "css", "typescript", "wordpress", "shopify", "fullstack", "full stack", "frontend", "backend", "mobile", "android", "ios"];
-  const designSkills = ["design", "figma", "photoshop", "illustrator", "canva", "logo", "branding", "ui", "ux", "ui/ux", "ui ux", "3d", "blender", "graphic design"];
-  const writingSkills = ["writing", "copywriting", "content writing", "seo", "editing", "blogging", "ghostwriting", "translation", "proofreading", "technical writing"];
-
-  const hasDev = skillsLower.some((s) => devSkills.includes(s));
-  const hasDesign = skillsLower.some((s) => designSkills.includes(s));
-  const hasWriting = skillsLower.some((s) => writingSkills.includes(s));
-
-  // Suggest 1-2 adjacent categories they haven't listed
-  if (!hasDev) groups.push(GENERIC_GROUPS[0]);
-  if (!hasDesign) groups.push(GENERIC_GROUPS[1]);
-  if (!hasWriting) groups.push(GENERIC_GROUPS[2]);
-
-  // Cap to 3 groups max so it doesn't get overwhelming
-  return groups.slice(0, 3);
-}
-
 export default function GigAlertsPage() {
   const navigate = useNavigate();
   const [input, setInput] = useState("");
@@ -350,16 +169,16 @@ export default function GigAlertsPage() {
               onClick={() => setShowSuggestions(true)}
               className="text-xs text-[#00F0B5]/70 hover:text-[#00F0B5] transition-colors underline underline-offset-2"
             >
-              {profile?.skills?.length > 0 ? "Suggestions based on your profile" : "Show examples"}
+              Show examples
             </button>
           </div>
         )}
 
-        {showSuggestions && (
+        {(showSuggestions || (keywords.length === 0 && !showSuggestions)) && showSuggestions && (
           <div className="mt-4 space-y-3">
             <div className="flex items-center justify-between">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                {profile?.skills?.length > 0 ? "Based on your profile" : "Tap to add"}
+                Tap to add
               </p>
               <button
                 onClick={() => setShowSuggestions(false)}
@@ -368,7 +187,15 @@ export default function GigAlertsPage() {
                 Hide
               </button>
             </div>
-            {getSuggestionGroups(profile, keywords).map((group) => (
+            {[
+              { label: "🖥 Development", keywords: ["react developer", "wordpress developer", "shopify developer", "mobile app developer", "full stack developer", "build a website", "web developer", "python developer", "fix my website"] },
+              { label: "🎨 Design", keywords: ["logo design", "ui ux designer", "graphic designer", "brand identity", "thumbnail designer", "figma designer", "web design"] },
+              { label: "✍️ Writing", keywords: ["blog writer", "seo writer", "copywriter", "content writer", "ghostwriter", "technical writer", "email copywriter"] },
+              { label: "📹 Video & Audio", keywords: ["video editor", "youtube editor", "motion graphics", "voice over", "podcast editor", "animation"] },
+              { label: "📈 Marketing", keywords: ["social media manager", "seo specialist", "email marketing", "facebook ads", "google ads", "marketing strategist"] },
+              { label: "🤖 Data & AI", keywords: ["data entry", "web scraping", "chatbot developer", "data analyst", "machine learning", "automation"] },
+              { label: "💼 Business", keywords: ["virtual assistant", "project manager", "bookkeeper", "data entry", "customer support", "lead generation"] },
+            ].map((group) => (
               <div key={group.label}>
                 <p className="text-xs text-gray-500 mb-1.5">{group.label}</p>
                 <div className="flex flex-wrap gap-1.5">
@@ -391,18 +218,6 @@ export default function GigAlertsPage() {
                 </div>
               </div>
             ))}
-            {profile?.skills?.length > 0 && (
-              <p className="text-[11px] text-gray-600 italic">
-                These suggestions come from your profile skills. Update your{" "}
-                <button
-                  onClick={() => navigate("/profile")}
-                  className="text-[#00F0B5]/60 hover:text-[#00F0B5] underline underline-offset-2 transition-colors"
-                >
-                  profile
-                </button>
-                {" "}to get different suggestions.
-              </p>
-            )}
           </div>
         )}
 
@@ -591,9 +406,7 @@ export default function GigAlertsPage() {
                 onClick={() => setShowSuggestions(true)}
                 className="mt-4 text-xs text-[#00F0B5]/70 hover:text-[#00F0B5] transition-colors underline underline-offset-2"
               >
-                {profile?.skills?.length > 0
-                  ? "Get suggestions from your profile"
-                  : "Browse keyword suggestions"}
+                Browse keyword suggestions
               </button>
             )}
           </div>
