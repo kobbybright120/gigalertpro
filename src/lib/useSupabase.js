@@ -567,57 +567,44 @@ export function useProfile() {
     if (!user) return { data: null, error: { message: "Not authenticated" } };
 
     const payload = {
-      id: user.id,
       ...updates,
       updated_at: new Date().toISOString(),
     };
 
-    // Debug: capture session vs user mismatch which commonly causes RLS failures
-    try {
-      const { data: { session } = {} } = await supabase.auth.getSession();
-      console.log(
-        "[useProfile] upsert attempt: session.user.id=",
-        session?.user?.id,
-        "hook user.id=",
-        user?.id,
-        "payload.id=",
-        payload.id,
-      );
-    } catch (e) {
-      console.log("[useProfile] getSession() failed:", e?.message || e);
-    }
-
-    // Try to upsert and return the row. The returned SELECT can be blocked by RLS USING policies,
-    // so if that happens we attempt a fallback upsert without requesting the returned row.
-    const res = await supabase
+    // Step 1: Try UPDATE (works when profile row already exists from the signup trigger)
+    const { data, error } = await supabase
       .from("profiles")
-      .upsert(payload, { onConflict: "id" })
+      .update(payload)
+      .eq("id", user.id)
       .select()
       .maybeSingle();
 
-    if (res.error) {
-      console.log("[useProfile] upsert+select failed:", res.error);
-
-      // If RLS blocks the SELECT (typical Postgres 42501), try a fallback upsert without .select()
-      const isRls = String(res.error.code || "").includes("42501") ||
-        String(res.error.message || "").toLowerCase().includes("row-level security");
-      if (isRls) {
-        console.log("[useProfile] attempting fallback upsert without .select() to avoid SELECT/RLS failure");
-        const fallback = await supabase.from("profiles").upsert(payload, { onConflict: "id" });
-        if (fallback.error) {
-          console.error("[useProfile] fallback upsert failed:", fallback.error);
-          return { data: null, error: fallback.error };
-        }
-        // Update UI state locally so the user sees their changes even if returning the row was blocked
-        setProfile({ ...profile, ...payload });
-        return { data: payload, error: null };
-      }
-
-      return { data: null, error: res.error };
+    if (!error && data) {
+      setProfile(data);
+      return { data, error: null };
     }
 
-    if (res.data) setProfile(res.data);
-    return { data: res.data, error: res.error };
+    // Step 2: If UPDATE returned nothing (row doesn't exist yet), INSERT
+    if (!error && !data) {
+      const { data: inserted, error: insertErr } = await supabase
+        .from("profiles")
+        .insert({ id: user.id, ...payload })
+        .select()
+        .maybeSingle();
+      if (!insertErr && inserted) {
+        setProfile(inserted);
+        return { data: inserted, error: null };
+      }
+      if (insertErr) {
+        console.error("[useProfile] insert fallback failed:", insertErr);
+        return { data: null, error: insertErr };
+      }
+    }
+
+    if (error) {
+      console.error("[useProfile] update failed:", error);
+    }
+    return { data, error };
   }
 
   return { profile, loading, updateProfile, refetch: fetchProfile };
