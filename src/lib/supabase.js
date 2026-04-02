@@ -11,7 +11,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Expose for quick debugging in browser console (dev only)
 try {
-  if (typeof window !== "undefined") window.supabase = supabase;
+  if (typeof window !== "undefined" && import.meta.env.DEV) window.supabase = supabase;
 } catch (e) {
   // ignore
 }

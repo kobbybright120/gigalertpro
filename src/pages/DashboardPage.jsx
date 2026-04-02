@@ -102,8 +102,8 @@ export default function DashboardPage() {
             glow: hotCount > 0,
           },
           {
-            label: "Sources",
-            value: "34+ subs",
+            label: "Sources Scanned",
+            value: "37+",
             icon: Globe,
             color: "text-purple-400",
             bg: "bg-gradient-to-br from-purple-400/10 to-purple-400/5",
@@ -213,7 +213,7 @@ export default function DashboardPage() {
                 Scanning Sources...
               </h3>
               <p className="text-gray-500 text-sm mt-1">
-                Searching Reddit & Craigslist for gigs matching your keywords
+                Searching Reddit, Craigslist & X/Twitter for gigs matching your keywords
               </p>
             </div>
           ) : topAlerts.length > 0 ? (

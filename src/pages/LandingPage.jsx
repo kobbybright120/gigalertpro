@@ -65,7 +65,7 @@ export default function LandingPage() {
               <span className="relative inline-flex rounded-full h-2 w-2 bg-[#00F0B5]"></span>
             </span>
             <span className="text-sm text-[#00F0B5] font-medium tracking-wide">
-              Scanning 34+ sources in real-time
+              Scanning 37+ sources in real-time
             </span>
           </div>
 
@@ -75,8 +75,9 @@ export default function LandingPage() {
           </h1>
 
           <p className="mt-7 text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
-            We scan Reddit & Craigslist every 2 minutes for your keywords, then
-            alert you instantly. Be the first to apply — win more projects.
+            We scan Reddit, Craigslist & X/Twitter every 2 minutes for your
+            keywords, then alert you instantly. Be the first to apply — win
+            more projects.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-12">
@@ -104,7 +105,7 @@ export default function LandingPage() {
               <Clock className="w-4 h-4 text-[#00F0B5]/60" /> 2-min scan cycle
             </span>
             <span className="flex items-center gap-1.5">
-              <BarChart3 className="w-4 h-4 text-[#00F0B5]/60" /> 34+ subreddits
+              <BarChart3 className="w-4 h-4 text-[#00F0B5]/60" /> 37+ sources
             </span>
           </div>
         </div>
@@ -114,7 +115,7 @@ export default function LandingPage() {
       <section className="relative border-y border-white/[0.04] bg-[#0B1120]/40">
         <div className="max-w-5xl mx-auto px-4 py-12 grid grid-cols-2 md:grid-cols-4 gap-8">
           {[
-            { value: "34+", label: "Subreddits Monitored" },
+            { value: "37+", label: "Sources Monitored" },
             { value: "2 min", label: "Scan Frequency" },
             { value: "10", label: "Craigslist Cities" },
             { value: "24/7", label: "Always Active" },
@@ -148,7 +149,7 @@ export default function LandingPage() {
             <FeatureCard
               icon={Radio}
               title="Smart Gig Radar"
-              description='Set keywords like "React developer" or "logo design". We monitor 34+ subreddits & Craigslist 24/7 and alert you within minutes.'
+              description='Set keywords like "React developer" or "logo design". We monitor 37+ sources across Reddit, Craigslist & X/Twitter 24/7 and alert you within minutes.'
               accent="from-[#00F0B5] to-[#00D4FF]"
             />
             <FeatureCard
@@ -349,7 +350,7 @@ export default function LandingPage() {
                 <BenefitItem text="Be the first to apply to high-paying gigs" />
                 <BenefitItem text="Save 10+ hours a week on prospecting" />
                 <BenefitItem text="Increase your response rate with AI pitches" />
-                <BenefitItem text="Cover Reddit + Craigslist automatically" />
+                <BenefitItem text="Cover Reddit, Craigslist & X/Twitter automatically" />
               </div>
 
               <Link

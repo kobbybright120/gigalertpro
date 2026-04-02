@@ -8,7 +8,7 @@ export default function PremiumBanner() {
         <div>
           <p className="font-semibold text-white">Upgrade to Premium</p>
           <p className="text-sm text-gray-400">
-            Unlimited alerts, AI proposals & priority scanning – $5/month
+            Unlimited alerts, AI proposals & priority scanning – $19/month
           </p>
         </div>
       </div>
