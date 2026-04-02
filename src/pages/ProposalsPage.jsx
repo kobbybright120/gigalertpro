@@ -1,5 +1,15 @@
 import { useState } from "react";
-import { Bot, Trash2, Copy, Check, Loader2, FileText, Trophy, MessageSquare, MinusCircle } from "lucide-react";
+import {
+  Bot,
+  Trash2,
+  Copy,
+  Check,
+  Loader2,
+  FileText,
+  Trophy,
+  MessageSquare,
+  MinusCircle,
+} from "lucide-react";
 import { useProposals } from "../lib/useSupabase";
 
 const OUTCOMES = [
@@ -105,7 +115,10 @@ export default function ProposalsPage() {
               {/* Outcome tracker — trains the AI */}
               <div className="mb-3">
                 <p className="text-[10px] text-gray-600 uppercase tracking-widest font-semibold mb-2">
-                  How did it go? <span className="normal-case text-[#00F0B5]/60">(helps the AI write better proposals)</span>
+                  How did it go?{" "}
+                  <span className="normal-case text-[#00F0B5]/60">
+                    (helps the AI write better proposals)
+                  </span>
                 </p>
                 <div className="flex items-center gap-1.5 flex-wrap">
                   {OUTCOMES.map(({ key, label, icon: Icon, active, hover }) => {

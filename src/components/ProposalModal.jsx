@@ -59,6 +59,7 @@ export default function ProposalModal({ gig, profile, onSave, onClose }) {
           userSkills: profile?.skills || [],
           userBio: profile?.bio || "",
           portfolioLinks: profile?.portfolio_links || [],
+          testimonials: profile?.testimonials || [],
           tone,
           upvotes: gig.upvotes || 0,
           commentCount: gig.comment_count || 0,

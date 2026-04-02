@@ -159,6 +159,7 @@ export default async function handler(req, res) {
     userSkills = [],
     userBio = "",
     portfolioLinks = [],
+    testimonials = [],
     tone = "professional", // professional | conversational | bold
     upvotes = 0,
     commentCount = 0,
@@ -184,49 +185,44 @@ export default async function handler(req, res) {
     bold: "Write in a bold, high-energy tone. Stand out from the crowd. Confident, direct, slightly provocative. Show personality.",
   };
 
-  const systemPrompt = `You write freelance proposals that get people hired. Your proposals feel like a genuine human message from a real freelancer who read the job post and actually wants to solve the client's problem. NOT an AI. NOT a template.
+  const systemPrompt = `You are an AI assistant that writes freelance proposals designed to win gigs. Your proposals must feel natural, human-written, and persuasive — never robotic.
 
-═══ RULE #1: NO DASHES ═══
-NEVER use dashes (—, –, -) anywhere in the output. Not in sentences, not between thoughts, not as punctuation. Use commas, periods, or just start a new sentence instead. This is non-negotiable.
+═══ STRUCTURE: Hook → Skills → Value → Closing ═══
 
-═══ PROPOSAL STRUCTURE ═══
+1. HOOK — Attention-grabbing opening (1 to 2 sentences):
+   Mention the job title directly and immediately highlight the core value the freelancer brings: saving the client time, boosting revenue, improving design, or increasing conversions.
+   Prove you read and understood their project. Jump straight into their world.
+   Example: "Your search for a React developer who actually cares about conversion rates ends here — I've rebuilt checkout flows for e-commerce brands and consistently pushed conversion above 8%."
+   NEVER open with anything generic. NEVER open talking about yourself first.
 
-1. PERSONALIZED HOOK (1 to 2 sentences):
-   Start with something that proves you read and understood their project. Jump straight into their world.
-   Show them you get what they need and connect it to a result you can deliver.
-   Example: "You need a landing page that actually converts visitors into paying customers. I've built pages like that for e-commerce brands and consistently pushed conversion rates above 8%."
-   NEVER open with anything generic. NEVER open talking about yourself.
+2. SKILLS — Relevant experience (2 to 3 sentences):
+   Highlight the freelancer's most relevant skills and experience.
+   Mirror keywords directly from the job description — if they said "Shopify", say "Shopify". If they said "brand identity", say "brand identity".
+   Be specific. Vague skills lose to specific ones.
 
-2. RESTATE THEIR NEED (1 to 2 sentences):
-   Rephrase the client's problem in your own words. This is like active listening in text form.
-   It shows them: "this person actually gets what I'm dealing with."
-   Example: "From your description, it sounds like your current site isn't guiding visitors toward the checkout, and you're losing potential sales because of it."
-
-3. YOUR SOLUTION, CLEARLY (3 to 4 short bullet points):
-   Lay out exactly what you'll do. Each bullet should be an action + the benefit the client gets.
-   Keep each bullet to one line. No fluff.
+3. VALUE — How those skills solve the client's problem (2 to 3 sentences or 3 short bullet points):
+   Explain clearly how those skills will solve the client's exact problem or deliver measurable results.
+   Each point should be an action + the benefit the client gets. Focus entirely on what the CLIENT gains.
    Example bullets:
-   • Redesign the hero section to highlight your strongest offer and hook visitors in the first 3 seconds
-   • Simplify the checkout flow so customers don't drop off before paying
-   • Set up basic analytics so you can see exactly where visitors convert or leave
-   • Deliver a fully responsive build within 7 days, ready to go live
+   • Rebuild the product page layout so visitors stop bouncing before they add to cart
+   • Connect Klaviyo abandoned-cart flows so you recover 15 to 25% of lost checkouts
+   • Deliver mobile-first, fully tested in 6 days with a walkthrough video
 
-4. SOCIAL PROOF (1 sentence):
-   Drop in one quick, relevant success story or metric. Keep it natural, like you'd mention it in passing.
-   Example: "I recently did something similar for a fitness brand and their sign ups went up 40% in the first two weeks."
-   If the freelancer has no relevant past work, skip this entirely. Never fabricate results.
+4. CLOSING — Confident, friendly call to action (1 sentence):
+   End with a specific next step that makes it easy for the client to say yes.
+   Sound confident, not desperate.
+   Example: "Send me a message and I'll put together a quick plan for your project today."
 
-5. LOW PRESSURE CALL TO ACTION (1 sentence):
-   End with something that makes it easy for the client to say yes. No pressure, just a simple next step.
-   Example: "If this sounds like a fit, I can put together a quick outline or we can hop on a short call to talk details."
-   Make them feel like responding is effortless.
+═══ PORTFOLIO RULE ═══
+If the freelancer's profile includes portfolio links, naturally weave ONE into the proposal — do not just paste the URL at the end. Introduce it in context.
+Example: "You can see a similar project at [link] — that client went from 2% to 9% conversion in three weeks."
+If NO portfolio link is provided, do not mention one, do not invent one, and do not say "check out my portfolio."
 
-═══ SOUNDING HUMAN (THIS IS CRITICAL) ═══
+═══ SOUNDING HUMAN ═══
 Write like a real person typing a message. Not an essay. Not a formal letter.
 Use contractions naturally (I'll, I've, you'll, that's, don't, won't, it's).
 Vary your sentence length. Some short. Some a bit longer and more flowing.
 Starting sentences with "And" or "But" or "So" is totally fine.
-Throw in a small personality touch here and there. A brief opinion, a quick observation, something that sounds like YOU, not a bot.
 If you read it out loud and it sounds stiff or robotic, rewrite it.
 
 BANNED WORDS AND PHRASES (never use these):
@@ -236,22 +232,22 @@ BANNED WORDS AND PHRASES (never use these):
 "Dear", "Hello there", "Hi there", "Hope this finds you well", "I came across your post", "I saw your listing"
 "Don't hesitate to reach out", "Looking forward to hearing from you", "Feel free to contact me", "Please do not hesitate"
 
-═══ FORMATTING BANS ═══
+═══ FORMATTING RULES ═══
 NEVER use dashes of any kind (—, –, -) in the output text. Use commas, periods, or semicolons instead.
 NEVER use markdown headers, bold, italic, or any formatting markup.
-NEVER add "Subject:" lines or labels like "Hook:" or "Solution:".
+NEVER add "Subject:" lines or section labels like "Hook:" or "Value:".
 NEVER start bullet points with "I have" or "I am". Start with what the CLIENT gets.
 NEVER fabricate portfolio links, client names, results, or numbers.
 
 ═══ TONE ═══
 ${toneGuide[tone] || toneGuide.professional}
 
-═══ FORMAT ═══
-Keep it under 200 words. Clients skim, they don't read novels.
-Plain text only. Use bullet points (•) for the solution section, plain sentences for everything else.
-If the gig is from Reddit, write like a Reddit reply. Casual, no corporate speak.
+═══ LENGTH AND FORMAT ═══
+150 to 250 words. Not shorter, not longer.
+Plain text only. Use bullet points (•) sparingly in the Value section only.
+If the gig is from Reddit, write like a Reddit reply — casual, no corporate speak.
 If the gig is from X/Twitter, be direct and punchy.
-Match the client's energy. If they're casual, be casual. If they're buttoned up, match that.
+Always emphasize the VALUE the freelancer adds to the client's project, not just their credentials.
 End with a question or a specific next step. Never end passively.`;
 
   // ── 4b. Fetch user's past winning proposals for few-shot learning ─────────────
@@ -316,20 +312,29 @@ ${examples}
       ? `Matched keywords: ${matchedKeywords.join(", ")}`
       : "";
 
-  const userPrompt = `═══ GIG DETAILS ═══
-Title: ${gigTitle.slice(0, 300)}
-${bodyPreview ? `Description: ${bodyPreview.slice(0, 800)}` : ""}
+  const testimonialsNote =
+    Array.isArray(testimonials) && testimonials.length > 0
+      ? `My past wins and social proof (use these naturally as proof points — never fabricate):\n${testimonials
+          .slice(0, 5)
+          .map((t) => `  • ${t}`)
+          .join("\n")}`
+      : "";
+
+  const userPrompt = `═══ JOB DESCRIPTION ═══
+Job title: ${gigTitle.slice(0, 300)}
+${bodyPreview ? `Full description: ${bodyPreview.slice(0, 800)}` : ""}
 ${budget ? `Budget: ${budget}` : ""}
 ${source ? `Platform: ${source}` : ""}
 ${category ? `Category: ${category}` : ""}
 ${keywordsNote}
 
-═══ MY FREELANCER PROFILE ═══
-${userBio ? `About me: ${userBio.slice(0, 500)}` : "No bio provided — focus on the approach and deliverables."}
-${skillsList ? `Skills: ${skillsList}` : ""}
-${portfolioNote}
+═══ FREELANCER BIO ═══
+${userBio ? userBio.slice(0, 500) : "No bio provided — focus on the approach and deliverables."}
+${skillsList ? `\nSkills: ${skillsList}` : ""}
+${portfolioNote ? `\n${portfolioLinks.length > 0 ? `Portfolio link (include naturally in the proposal if relevant): ${portfolioNote}` : ""}` : ""}
+${testimonialsNote ? `\n${testimonialsNote}` : ""}
 
-Write a winning proposal that will get me hired for this gig.`;
+Write a winning proposal using the Hook → Skills → Value → Closing structure. 150 to 250 words. Make it feel genuinely human and focused entirely on the value I bring to this specific job.`;
 
   // ── 5. Call OpenAI ───────────────────────────────────────────────────────────
   let openaiData;
