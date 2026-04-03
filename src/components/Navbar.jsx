@@ -49,13 +49,13 @@ export default function Navbar() {
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 h-14 bg-[#0B1120]/80 backdrop-blur-xl border-b border-white/[0.04] flex items-center justify-between px-4">
         <Link
           to="/dashboard"
-          className="flex items-center gap-2.5 text-lg font-bold text-white"
+          className="flex items-center gap-2 text-lg font-bold text-white"
         >
-          <div className="w-9 h-9 flex items-center justify-center">
+          <div className="w-8 h-8 flex items-center justify-center">
             <img
               src="/GigAlertIcon.png?v=20260403"
               alt="GigAlertPro"
-              className="w-full h-full object-contain transform scale-150 origin-center"
+              className="w-full h-full object-contain transform scale-125 origin-center"
             />
           </div>
           <span>
@@ -111,12 +111,12 @@ export default function Navbar() {
           ${mobileOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`}
       >
         {/* Logo */}
-        <div className="h-16 flex items-center gap-2.5 px-5 border-b border-white/[0.04] shrink-0">
-          <div className="w-12 h-12 flex items-center justify-center">
+        <div className="h-16 flex items-center gap-2 px-4 border-b border-white/[0.04] shrink-0">
+          <div className="w-10 h-10 flex items-center justify-center">
             <img
               src="/GigAlertIcon.png?v=20260403"
               alt="GigAlertPro"
-              className="w-full h-full object-contain transform scale-150 origin-center"
+              className="w-full h-full object-contain transform scale-125 origin-center"
             />
           </div>
           <Link
