@@ -58,7 +58,7 @@ async function upsertProfileByEmail(email, fields) {
   // Look up profile by email
   const lookupRes = await fetch(
     `${SUPABASE_URL}/rest/v1/profiles?email=eq.${encodeURIComponent(email)}&select=id`,
-    { headers: supabaseHeaders() }
+    { headers: supabaseHeaders() },
   );
   const rows = await lookupRes.json().catch(() => []);
   const userId = rows?.[0]?.id;
@@ -169,7 +169,7 @@ export default async function handler(req, res) {
           subscription_status: "past_due",
         });
         console.warn(
-          `[paystack-webhook] Payment failed (past_due) for ${email}`
+          `[paystack-webhook] Payment failed (past_due) for ${email}`,
         );
       }
     }

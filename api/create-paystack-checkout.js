@@ -15,9 +15,10 @@
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 const PAYSTACK_PLAN_MONTHLY = process.env.PAYSTACK_PLAN_MONTHLY;
 const PAYSTACK_PLAN_YEARLY = process.env.PAYSTACK_PLAN_YEARLY;
-const APP_URL = (
-  process.env.APP_URL || "https://gigalertpro.com"
-).replace(/\/$/, "");
+const APP_URL = (process.env.APP_URL || "https://gigalertpro.com").replace(
+  /\/$/,
+  "",
+);
 
 // ── Plan auto-creation cache (per cold start) ─────────────────────────────────
 // If PAYSTACK_PLAN_MONTHLY / PAYSTACK_PLAN_YEARLY are not set, we create the
@@ -55,7 +56,7 @@ async function getOrCreatePlan(period) {
 
   if (!res.ok || !json.data?.plan_code) {
     throw new Error(
-      `Paystack plan creation failed: ${json.message || "unknown error"}`
+      `Paystack plan creation failed: ${json.message || "unknown error"}`,
     );
   }
 
@@ -64,7 +65,7 @@ async function getOrCreatePlan(period) {
 
   // Log the plan code so the operator can persist it in env vars
   console.info(
-    `[paystack] Auto-created ${period} plan. Set PAYSTACK_PLAN_${period.toUpperCase()}=${code} in Vercel env vars.`
+    `[paystack] Auto-created ${period} plan. Set PAYSTACK_PLAN_${period.toUpperCase()}=${code} in Vercel env vars.`,
   );
 
   return code;
@@ -128,7 +129,7 @@ export default async function handler(req, res) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(payload),
-      }
+      },
     );
 
     const initData = await initRes.json();
