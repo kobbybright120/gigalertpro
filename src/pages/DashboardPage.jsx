@@ -250,10 +250,10 @@ export default function DashboardPage() {
                     budget: alert.budget || null,
                     source:
                       alert.source_platform === "Reddit"
-                        ? `r/${alert.subreddit}`
+                        ? "Reddit"
                         : alert.source_platform === "Craigslist"
-                          ? `${alert.author} Craigslist`
-                          : `@${alert.author}`,
+                          ? "Craigslist"
+                          : alert.source_platform || "Reddit",
                     url: alert.url,
                     postedAt:
                       alert.time_ago ||
