@@ -9,7 +9,6 @@ const DISABLE_AUTH =
   (import.meta.env.VITE_SUPABASE_URL || "").includes("placeholder") ||
   !import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-
 const ACTIVE_STATUSES = ["active", "trialing"];
 
 export default function SubscriptionGate({ children }) {
