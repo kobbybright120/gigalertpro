@@ -57,10 +57,10 @@ export default function Navbar() {
               alt="GigAlertPro"
               className="w-full h-full object-contain transform scale-125 origin-center"
             />
+            <span>
+              GigAlert<span className="text-gradient">Pro</span>
+            </span>
           </div>
-          <span>
-            GigAlert<span className="text-gradient">Pro</span>
-          </span>
         </Link>
 
         <div className="flex items-center gap-3">
