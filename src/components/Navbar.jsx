@@ -51,7 +51,7 @@ export default function Navbar() {
           to="/dashboard"
           className="flex items-center gap-2.5 text-lg font-bold text-white"
         >
-          <div className="w-9 h-9 rounded-lg overflow-hidden">
+          <div className="w-9 h-9 flex items-center justify-center">
             <img
               src="/GigAlertIcon.png?v=20260403"
               alt="GigAlertPro"
@@ -112,7 +112,7 @@ export default function Navbar() {
       >
         {/* Logo */}
         <div className="h-16 flex items-center gap-2.5 px-5 border-b border-white/[0.04] shrink-0">
-          <div className="w-12 h-12 rounded-lg overflow-hidden shadow-[0_0_12px_rgba(0,240,181,0.15)]">
+          <div className="w-12 h-12 flex items-center justify-center">
             <img
               src="/GigAlertIcon.png?v=20260403"
               alt="GigAlertPro"
