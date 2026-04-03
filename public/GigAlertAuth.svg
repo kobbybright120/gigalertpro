@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Auth/landing style logo: rounded square with gradient and a lightning mark -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-hidden="false" role="img" aria-label="GigAlert">
+  <defs>
+    <linearGradient id="g1" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#00F0B5"/>
+      <stop offset="1" stop-color="#00D4FF"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="12" fill="url(#g1)"/>
+  <path d="M41 21 L29 35 L35 35 L25 50 L40 36 L33 36 Z" fill="#020617" />
+</svg>
