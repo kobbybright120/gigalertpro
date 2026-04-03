@@ -33,6 +33,7 @@ const SUBREDDITS = [
   { name: "YouTubeEditorsForHire", mode: "new", weight: 1.0 },
   { name: "VoiceWork", mode: "new", weight: 1.0 },
   { name: "VideoEditors_forhire", mode: "new", weight: 1.0 },
+  { name: "VideoEditors", mode: "new", weight: 1.0 },
   { name: "VoiceActing", mode: "new", weight: 0.9 },
   { name: "MarketingJobs", mode: "new", weight: 1.0 },
   { name: "hireforgigs", mode: "new", weight: 1.1 },

@@ -86,6 +86,7 @@ const COMBINED_SUBS_2 = [
   "YouTubeEditorsForHire",
   "VoiceWork",
   "VideoEditors_forhire",
+  "VideoEditors",
   "VoiceActing",
   "MarketingJobs",
   "hireforgigs",
