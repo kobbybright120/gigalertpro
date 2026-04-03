@@ -55,7 +55,7 @@ export default function Navbar() {
             <img
               src="/GigAlertIcon.png?v=20260403"
               alt="GigAlertPro"
-              className="w-full h-full object-contain"
+              className="w-full h-full object-contain transform scale-150 origin-center"
             />
           </div>
           <span>
@@ -116,7 +116,7 @@ export default function Navbar() {
             <img
               src="/GigAlertIcon.png?v=20260403"
               alt="GigAlertPro"
-              className="w-full h-full object-contain"
+              className="w-full h-full object-contain transform scale-150 origin-center"
             />
           </div>
           <Link
