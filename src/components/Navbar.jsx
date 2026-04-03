@@ -13,7 +13,6 @@ import {
   ChevronRight,
 } from "lucide-react";
 import NotificationBell from "./NotificationBell";
-import Logo from "./Logo";
 import { useNewGigCount } from "../context/NewGigCountContext";
 
 const navItems = [
@@ -50,11 +49,14 @@ export default function Navbar() {
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 h-14 bg-[#0B1120]/80 backdrop-blur-xl border-b border-white/[0.04] flex items-center justify-between px-4">
         <Link
           to="/dashboard"
-          aria-label="Go to dashboard"
-          className="flex items-center gap-2 text-base font-semibold leading-none text-white group hover:scale-105 transition-premium"
+          className="flex items-center gap-2.5 text-lg font-bold text-white"
         >
-          <div className="flex items-center justify-center">
-            <Logo className="w-6 h-6 sm:w-7 sm:h-7" />
+          <div className="w-7 h-7 rounded-lg overflow-hidden">
+            <img
+              src="/GigAlertIcon.png?v=20260403"
+              alt="GigAlertPro"
+              className="w-7 h-7 object-cover"
+            />
           </div>
           <span>
             GigAlert<span className="text-gradient">Pro</span>
@@ -109,13 +111,16 @@ export default function Navbar() {
           ${mobileOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`}
       >
         {/* Logo */}
-        <div className="h-16 flex items-center gap-1 px-4 border-b border-white/[0.04] shrink-0">
-          <div className="flex items-center justify-center">
-            <Logo className="w-8 h-8 sm:w-10 sm:h-10" />
+        <div className="h-16 flex items-center gap-2.5 px-5 border-b border-white/[0.04] shrink-0">
+          <div className="w-8 h-8 rounded-lg overflow-hidden shadow-[0_0_12px_rgba(0,240,181,0.15)]">
+            <img
+              src="/GigAlertIcon.png?v=20260403"
+              alt="GigAlertPro"
+              className="w-8 h-8 object-cover"
+            />
           </div>
           <Link
             to="/dashboard"
-            aria-label="Go to dashboard"
             className="text-lg font-bold text-white tracking-tight"
           >
             GigAlert<span className="text-gradient">Pro</span>
