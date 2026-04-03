@@ -9,14 +9,18 @@ import {
   ExternalLink,
   MessageSquareQuote,
   Loader2,
+  Mail,
 } from "lucide-react";
 import { useProfile } from "../lib/useSupabase";
+import { useAuth } from "../context/AuthContext";
 
 export default function ProfilePage() {
   const { profile: dbProfile, loading, updateProfile } = useProfile();
+  const { user } = useAuth();
 
   const profile = {
     name: dbProfile?.name || "",
+    email: dbProfile?.email || user?.email || "",
     bio: dbProfile?.bio || "",
     skills: dbProfile?.skills || [],
     testimonials: dbProfile?.testimonials || [],
@@ -113,6 +117,22 @@ export default function ProfilePage() {
             </p>
 
             <div className="space-y-5">
+              {/* Email — read-only */}
+              {profile.email && (
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wider">
+                    Email
+                  </label>
+                  <div className="flex items-center gap-2.5 w-full px-4 py-3 bg-white/[0.03] border border-white/[0.04] rounded-xl text-gray-500 text-sm">
+                    <Mail className="w-4 h-4 shrink-0" />
+                    {profile.email}
+                  </div>
+                  <p className="text-[11px] text-gray-600 mt-1">
+                    Email is managed via your account settings and cannot be changed here.
+                  </p>
+                </div>
+              )}
+
               {/* Display Name */}
               <div>
                 <label className="block text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wider">
@@ -270,6 +290,12 @@ export default function ProfilePage() {
             <h2 className="text-xl font-extrabold text-white tracking-tight">
               {profile.name || "Your Name"}
             </h2>
+            {profile.email && (
+              <p className="text-gray-500 text-xs mt-1 flex items-center justify-center gap-1.5">
+                <Mail className="w-3 h-3" />
+                {profile.email}
+              </p>
+            )}
             <p className="text-gray-500 text-sm mt-1 flex items-center justify-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-[#00F0B5] shadow-[0_0_6px_rgba(0,240,181,0.4)]" />
               Available for Work

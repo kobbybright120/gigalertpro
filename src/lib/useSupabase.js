@@ -577,7 +577,8 @@ export function useProfile() {
       .select("*")
       .eq("id", user.id)
       .maybeSingle();
-    setProfile(data);
+    // Merge auth email in case the profiles row predates the email column
+    setProfile(data ? { ...data, email: data.email || user.email } : null);
     setLoading(false);
   }, [user]);
 
@@ -606,6 +607,7 @@ export function useProfile() {
       p_skills: payload.skills ?? [],
       p_testimonials: payload.testimonials ?? [],
       p_portfolio_links: payload.portfolio_links ?? [],
+      p_email: user.email ?? null,
     });
 
     if (error) {
