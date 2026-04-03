@@ -16,6 +16,7 @@ const DISABLE_AUTH =
   VITE_SUPABASE_URL.includes("placeholder") ||
   !VITE_SUPABASE_ANON_KEY;
 import Navbar from "./components/Navbar";
+import SubscriptionGate from "./components/SubscriptionGate";
 import LandingPage from "./pages/LandingPage";
 import AuthPage from "./pages/AuthPage";
 import DashboardPage from "./pages/DashboardPage";
@@ -41,7 +42,9 @@ function ProtectedLayout() {
       <Navbar />
       {/* Main content offset by sidebar width */}
       <main className="md:ml-60 pt-14 md:pt-0 min-h-screen">
-        <Outlet />
+        <SubscriptionGate>
+          <Outlet />
+        </SubscriptionGate>
       </main>
     </div>
   );
