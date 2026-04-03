@@ -53,7 +53,7 @@ export default function Navbar() {
         >
           <div className="w-7 h-7 rounded-lg overflow-hidden">
             <img
-              src="/GigAlertIcon.png"
+              src="/GigAlertIcon.png?v=20260403"
               alt="GigAlertPro"
               className="w-7 h-7 object-cover"
             />
@@ -114,7 +114,7 @@ export default function Navbar() {
         <div className="h-16 flex items-center gap-2.5 px-5 border-b border-white/[0.04] shrink-0">
           <div className="w-8 h-8 rounded-lg overflow-hidden shadow-[0_0_12px_rgba(0,240,181,0.15)]">
             <img
-              src="/GigAlertIcon.png"
+              src="/GigAlertIcon.png?v=20260403"
               alt="GigAlertPro"
               className="w-8 h-8 object-cover"
             />
