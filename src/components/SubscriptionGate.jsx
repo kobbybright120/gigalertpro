@@ -12,6 +12,7 @@ const DISABLE_AUTH =
 const ACTIVE_STATUSES = ["active", "trialing"];
 
 export default function SubscriptionGate({ children }) {
+  console.debug("SubscriptionGate: PAYMENTS_ENABLED=", PAYMENTS_ENABLED);
   if (!PAYMENTS_ENABLED) return children;
   const { profile, loading } = useProfile();
 
