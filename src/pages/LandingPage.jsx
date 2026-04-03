@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import {
   Zap,
   ArrowRight,
@@ -156,19 +157,24 @@ const DEMO_GIGS = [
    MAIN COMPONENT
    ═══════════════════════════════════════════════════════════════════════ */
 export default function LandingPage() {
+  const { user } = useAuth();
+
   async function handleCheckout(period) {
     try {
-      const res = await fetch("/api/create-checkout", {
+      const res = await fetch("/api/create-paystack-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ period }),
+        body: JSON.stringify({
+          period,
+          email: user?.email ?? undefined,
+        }),
       });
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;
       } else {
         console.error("Checkout error:", data.error);
-        // Fallback to auth page if Stripe not yet configured
+        // Fallback to auth page if Paystack not yet configured
         window.location.href = "/auth";
       }
     } catch {
