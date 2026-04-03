@@ -119,8 +119,8 @@ export function notifyNewGigs(alerts) {
 function showNotification(title, options = {}) {
   try {
     const notif = new Notification(title, {
-      icon: "/logo/GigAlertIcon.png",
-      badge: "/logo/GigAlertIcon.png",
+      icon: "/GigAlertIcon.png",
+      badge: "/GigAlertIcon.png",
       silent: false,
       ...options,
     });
