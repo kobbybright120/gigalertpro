@@ -1,6 +1,8 @@
 import { Crown } from "lucide-react";
+import { PAYMENTS_ENABLED } from "../../payments.config.js";
 
 export default function PremiumBanner() {
+  if (!PAYMENTS_ENABLED) return null;
   return (
     <div className="bg-gradient-to-r from-[#00F0B5]/10 to-[#00D4FF]/10 border border-[#00F0B5]/20 rounded-xl p-4 flex items-center justify-between">
       <div className="flex items-center gap-3">

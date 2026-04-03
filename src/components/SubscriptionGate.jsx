@@ -1,6 +1,7 @@
 import { useProfile } from "../lib/useSupabase";
 import { Link } from "react-router-dom";
 import { Zap, ArrowRight, Shield, Star, CheckCircle2 } from "lucide-react";
+import { PAYMENTS_ENABLED } from "../../payments.config.js";
 
 const DISABLE_AUTH =
   import.meta.env.VITE_DISABLE_AUTH === "true" ||
@@ -8,9 +9,11 @@ const DISABLE_AUTH =
   (import.meta.env.VITE_SUPABASE_URL || "").includes("placeholder") ||
   !import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+
 const ACTIVE_STATUSES = ["active", "trialing"];
 
 export default function SubscriptionGate({ children }) {
+  if (!PAYMENTS_ENABLED) return children;
   const { profile, loading } = useProfile();
 
   // Demo mode — skip gate

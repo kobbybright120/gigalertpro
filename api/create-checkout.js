@@ -12,6 +12,8 @@
 //   APP_URL                    — https://gigalertpro.com (no trailing slash)
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { PAYMENTS_ENABLED } from "../payments.config.js";
+
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 const STRIPE_PRICE_MONTHLY = process.env.STRIPE_PRICE_MONTHLY;
 const STRIPE_PRICE_YEARLY = process.env.STRIPE_PRICE_YEARLY;
@@ -26,6 +28,10 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
   if (req.method === "OPTIONS") return res.status(200).end();
+
+  if (req.method === "POST" && !PAYMENTS_ENABLED) {
+    return res.status(503).json({ error: "Payments temporarily disabled" });
+  }
 
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });

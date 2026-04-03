@@ -12,6 +12,8 @@
 //   APP_URL                    — https://gigalertpro.com (no trailing slash)
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { PAYMENTS_ENABLED } from "../payments.config.js";
+
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 const PAYSTACK_PLAN_MONTHLY = process.env.PAYSTACK_PLAN_MONTHLY;
 const PAYSTACK_PLAN_YEARLY = process.env.PAYSTACK_PLAN_YEARLY;
@@ -82,6 +84,10 @@ export default async function handler(req, res) {
 
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  if (!PAYMENTS_ENABLED) {
+    return res.status(503).json({ error: "Payments temporarily disabled" });
   }
 
   if (!PAYSTACK_SECRET_KEY) {

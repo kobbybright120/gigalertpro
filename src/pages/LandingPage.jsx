@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { PAYMENTS_ENABLED } from "../../payments.config.js";
 import {
   Zap,
   ArrowRight,
@@ -160,6 +161,12 @@ export default function LandingPage() {
   const { user } = useAuth();
 
   async function handleCheckout(period) {
+    if (!PAYMENTS_ENABLED) {
+      // Payments disabled: fall back to auth/signup
+      window.location.href = "/auth";
+      return;
+    }
+
     try {
       const res = await fetch("/api/create-paystack-checkout", {
         method: "POST",
