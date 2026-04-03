@@ -55,7 +55,7 @@ export default function Navbar() {
             <img
               src="/GigAlertIcon.png?v=20260403"
               alt="GigAlertPro"
-              className="w-full h-full object-contain transform scale-125 origin-center"
+              className="w-full h-full object-contain transform scale-100 origin-center"
             />
             <span>
               GigAlert<span className="text-gradient">Pro</span>
