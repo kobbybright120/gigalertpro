@@ -128,7 +128,8 @@ export default function ProfilePage() {
                     {profile.email}
                   </div>
                   <p className="text-[11px] text-gray-600 mt-1">
-                    Email is managed via your account settings and cannot be changed here.
+                    Email is managed via your account settings and cannot be
+                    changed here.
                   </p>
                 </div>
               )}
