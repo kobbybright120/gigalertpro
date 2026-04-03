@@ -34,7 +34,12 @@ For each post, decide: is a CLIENT actively looking to HIRE or PAY a freelancer 
 ═══ OUTPUT "0" (not a gig) if the post matches ANY of these: ═══
 • Freelancer/professional advertising their OWN services or availability
   ("I'm a developer", "hire me", "portfolio inside", "available for work",
-   "X years experience", "open for commissions")
+   "X years experience", "open for commissions", "[profession] here",
+   "developer here", "designer here", "writer here", "editor here",
+   "X projects completed", "X+ projects", "my portfolio", "check out my work",
+   "taking on new clients", "available for new projects", "DMs open",
+   "offering services", "my services include", "I specialize in",
+   "I can help you with", "I build", "I design", "I write")
 • Someone LOOKING FOR work/clients (job seeker, not job poster)
 • Discussion, rant, question, or opinion about hiring, freelancing, or the industry
   ("Do you feel like this is a problem?", "I'm tired of...", "What do you think about...")
@@ -57,11 +62,14 @@ For each post, decide: is a CLIENT actively looking to HIRE or PAY a freelancer 
 • Post uses hiring vocabulary but is really a discussion or complaint → 0
 • Freelancer title that sounds like a job but is self-promotion
   ("Part-Time Remote Web Developer Available | Portfolio Inside" → 0)
+• "Shopify developer here, 50+ projects" (freelancer advertising services → 0)
+• "[skill] developer/designer/writer/editor here" with project counts → 0
 • Posts asking for recommendations or opinions, not hiring → 0
 
 ═══ CRITICAL RULE: ═══
-When genuinely unsure, output "1" — it is worse to hide a real gig from a paying user
-than to show a borderline post. But obvious non-gigs MUST be filtered.
+When genuinely unsure, lean toward "0". Self-promotion posts from freelancers
+are common on job subreddits and MUST be rejected. Only output "1" when the
+post clearly reads as a client/company seeking to hire or pay someone.
 
 Respond with ONLY index:classification pairs, one per line.
 Format: NUMBER:0 or NUMBER:1
