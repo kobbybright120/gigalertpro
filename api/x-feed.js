@@ -251,7 +251,7 @@ export default async function handler(req, res) {
       console.log("[x-feed] Serving from Upstash Redis cache");
       res.setHeader(
         "Cache-Control",
-        "public, s-maxage=60, stale-while-revalidate=120",
+        "public, s-maxage=30, stale-while-revalidate=30",
       );
       res.setHeader("Content-Type", "application/json");
       return res.status(200).send(cached);
@@ -269,7 +269,7 @@ export default async function handler(req, res) {
 
     res.setHeader(
       "Cache-Control",
-      "public, s-maxage=120, stale-while-revalidate=600",
+      "public, s-maxage=30, stale-while-revalidate=60",
     );
     res.setHeader("Content-Type", "application/json");
     return res.status(200).json(data);

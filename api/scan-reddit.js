@@ -304,10 +304,10 @@ export default async function handler(req, res) {
     const cached = await redisGet(REDIS_KEY);
     if (cached) {
       console.log("[scan-reddit] Serving from Upstash Redis cache");
-      // Aggressive CDN caching — data is pre-fetched by cron, safe to cache long
+      // Short CDN cache — cron refreshes Redis frequently, keep edge data fresh
       res.setHeader(
         "Cache-Control",
-        "public, s-maxage=60, stale-while-revalidate=120, stale-if-error=86400",
+        "public, s-maxage=30, stale-while-revalidate=30, stale-if-error=86400",
       );
       res.setHeader("Content-Type", "application/json");
       // cached is already a JSON string — send directly (no double-serialize)
@@ -327,7 +327,7 @@ export default async function handler(req, res) {
     // Shorter CDN TTL for live path
     res.setHeader(
       "Cache-Control",
-      "public, s-maxage=120, stale-while-revalidate=600, stale-if-error=3600",
+      "public, s-maxage=30, stale-while-revalidate=60, stale-if-error=3600",
     );
     res.setHeader("Content-Type", "application/json");
     return res.status(200).json(data);

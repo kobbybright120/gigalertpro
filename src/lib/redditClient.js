@@ -49,7 +49,7 @@ const SUBREDDITS = [
 ];
 
 // ── Cache (persisted in sessionStorage to survive HMR reloads) ───────────────
-const CACHE_TTL_MS = 45 * 1000; // 45 sec — keep data fresh for speed
+const CACHE_TTL_MS = 20 * 1000; // 20 sec — keep data as fresh as possible
 const CACHE_KEY = "gigalertpro_reddit_cache";
 function loadCache() {
   try {
