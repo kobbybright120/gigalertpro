@@ -55,6 +55,7 @@ const SUBREDDITS: SubConfig[] = [
   { name: "RecruitingHiringPH", mode: "new", weight: 1.0 },
   { name: "VancouverJobs", mode: "new", weight: 1.0 },
   { name: "freelance", mode: "new", weight: 0.8 },
+  { name: "freelancerguide", mode: "new", weight: 1.0 },
   { name: "jobbit", mode: "new", weight: 1.0 },
   { name: "remotework", mode: "new", weight: 0.9 },
   { name: "remotelegaljobs", mode: "new", weight: 1.0 },
