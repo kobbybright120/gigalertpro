@@ -18,6 +18,9 @@ import {
   Globe,
   Radio,
   ChevronDown,
+  Users,
+  X,
+  Minus,
 } from "lucide-react";
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -230,7 +233,7 @@ export default function LandingPage() {
               to="/auth"
               className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-[#00F0B5] text-[#020617] text-sm font-semibold rounded-lg hover:bg-[#00dba5] transition-all duration-200"
             >
-              Start Free Trial <ArrowRight className="w-4 h-4" />
+              Get Started Free <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </div>
@@ -270,7 +273,7 @@ export default function LandingPage() {
               to="/auth"
               className="group inline-flex items-center gap-2 px-8 py-4 bg-[#00F0B5] text-[#020617] font-bold rounded-lg hover:bg-[#00dba5] transition-all duration-200 text-base"
             >
-              Start Free Trial
+              Get Started Free
               <ArrowRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
             </Link>
             <a
@@ -282,7 +285,7 @@ export default function LandingPage() {
           </div>
 
           <p className="mt-5 text-sm text-gray-500">
-            🔒 No credit card. No spam. Takes 45 seconds to set up.
+            🔒 No credit card needed. Free forever on the starter plan.
           </p>
 
           {/* Social proof: avatar stack */}
@@ -547,138 +550,11 @@ export default function LandingPage() {
       </section>
 
       {/* ── Pricing ── */}
-      <section
-        ref={priceRef}
-        id="pricing"
-        className="relative py-28 border-t border-white/[0.04]"
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div
-            className={`text-center mb-16 transition-all duration-700 ease-out ${priceVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
-          >
-            <p className="text-sm font-semibold text-[#00F0B5] uppercase tracking-widest mb-3">
-              Pricing
-            </p>
-            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-              One plan. Everything included.{" "}
-              <span className="text-[#00F0B5]">No surprises.</span>
-            </h2>
-            <p className="mt-4 text-gray-400 text-lg max-w-xl mx-auto">
-              Start your free trial today. No credit card required. Cancel
-              anytime.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
-            {/* Monthly */}
-            <div
-              className={`glass-card rounded-2xl p-8 hover:border-white/10 flex flex-col transition-all duration-700 ease-out ${priceVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
-              style={stagger(0)}
-            >
-              <div className="mb-6">
-                <h3 className="text-lg font-bold text-white">Monthly</h3>
-                <p className="text-gray-500 text-sm mt-1">Billed every month</p>
-              </div>
-              <div className="mb-8">
-                <div className="flex items-end gap-1">
-                  <span className="text-5xl font-extrabold text-white">
-                    $20
-                  </span>
-                  <span className="text-gray-500 text-sm pb-2">/month</span>
-                </div>
-              </div>
-              <ul className="space-y-3 mb-8 flex-1">
-                <PricingFeature text="Unlimited keyword alerts" />
-                <PricingFeature text="Reddit, Craigslist & X/Twitter" />
-                <PricingFeature text="Real-time gig scanning" />
-                <PricingFeature text="Gig quality scoring" />
-                <PricingFeature text="50 AI proposals per day" />
-                <PricingFeature text="Instant alerts + email notifications" />
-                <PricingFeature text="Freelancer profile hub" />
-              </ul>
-              <button
-                onClick={() => handleCheckout("monthly")}
-                className="w-full py-3.5 border border-white/10 text-gray-300 font-semibold rounded-xl hover:bg-white/[0.04] hover:border-white/20 transition-all duration-300 flex items-center justify-center gap-2"
-              >
-                Start Free Trial
-                <ArrowRight className="w-4 h-4" />
-              </button>
-              <p className="text-xs text-gray-600 text-center mt-3">
-                No credit card required. Cancel anytime.
-              </p>
-            </div>
-
-            {/* Yearly */}
-            <div
-              className={`relative glass-card rounded-2xl p-8 border-[#00F0B5]/20 hover:border-[#00F0B5]/30 glow-green flex flex-col transition-all duration-700 ease-out ${priceVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
-              style={stagger(1)}
-            >
-              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-                <span className="inline-flex items-center gap-1 px-3 py-1 bg-[#00F0B5] text-[#020617] text-xs font-bold rounded-full">
-                  <Star className="w-3 h-3" /> Most Popular · Save $48/yr
-                </span>
-              </div>
-              <div className="mb-6">
-                <h3 className="text-lg font-bold text-white">Yearly</h3>
-                <p className="text-gray-500 text-sm mt-1">Billed once a year</p>
-              </div>
-              <div className="mb-8">
-                <div className="flex items-end gap-1">
-                  <span className="text-5xl font-extrabold text-white">
-                    $16
-                  </span>
-                  <span className="text-gray-500 text-sm pb-2">/month</span>
-                </div>
-                <p className="text-sm text-gray-500 mt-1.5">
-                  Billed as{" "}
-                  <span className="text-[#00F0B5] font-semibold">
-                    $192/year
-                  </span>
-                  <span className="ml-2 line-through text-gray-600">$240</span>
-                </p>
-              </div>
-              <ul className="space-y-3 mb-8 flex-1">
-                <PricingFeature text="Everything in Monthly" highlighted />
-                <PricingFeature text="2 months free" highlighted />
-                <PricingFeature text="Unlimited keyword alerts" highlighted />
-                <PricingFeature
-                  text="Reddit, Craigslist & X/Twitter"
-                  highlighted
-                />
-                <PricingFeature text="Real-time gig scanning" highlighted />
-                <PricingFeature text="Gig quality scoring" highlighted />
-                <PricingFeature text="50 AI proposals per day" highlighted />
-                <PricingFeature
-                  text="Instant alerts + email notifications"
-                  highlighted
-                />
-                <PricingFeature text="Freelancer profile hub" highlighted />
-              </ul>
-              <button
-                onClick={() => handleCheckout("yearly")}
-                className="w-full py-3.5 bg-[#00F0B5] text-[#020617] font-bold rounded-xl hover:bg-[#00dba5] transition-all duration-200 flex items-center justify-center gap-2"
-              >
-                Start Free Trial
-                <ArrowRight className="w-4 h-4" />
-              </button>
-              <p className="text-xs text-gray-600 text-center mt-3">
-                No credit card required. Cancel anytime.
-              </p>
-            </div>
-          </div>
-
-          <p className="text-center text-sm text-gray-500 mt-8">
-            Questions?{" "}
-            <a
-              href="mailto:support@gigalertpro.com"
-              className="text-[#00F0B5] hover:underline"
-            >
-              Contact us
-            </a>
-            . We reply within 24 hours.
-          </p>
-        </div>
-      </section>
+      <PricingSection
+        priceRef={priceRef}
+        priceVis={priceVis}
+        handleCheckout={handleCheckout}
+      />
 
       {/* ── Social Proof ── */}
       <section
@@ -732,7 +608,7 @@ export default function LandingPage() {
                 to="/auth"
                 className="group inline-flex items-center gap-2 px-8 py-4 mt-12 bg-[#00F0B5] text-[#020617] font-bold rounded-lg hover:bg-[#00dba5] transition-all duration-200 text-base"
               >
-                Start Free Trial
+                Get Started Free
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
               </Link>
             </div>
@@ -848,7 +724,7 @@ export default function LandingPage() {
                 to="/auth"
                 className="group inline-flex items-center gap-2 px-8 py-4 bg-[#00F0B5] text-[#020617] font-bold rounded-lg hover:bg-[#00dba5] transition-all duration-200 text-base"
               >
-                Start Free Trial
+                Get Started Free
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
               </Link>
               <p className="text-sm text-gray-500 mt-5">
@@ -1299,6 +1175,353 @@ function LiveDemo() {
         </div>
       )}
     </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   PRICING SECTION
+   ═══════════════════════════════════════════════════════════════════════ */
+function PricingSection({ priceRef, priceVis, handleCheckout }) {
+  const [annual, setAnnual] = useState(false);
+
+  const proPrice = annual ? 12 : 15;
+  const teamPrice = 29;
+
+  const COMPARISON_ROWS = [
+    { label: "Alerts per day", free: "3", pro: "Unlimited", team: "Unlimited" },
+    {
+      label: "Platforms covered",
+      free: "Reddit only",
+      pro: "All (Reddit, X, Discord and more)",
+      team: "All (Reddit, X, Discord and more)",
+    },
+    { label: "Keywords", free: "1", pro: "Unlimited", team: "Unlimited" },
+    { label: "AI proposal generator", free: false, pro: true, team: true },
+    {
+      label: "Scanning speed",
+      free: "Every 30 min",
+      pro: "Every 2 min",
+      team: "Every 2 min",
+    },
+    {
+      label: "Notifications",
+      free: "Dashboard only",
+      pro: "Browser + email",
+      team: "Browser + email",
+    },
+    { label: "Team members", free: "1", pro: "1", team: "Up to 3" },
+  ];
+
+  return (
+    <section
+      ref={priceRef}
+      id="pricing"
+      className="relative py-28 border-t border-white/[0.04]"
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div
+          className={`text-center mb-16 transition-all duration-700 ease-out ${priceVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+        >
+          <p className="text-sm font-semibold text-[#00F0B5] uppercase tracking-widest mb-3">
+            Pricing
+          </p>
+          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+            Start free. Upgrade when you're ready.
+          </h2>
+          <p className="mt-4 text-gray-400 text-lg max-w-xl mx-auto">
+            No credit card needed to get started. Upgrade to Pro the moment
+            GigAlertPro finds your first client.
+          </p>
+
+          {/* Billing toggle */}
+          <div className="flex items-center justify-center gap-4 mt-8">
+            <span
+              className={`text-sm font-medium ${!annual ? "text-white" : "text-gray-500"}`}
+            >
+              Monthly
+            </span>
+            <button
+              onClick={() => setAnnual(!annual)}
+              className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${annual ? "bg-[#00F0B5]" : "bg-white/10"}`}
+            >
+              <span
+                className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform duration-200 ${annual ? "translate-x-6" : ""}`}
+              />
+            </button>
+            <span
+              className={`text-sm font-medium ${annual ? "text-white" : "text-gray-500"}`}
+            >
+              Annual
+            </span>
+            {annual && (
+              <span className="px-2.5 py-1 bg-[#00F0B5]/10 text-[#00F0B5] text-xs font-bold rounded-full border border-[#00F0B5]/20">
+                Save 20%
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Pricing cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          {/* Free Plan */}
+          <div
+            className={`glass-card rounded-2xl p-8 hover:border-white/10 flex flex-col transition-all duration-700 ease-out ${priceVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+            style={stagger(0)}
+          >
+            <div className="mb-6">
+              <h3 className="text-lg font-bold text-white">Free</h3>
+              <p className="text-gray-500 text-sm mt-1">
+                Get started, no strings attached
+              </p>
+            </div>
+            <div className="mb-8">
+              <div className="flex items-end gap-1">
+                <span className="text-5xl font-extrabold text-white">$0</span>
+                <span className="text-gray-500 text-sm pb-2">/month</span>
+              </div>
+              <p className="text-sm text-gray-500 mt-1.5">Free forever</p>
+            </div>
+            <ul className="space-y-3 mb-8 flex-1">
+              <PricingFeature text="3 alerts per day" />
+              <PricingFeature text="1 platform (Reddit)" />
+              <PricingFeature text="1 keyword" />
+              <PricingFeature text="Basic dashboard access" />
+              <PricingFeature text="Gig quality scoring" />
+            </ul>
+            <Link
+              to="/auth"
+              className="w-full py-3.5 border border-white/10 text-gray-300 font-semibold rounded-xl hover:bg-white/[0.04] hover:border-white/20 transition-all duration-300 flex items-center justify-center gap-2 text-sm"
+            >
+              Get Started Free
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+            <p className="text-xs text-gray-600 text-center mt-3">
+              Free forever. No credit card. Ever.
+            </p>
+          </div>
+
+          {/* Pro Plan */}
+          <div
+            className={`relative glass-card rounded-2xl p-8 border-[#00F0B5]/20 hover:border-[#00F0B5]/30 glow-green flex flex-col transition-all duration-700 ease-out ${priceVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+            style={stagger(1)}
+          >
+            <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+              <span className="inline-flex items-center gap-1 px-3 py-1 bg-[#00F0B5] text-[#020617] text-xs font-bold rounded-full">
+                <Star className="w-3 h-3" /> Most Popular
+              </span>
+            </div>
+            <div className="mb-6">
+              <h3 className="text-lg font-bold text-white">Pro</h3>
+              <p className="text-gray-500 text-sm mt-1">
+                For serious freelancers
+              </p>
+            </div>
+            <div className="mb-8">
+              <div className="flex items-end gap-1">
+                <span className="text-5xl font-extrabold text-white">
+                  ${proPrice}
+                </span>
+                <span className="text-gray-500 text-sm pb-2">/month</span>
+              </div>
+              {annual ? (
+                <p className="text-sm text-gray-500 mt-1.5">
+                  Billed as{" "}
+                  <span className="text-[#00F0B5] font-semibold">
+                    $144/year
+                  </span>
+                  <span className="ml-2 line-through text-gray-600">$180</span>
+                </p>
+              ) : (
+                <p className="text-sm text-gray-500 mt-1.5">Billed monthly</p>
+              )}
+            </div>
+            <ul className="space-y-3 mb-8 flex-1">
+              <PricingFeature text="Unlimited alerts" highlighted />
+              <PricingFeature
+                text="All platforms (Reddit, X, Discord and more)"
+                highlighted
+              />
+              <PricingFeature text="Unlimited keywords" highlighted />
+              <PricingFeature text="AI proposal generator" highlighted />
+              <PricingFeature
+                text="Priority scanning every 2 minutes"
+                highlighted
+              />
+              <PricingFeature
+                text="Browser and email notifications"
+                highlighted
+              />
+              <PricingFeature text="All niches" highlighted />
+            </ul>
+            <button
+              onClick={() => handleCheckout(annual ? "yearly" : "monthly")}
+              className="w-full py-3.5 bg-[#00F0B5] text-[#020617] font-bold rounded-xl hover:bg-[#00dba5] transition-all duration-200 flex items-center justify-center gap-2 text-sm"
+            >
+              Start Free Trial
+              <ArrowRight className="w-4 h-4" />
+            </button>
+            <p className="text-xs text-gray-600 text-center mt-3">
+              No credit card required. Cancel anytime.
+            </p>
+          </div>
+
+          {/* Team Plan */}
+          <div
+            className={`glass-card rounded-2xl p-8 hover:border-white/10 flex flex-col transition-all duration-700 ease-out ${priceVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+            style={stagger(2)}
+          >
+            <div className="mb-6">
+              <h3 className="text-lg font-bold text-white">Team</h3>
+              <p className="text-gray-500 text-sm mt-1">
+                For small teams and agencies
+              </p>
+            </div>
+            <div className="mb-8">
+              <div className="flex items-end gap-1">
+                <span className="text-5xl font-extrabold text-white">
+                  ${teamPrice}
+                </span>
+                <span className="text-gray-500 text-sm pb-2">/month</span>
+              </div>
+              <p className="text-sm text-gray-500 mt-1.5">Billed monthly</p>
+            </div>
+            <ul className="space-y-3 mb-8 flex-1">
+              <PricingFeature text="Everything in Pro" highlighted />
+              <PricingFeature text="Up to 3 team members" highlighted />
+              <PricingFeature text="Shared dashboard" highlighted />
+              <PricingFeature text="Priority support" highlighted />
+            </ul>
+            <button
+              onClick={() => handleCheckout("team")}
+              className="w-full py-3.5 border border-white/10 text-gray-300 font-semibold rounded-xl hover:bg-white/[0.04] hover:border-white/20 transition-all duration-300 flex items-center justify-center gap-2 text-sm"
+            >
+              Start Free Trial
+              <ArrowRight className="w-4 h-4" />
+            </button>
+            <p className="text-xs text-gray-600 text-center mt-3">
+              No credit card required. Cancel anytime.
+            </p>
+          </div>
+        </div>
+
+        {/* Comparison table */}
+        <div
+          className={`mt-20 max-w-4xl mx-auto transition-all duration-700 ease-out ${priceVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+          style={stagger(3)}
+        >
+          <h3 className="text-xl font-bold text-white text-center mb-8">
+            Compare plans
+          </h3>
+          <div className="glass-card rounded-2xl overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-white/[0.06]">
+                    <th className="text-left text-gray-400 font-medium py-4 px-6 w-1/4"></th>
+                    <th className="text-center text-gray-300 font-semibold py-4 px-4">
+                      Free
+                    </th>
+                    <th className="text-center text-[#00F0B5] font-semibold py-4 px-4">
+                      Pro
+                    </th>
+                    <th className="text-center text-gray-300 font-semibold py-4 px-4">
+                      Team
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {COMPARISON_ROWS.map(({ label, free, pro, team }, i) => (
+                    <tr
+                      key={label}
+                      className={
+                        i < COMPARISON_ROWS.length - 1
+                          ? "border-b border-white/[0.04]"
+                          : ""
+                      }
+                    >
+                      <td className="text-left text-gray-400 py-3.5 px-6">
+                        {label}
+                      </td>
+                      <td className="text-center py-3.5 px-4">
+                        <ComparisonCell value={free} />
+                      </td>
+                      <td className="text-center py-3.5 px-4">
+                        <ComparisonCell value={pro} highlighted />
+                      </td>
+                      <td className="text-center py-3.5 px-4">
+                        <ComparisonCell value={team} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        {/* Trust strip */}
+        <div
+          className={`mt-16 glass-card rounded-2xl p-8 max-w-4xl mx-auto transition-all duration-700 ease-out ${priceVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+          style={stagger(4)}
+        >
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            {[
+              { value: "2,400+", label: "Active Freelancers" },
+              { value: "$2.4M+", label: "In Gigs Discovered" },
+              { value: "4.9/5", label: "Average Rating" },
+              { value: "7 Days", label: "Free on Pro" },
+            ].map(({ value, label }, i) => (
+              <div key={label} style={stagger(i)}>
+                <p className="text-2xl sm:text-3xl font-extrabold text-white">
+                  {value}
+                </p>
+                <p className="text-sm text-gray-500 mt-1">{label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <p className="text-center text-sm text-gray-500 mt-8">
+          Questions?{" "}
+          <a
+            href="mailto:support@gigalertpro.com"
+            className="text-[#00F0B5] hover:underline"
+          >
+            Contact us
+          </a>
+          . We reply within 24 hours.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function ComparisonCell({ value, highlighted }) {
+  if (value === true) {
+    return (
+      <div className="flex justify-center">
+        <div
+          className={`w-5 h-5 rounded-full flex items-center justify-center ${highlighted ? "bg-[#00F0B5]/15 text-[#00F0B5]" : "bg-white/[0.06] text-gray-400"}`}
+        >
+          <Check className="w-3 h-3" />
+        </div>
+      </div>
+    );
+  }
+  if (value === false) {
+    return (
+      <div className="flex justify-center">
+        <Minus className="w-4 h-4 text-gray-600" />
+      </div>
+    );
+  }
+  return (
+    <span
+      className={highlighted ? "text-gray-200 font-medium" : "text-gray-400"}
+    >
+      {value}
+    </span>
   );
 }
 
