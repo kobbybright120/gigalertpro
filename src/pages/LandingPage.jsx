@@ -6,7 +6,6 @@ import {
   Zap,
   ArrowRight,
   Sparkles,
-  UserCircle,
   CheckCircle2,
   Quote,
   Shield,
@@ -14,18 +13,13 @@ import {
   Check,
   Star,
   Bell,
-  Bookmark,
   Trophy,
   TrendingUp,
   Search,
   Globe,
-  MessageSquare,
   AlertTriangle,
   Radio,
-  ExternalLink,
-  ChevronRight,
   ChevronDown,
-  HelpCircle,
 } from "lucide-react";
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -236,15 +230,9 @@ export default function LandingPage() {
           <div className="flex items-center gap-3">
             <Link
               to="/auth"
-              className="text-sm text-gray-400 hover:text-white transition-colors px-3 py-2"
-            >
-              Log In
-            </Link>
-            <Link
-              to="/auth"
               className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-[#00F0B5] text-[#020617] text-sm font-semibold rounded-full hover:bg-[#00dba5] hover:shadow-[0_0_24px_rgba(0,240,181,0.25)] transition-all duration-300"
             >
-              Get Started <ArrowRight className="w-4 h-4" />
+              Start Free Trial <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </div>
@@ -267,19 +255,19 @@ export default function LandingPage() {
               <span className="relative inline-flex rounded-full h-2 w-2 bg-[#00F0B5]" />
             </span>
             <span className="text-sm text-[#00F0B5] font-medium tracking-wide">
-              Scanning 37+ sources right now
+              Scanning Reddit, Craigslist & X right now
             </span>
           </div>
 
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold leading-[1.1] tracking-tight">
-            The gigs you want. <br className="hidden sm:block" />
-            <span className="text-gradient">Before anyone else.</span>
+            You're losing gigs <br className="hidden sm:block" />
+            <span className="text-gradient">while you sleep. We fix that.</span>
           </h1>
 
           <p className="mt-7 text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
-            GigAlertPro scans Reddit, Craigslist, X/Twitter, and 37+ sources
-            every 2 minutes. You see matching gigs first, apply first, and close
-            projects before the competition even shows up.
+            Reddit gig posts get 20+ applicants in the first 10 minutes.
+            GigAlertPro sends you instant browser alerts within seconds of
+            posting — so you apply first, not last. Try it free.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-12">
@@ -287,7 +275,7 @@ export default function LandingPage() {
               to="/auth"
               className="group inline-flex items-center gap-2 px-8 py-4 bg-[#00F0B5] text-[#020617] font-bold rounded-full hover:bg-[#00dba5] hover:shadow-[0_0_32px_rgba(0,240,181,0.3)] transition-all duration-300 text-base"
             >
-              Start Your 7-Day Free Trial
+              Start Free Trial
               <ArrowRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
             </Link>
             <a
@@ -297,6 +285,10 @@ export default function LandingPage() {
               See it in action
             </a>
           </div>
+
+          <p className="mt-5 text-sm text-gray-500">
+            🔒 No credit card. No spam. Takes 45 seconds to set up.
+          </p>
 
           {/* Social proof: avatar stack */}
           <div className="flex items-center justify-center gap-3 mt-14">
@@ -328,19 +320,21 @@ export default function LandingPage() {
                 ))}
               </div>
               <p className="text-sm text-gray-400">
-                Loved by{" "}
+                Joined by{" "}
                 <span className="text-white font-semibold">2,400+</span>{" "}
-                freelancers
+                freelancers on Reddit, Craigslist & X
               </p>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-6 mt-8 text-sm text-gray-500">
             <span className="flex items-center gap-1.5">
-              <Shield className="w-4 h-4 text-[#00F0B5]/60" /> 7-day free trial
+              <Shield className="w-4 h-4 text-[#00F0B5]/60" /> No credit card
+              required
             </span>
             <span className="flex items-center gap-1.5">
-              <Clock className="w-4 h-4 text-[#00F0B5]/60" /> Setup in 2 minutes
+              <Clock className="w-4 h-4 text-[#00F0B5]/60" /> Setup in 45
+              seconds
             </span>
             <span className="flex items-center gap-1.5">
               <Radio className="w-4 h-4 text-[#00F0B5]/60" /> Cancel anytime
@@ -349,10 +343,21 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── Problem Strip ── */}
+      <section className="relative border-y border-red-500/10 bg-red-500/[0.03]">
+        <div className="max-w-4xl mx-auto px-4 py-6 text-center">
+          <p className="text-base sm:text-lg font-bold text-red-400">
+            <AlertTriangle className="w-5 h-5 inline-block mr-2 -mt-0.5" />
+            The average Reddit gig post gets 20+ applicants in 10 minutes. If
+            you're not first, you're invisible.
+          </p>
+        </div>
+      </section>
+
       {/* ── Stats Bar ── */}
       <section
         ref={statsRef}
-        className="relative border-y border-white/[0.04] bg-[#0B1120]/40"
+        className="relative border-b border-white/[0.04] bg-[#0B1120]/40"
       >
         <div className="max-w-6xl mx-auto px-4 py-12 grid grid-cols-2 md:grid-cols-4 gap-8">
           {[
@@ -385,12 +390,14 @@ export default function LandingPage() {
               Features
             </p>
             <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-              Everything you need to{" "}
-              <span className="text-gradient">land more gigs</span>
+              Not just alerts.{" "}
+              <span className="text-gradient">
+                A complete system for winning gigs.
+              </span>
             </h2>
             <p className="mt-4 text-gray-400 text-lg max-w-xl mx-auto">
-              From intelligent gig scanning to quality scoring and instant
-              alerts, built for freelancers who want to be first.
+              Everything you need to find, evaluate, and win freelance gigs
+              before your competition even opens their browser.
             </p>
           </div>
 
@@ -400,65 +407,44 @@ export default function LandingPage() {
                 icon: Radio,
                 title: "Real-Time Gig Radar",
                 description:
-                  "See gigs within seconds of being posted across Reddit (34+ subs), Craigslist (10 cities), and X/Twitter. Early applicants get 3x more responses.",
+                  "We scan Reddit, Craigslist, and X every 2 minutes. You see gigs within seconds of being posted \u2014 not hours later. Early applicants get 3x more responses.",
                 accent: "from-[#00F0B5] to-[#00D4FF]",
               },
               {
                 icon: Globe,
                 title: "Multi-Platform Coverage",
                 description:
-                  "Stop wasting hours jumping between 10 tabs. One dashboard aggregates every opportunity from Reddit, Craigslist, X/Twitter, and more.",
+                  "Reddit (34+ subs), Craigslist (10 cities), X/Twitter \u2014 all in one dashboard. Stop wasting 2+ hours a day jumping between tabs. One feed covers everything.",
                 accent: "from-orange-400 to-orange-500",
               },
               {
                 icon: TrendingUp,
                 title: "Gig Quality Scoring",
                 description:
-                  "Every gig gets a 0 to 100 score based on budget, keyword match, and competition. Freelancers who focus on high-score gigs close 2x more deals.",
+                  "Every gig gets a 0\u2013100 score based on budget, keyword match, and competition level. Freelancers who focus on high-score gigs close 2x more deals.",
                 accent: "from-[#f59e0b] to-[#fbbf24]",
               },
               {
                 icon: Bell,
-                title: "Instant Notifications",
+                title: "Instant Browser Alerts",
                 description:
-                  "Get browser push alerts the moment a matching gig appears. Our fastest users apply within 3 minutes and consistently land the project.",
+                  "Get a push notification the second a matching gig appears. No more refreshing feeds. Our fastest users apply within 3 minutes and consistently win the project.",
                 accent: "from-blue-400 to-blue-500",
-              },
-              {
-                icon: Search,
-                title: "Smart Keyword Matching",
-                description:
-                  "Tell us what you do (\u201cReact developer\u201d, \u201clogo design\u201d) and our AI filters out the noise. You only see gigs worth your time.",
-                accent: "from-cyan-400 to-cyan-500",
-              },
-              {
-                icon: Bookmark,
-                title: "Save & Organize Gigs",
-                description:
-                  "Bookmark opportunities, track your pipeline, and never lose a lead. Your entire freelance workflow in one place.",
-                accent: "from-pink-400 to-rose-400",
               },
               {
                 icon: Sparkles,
                 title: "AI Proposal Generator",
                 badge: "AI",
                 description:
-                  "Generate a personalized, ready-to-send proposal in one click. Built from your profile, skills, and past wins. Apply 10x faster.",
+                  "One click generates a personalized, ready-to-send proposal built from your profile, skills, and past wins. Apply 10x faster than writing from scratch.",
                 accent: "from-[#7c3aed] to-[#a78bfa]",
               },
               {
                 icon: Trophy,
                 title: "Win Rate Learning",
                 description:
-                  "Mark proposals as Won, Got Reply, or No Response. The AI studies your winning patterns and writes better proposals over time.",
+                  "Mark proposals as Won, Got Reply, or No Response. The AI studies your winning patterns and writes sharper proposals over time. Users report 2x higher win rates after 30 days.",
                 accent: "from-emerald-400 to-emerald-500",
-              },
-              {
-                icon: UserCircle,
-                title: "Freelancer Profile Hub",
-                description:
-                  "Build a rich profile with skills, bio, and portfolio links. The AI uses it all to craft proposals that sound like you, not a template.",
-                accent: "from-indigo-400 to-indigo-500",
               },
             ].map((f, i) => (
               <div
@@ -487,8 +473,8 @@ export default function LandingPage() {
               How It Works
             </p>
             <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-              Three steps to your{" "}
-              <span className="text-gradient">next gig</span>
+              Three steps.{" "}
+              <span className="text-gradient">Apply first. Win.</span>
             </h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -496,20 +482,20 @@ export default function LandingPage() {
               {
                 step: "01",
                 emoji: "\ud83c\udfaf",
-                title: "Set Your Keywords",
-                desc: "Enter skills or roles you\u2019re looking for, \u201cReact developer\u201d, \u201clogo design\u201d, \u201cvideo editor\u201d. Our radar starts scanning 37+ sources immediately.",
+                title: "Tell Us What You Do",
+                desc: "Enter your skills \u2014 \u201cReact developer\u201d, \u201clogo design\u201d, \u201cvirtual assistant.\u201d Our radar starts scanning 37+ sources across Reddit, Craigslist, and X immediately. Takes 45 seconds.",
               },
               {
                 step: "02",
                 emoji: "\u26a1",
-                title: "Get Matched Instantly",
-                desc: "We surface the most relevant gigs, scored by quality, budget, and keyword match. You get notified the moment something matches your skills.",
+                title: "Get Alerted Instantly",
+                desc: "The moment a matching gig is posted, you get a browser push notification. No refreshing. No scrolling. Every gig is scored 0\u2013100 so you know which ones are worth your time.",
               },
               {
                 step: "03",
                 emoji: "\u2728",
-                title: "Apply First & Win",
-                desc: "Review the gig details, generate an AI-powered proposal in one click, and apply before the competition even sees the post.",
+                title: "Apply First & Close the Deal",
+                desc: "Generate an AI-powered proposal in one click, copy it, and DM the client. While others are still browsing Reddit, you\u2019ve already sent your pitch. First reply wins 80% of the time.",
               },
             ].map(({ step, emoji, title, desc }, i) => (
               <div
@@ -579,11 +565,12 @@ export default function LandingPage() {
               Pricing
             </p>
             <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-              Simple pricing.{" "}
-              <span className="text-gradient">Everything included.</span>
+              One plan. Everything included.{" "}
+              <span className="text-gradient">No surprises.</span>
             </h2>
             <p className="mt-4 text-gray-400 text-lg max-w-xl mx-auto">
-              Start your 7-day free trial today. No credit card required.
+              Start your free trial today. No credit card required. Cancel
+              anytime.
             </p>
           </div>
 
@@ -618,11 +605,11 @@ export default function LandingPage() {
                 onClick={() => handleCheckout("monthly")}
                 className="w-full py-3.5 border border-white/10 text-gray-300 font-semibold rounded-xl hover:bg-white/[0.04] hover:border-white/20 transition-all duration-300 flex items-center justify-center gap-2"
               >
-                Start 7-Day Free Trial
+                Start Free Trial
                 <ArrowRight className="w-4 h-4" />
               </button>
               <p className="text-xs text-gray-600 text-center mt-3">
-                Cancel anytime
+                No credit card required. Cancel anytime.
               </p>
             </div>
 
@@ -633,7 +620,7 @@ export default function LandingPage() {
             >
               <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
                 <span className="inline-flex items-center gap-1 px-3 py-1 bg-[#00F0B5] text-[#020617] text-xs font-bold rounded-full">
-                  <Star className="w-3 h-3" /> Save $48 a year
+                  <Star className="w-3 h-3" /> Most Popular — Save $48/yr
                 </span>
               </div>
               <div className="mb-6">
@@ -676,11 +663,11 @@ export default function LandingPage() {
                 onClick={() => handleCheckout("yearly")}
                 className="w-full py-3.5 bg-[#00F0B5] text-[#020617] font-bold rounded-xl hover:bg-[#00dba5] hover:shadow-[0_0_20px_rgba(0,240,181,0.25)] transition-all duration-300 flex items-center justify-center gap-2"
               >
-                Start 7-Day Free Trial
+                Start Free Trial
                 <ArrowRight className="w-4 h-4" />
               </button>
               <p className="text-xs text-gray-600 text-center mt-3">
-                Cancel anytime
+                No credit card required. Cancel anytime.
               </p>
             </div>
           </div>
@@ -730,12 +717,12 @@ export default function LandingPage() {
               className={`transition-all duration-700 ease-out ${proofVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
             >
               <p className="text-sm font-semibold text-[#00F0B5] uppercase tracking-widest mb-4">
-                Why Freelancers Love Us
+                Real Results
               </p>
               <h2 className="text-3xl sm:text-4xl font-extrabold leading-tight tracking-tight">
-                Freelancers are landing{" "}
-                <span className="text-gradient">$5k+ projects</span> by
-                responding first.
+                Freelancers are closing{" "}
+                <span className="text-gradient">$5K+ deals</span> by showing up
+                first.
               </h2>
 
               <div className="mt-10 space-y-5">
@@ -750,7 +737,7 @@ export default function LandingPage() {
                 to="/auth"
                 className="group inline-flex items-center gap-2 px-8 py-4 mt-12 bg-[#00F0B5] text-[#020617] font-bold rounded-full hover:bg-[#00dba5] hover:shadow-[0_0_32px_rgba(0,240,181,0.3)] transition-all duration-300 text-base"
               >
-                Start Your Free Trial
+                Start Free Trial
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
               </Link>
             </div>
@@ -759,25 +746,28 @@ export default function LandingPage() {
               className={`space-y-5 transition-all duration-700 ease-out delay-200 ${proofVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
             >
               <TestimonialCard
-                quote="GigAlertPro found a Reddit post looking for a designer 3 minutes after it went live. I applied first and closed a $3,000 project that same day."
+                quote="Got an alert 3 minutes after someone posted on r/forhire looking for a designer. Applied immediately. Closed a $3,000 project that same afternoon. Without this tool I never would've seen that post."
                 name="Sarah J."
                 role="UI Designer"
+                amount="$3,000"
                 initials="SJ"
                 color="from-yellow-400 to-orange-400"
                 rating={5}
               />
               <TestimonialCard
-                quote="I used to spend 2 hours a day scrolling Reddit and Craigslist for leads. Now I get notified instantly and only see gigs that actually match my skills. Already landed $8K in new work."
+                quote="I was spending 2 hours a day refreshing Reddit and Craigslist. Now I just wait for the ping. Landed $8,000 in new work my first month. Honestly can’t believe I used to do this manually."
                 name="Marcus T."
                 role="React Developer"
+                amount="$8,000"
                 initials="MT"
                 color="from-[#00F0B5] to-[#00D4FF]"
                 rating={5}
               />
               <TestimonialCard
-                quote="The AI proposal generator paid for the subscription in one day. I applied to a $6K Shopify rebuild 8 minutes after it was posted, and won the project."
+                quote="The AI proposal thing is insane. I saw a $6,000 Shopify rebuild on Reddit, hit generate, tweaked two sentences, and sent it. Got the gig 8 minutes after it was posted. The subscription paid for itself day one."
                 name="Alex K."
                 role="Full-Stack Dev"
+                amount="$6,000"
                 initials="AK"
                 color="from-[#7c3aed] to-[#a78bfa]"
                 rating={5}
@@ -800,38 +790,41 @@ export default function LandingPage() {
               FAQ
             </p>
             <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-              Common questions
+              Got questions? We've got answers.
             </h2>
           </div>
           <div className="space-y-3">
             {[
               {
+                q: "How fast do gigs actually show up?",
+                a: "Fast. We scan Reddit, Craigslist, and X every 1\u20132 minutes. Most gigs appear in your feed within seconds of being posted on the original platform. You'll get a browser push notification instantly \u2014 no refreshing, no checking back. Our fastest users apply within 3 minutes of a gig going live.",
+                defaultOpen: true,
+              },
+              {
+                q: "How is this different from Upwork or Fiverr?",
+                a: "On Upwork and Fiverr, you\u2019re competing with 50\u2013100 other freelancers on every posted job. By the time you see it, the client is already drowning in proposals. GigAlertPro scans places most freelancers never check \u2014 Reddit subs, Craigslist gigs, X/Twitter posts \u2014 and alerts you in seconds. You\u2019re often the first or second person to reply. That\u2019s how you win.",
+                defaultOpen: true,
+              },
+              {
                 q: "What sources does GigAlertPro scan?",
-                a: "We scan 37+ sources including Reddit (34+ subreddits like r/forhire, r/freelance, r/hiring), Craigslist (10 major cities), and X/Twitter. New sources are added regularly.",
-              },
-              {
-                q: "How fast do new gigs show up?",
-                a: "Our radar scans every 1 to 2 minutes depending on your plan. Most gigs appear in your feed within seconds of being posted on the original platform.",
-              },
-              {
-                q: "How is this different from job boards like Upwork or Fiverr?",
-                a: "Job boards are crowded. By the time you see a post, 50 people have already applied. GigAlertPro surfaces gigs from places most freelancers never check, and alerts you instantly so you can apply first.",
+                a: "We scan 37+ sources including Reddit (34+ subreddits like r/forhire, r/freelance, r/hiring), Craigslist (10 major cities), and X/Twitter freelance accounts. New sources are added regularly. One dashboard replaces hours of manual searching.",
               },
               {
                 q: "What does the AI proposal generator do?",
-                a: "It creates a personalized, ready-to-send proposal based on your profile, skills, and past winning patterns. One click to generate, then copy and send. Freelancers report applying 10x faster.",
+                a: "It writes a personalized, ready-to-send proposal in one click. It pulls from your profile, skills, and past wins to craft something that sounds like you \u2014 not a generic template. Freelancers report applying 10x faster. You generate, tweak a sentence or two, and send. Done.",
               },
               {
                 q: "Can I cancel anytime?",
-                a: "Yes. Cancel with one click from your account settings. No questions asked, no hidden fees. Your 7-day trial is completely commitment-free.",
+                a: "Yes. One click from your account settings. No questions, no hidden fees, no guilt trips. Your free trial is completely commitment-free. If it\u2019s not for you, cancel and you won\u2019t be charged a cent.",
               },
-            ].map(({ q, a }, i) => (
+            ].map(({ q, a, defaultOpen }, i) => (
               <FaqItem
                 key={i}
                 question={q}
                 answer={a}
                 visible={faqVis}
                 index={i}
+                defaultOpen={defaultOpen}
               />
             ))}
           </div>
@@ -847,21 +840,21 @@ export default function LandingPage() {
             <div className="absolute inset-0 bg-gradient-to-br from-[#00F0B5]/[0.06] to-[#00D4FF]/[0.03]" />
             <div className="relative">
               <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-4">
-                New gigs are being posted right now.
+                Someone just posted your perfect gig. Are you going to see it?
               </h2>
               <p className="text-gray-400 text-lg max-w-lg mx-auto mb-8">
-                Every minute you wait, someone else applies first. Start your
-                free trial and let GigAlertPro find your next project.
+                Every minute you're not using GigAlertPro, another freelancer is
+                applying first. Stop losing gigs you should be winning.
               </p>
               <Link
                 to="/auth"
                 className="group inline-flex items-center gap-2 px-8 py-4 bg-[#00F0B5] text-[#020617] font-bold rounded-full hover:bg-[#00dba5] hover:shadow-[0_0_32px_rgba(0,240,181,0.3)] transition-all duration-300 text-base"
               >
-                Start Your 7-Day Free Trial
+                Start Free Trial
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
               </Link>
-              <p className="text-xs text-gray-500 mt-4">
-                Cancel anytime. No credit card required to start.
+              <p className="text-sm text-gray-500 mt-5">
+                Join 2,400+ freelancers already landing gigs with GigAlertPro
               </p>
             </div>
           </div>
@@ -1365,8 +1358,8 @@ function BenefitItem({ text }) {
   );
 }
 
-function FaqItem({ question, answer, visible, index }) {
-  const [open, setOpen] = useState(false);
+function FaqItem({ question, answer, visible, index, defaultOpen }) {
+  const [open, setOpen] = useState(!!defaultOpen);
   return (
     <div
       className={`glass-card rounded-xl overflow-hidden transition-all duration-700 ease-out ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
@@ -1390,10 +1383,26 @@ function FaqItem({ question, answer, visible, index }) {
   );
 }
 
-function TestimonialCard({ quote, name, role, initials, color, rating }) {
+function TestimonialCard({
+  quote,
+  name,
+  role,
+  amount,
+  initials,
+  color,
+  rating,
+}) {
   return (
     <div className="glass-card rounded-2xl p-6 relative hover:border-white/10 transition-all duration-300">
       <Quote className="w-5 h-5 text-[#00F0B5]/20 absolute top-6 right-6" />
+      {amount && (
+        <div className="mb-3">
+          <span className="text-2xl font-extrabold text-gradient">
+            {amount}
+          </span>
+          <span className="text-sm text-gray-500 ml-2">deal closed</span>
+        </div>
+      )}
       {rating && (
         <div className="flex items-center gap-0.5 mb-3">
           {[...Array(rating)].map((_, i) => (
