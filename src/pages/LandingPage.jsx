@@ -20,7 +20,6 @@ import {
   ChevronDown,
   Users,
   X,
-  Minus,
 } from "lucide-react";
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -1187,31 +1186,6 @@ function PricingSection({ priceRef, priceVis, handleCheckout }) {
   const proPrice = annual ? 12 : 15;
   const teamPrice = 29;
 
-  const COMPARISON_ROWS = [
-    { label: "Alerts per day", free: "3", pro: "Unlimited", team: "Unlimited" },
-    {
-      label: "Platforms covered",
-      free: "Reddit only",
-      pro: "All (Reddit, X, Discord and more)",
-      team: "All (Reddit, X, Discord and more)",
-    },
-    { label: "Keywords", free: "1", pro: "Unlimited", team: "Unlimited" },
-    { label: "AI proposal generator", free: false, pro: true, team: true },
-    {
-      label: "Scanning speed",
-      free: "Every 30 min",
-      pro: "Every 2 min",
-      team: "Every 2 min",
-    },
-    {
-      label: "Notifications",
-      free: "Dashboard only",
-      pro: "Browser + email",
-      team: "Browser + email",
-    },
-    { label: "Team members", free: "1", pro: "1", team: "Up to 3" },
-  ];
-
   return (
     <section
       ref={priceRef}
@@ -1405,61 +1379,6 @@ function PricingSection({ priceRef, priceVis, handleCheckout }) {
           </div>
         </div>
 
-        {/* Comparison table */}
-        <div
-          className={`mt-20 max-w-4xl mx-auto transition-all duration-700 ease-out ${priceVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
-          style={stagger(3)}
-        >
-          <h3 className="text-xl font-bold text-white text-center mb-8">
-            Compare plans
-          </h3>
-          <div className="glass-card rounded-2xl overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-white/[0.06]">
-                    <th className="text-left text-gray-400 font-medium py-4 px-6 w-1/4"></th>
-                    <th className="text-center text-gray-300 font-semibold py-4 px-4">
-                      Free
-                    </th>
-                    <th className="text-center text-[#00F0B5] font-semibold py-4 px-4">
-                      Pro
-                    </th>
-                    <th className="text-center text-gray-300 font-semibold py-4 px-4">
-                      Team
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {COMPARISON_ROWS.map(({ label, free, pro, team }, i) => (
-                    <tr
-                      key={label}
-                      className={
-                        i < COMPARISON_ROWS.length - 1
-                          ? "border-b border-white/[0.04]"
-                          : ""
-                      }
-                    >
-                      <td className="text-left text-gray-400 py-3.5 px-6">
-                        {label}
-                      </td>
-                      <td className="text-center py-3.5 px-4">
-                        <ComparisonCell value={free} />
-                      </td>
-                      <td className="text-center py-3.5 px-4">
-                        <ComparisonCell value={pro} highlighted />
-                      </td>
-                      <td className="text-center py-3.5 px-4">
-                        <ComparisonCell value={team} />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
         {/* Trust strip */}
         <div
           className={`mt-16 glass-card rounded-2xl p-8 max-w-4xl mx-auto transition-all duration-700 ease-out ${priceVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
@@ -1494,34 +1413,6 @@ function PricingSection({ priceRef, priceVis, handleCheckout }) {
         </p>
       </div>
     </section>
-  );
-}
-
-function ComparisonCell({ value, highlighted }) {
-  if (value === true) {
-    return (
-      <div className="flex justify-center">
-        <div
-          className={`w-5 h-5 rounded-full flex items-center justify-center ${highlighted ? "bg-[#00F0B5]/15 text-[#00F0B5]" : "bg-white/[0.06] text-gray-400"}`}
-        >
-          <Check className="w-3 h-3" />
-        </div>
-      </div>
-    );
-  }
-  if (value === false) {
-    return (
-      <div className="flex justify-center">
-        <Minus className="w-4 h-4 text-gray-600" />
-      </div>
-    );
-  }
-  return (
-    <span
-      className={highlighted ? "text-gray-200 font-medium" : "text-gray-400"}
-    >
-      {value}
-    </span>
   );
 }
 
