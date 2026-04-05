@@ -86,7 +86,7 @@ const DEMO_GIGS = [
     keywords: ["React", "TypeScript", "API"],
     upvotes: 8,
     proposal:
-      "Your analytics dashboard needs to do more than render charts, it needs to help your team act on data in real time. I\u2019ve built three SaaS dashboards with live Stripe and Segment integrations, and the last one cut manual reporting by 80%.\n\nHere\u2019s how I\u2019d approach yours:\n\n\u2022 React + TypeScript frontend with type-safe API models\n\u2022 WebSocket-powered real-time charts, no page refreshes\n\u2022 Role-based user management with granular permissions\n\u2022 Fully responsive, delivered in 3 weeks with a recorded walkthrough\n\nA fintech client\u2019s dashboard I built handles 50K+ daily events, their team ditched spreadsheets within a week.\n\nWhat\u2019s your timeline for getting this in front of your team?",
+      "I will build your SaaS analytics dashboard in 3 weeks, fully real-time and production-ready.\n\nMy work: https://github.com/devsamples/saas-dashboards\n\nHi,\n\nI see you are looking for a React developer to build an analytics dashboard for your SaaS platform, you are in luck. I have built 3 SaaS dashboards with live Stripe and Segment integrations under my belt, and I will be applying the same approach to yours. The last one cut manual reporting by 80% the week it launched.\n\nHere is what I will do for your project:\n\n\u2022 React with TypeScript so your data models are type-safe end to end\n\u2022 WebSocket-powered charts that update in real time without page refreshes\n\u2022 Role-based access control so each team member sees only what they need\n\nI can deliver a working prototype by end of week one so you see real progress fast.\n\nWhat is your target launch date?",
   },
   {
     id: 2,
@@ -100,7 +100,7 @@ const DEMO_GIGS = [
     keywords: ["Logo Design", "Branding"],
     upvotes: 3,
     proposal:
-      "A heartbeat motif can either feel generic or become the visual hook people instantly associate with FitPulse. The difference is in how you abstract it.\n\nI\u2019ve designed logos for three health & wellness apps. The best-performing one used a dynamic pulse wave built into the lettermark itself, it read as \u201cenergy\u201d without being obvious.\n\nHere\u2019s what I\u2019d deliver:\n\n\u2022 3 distinct concepts, minimal to bold\n\u2022 App-store-optimized icon version\n\u2022 Dark/light variants + one-color for merch\n\u2022 Brand guideline PDF with spacing & color codes\n\nWant to start with a quick 15-min call to nail the vibe?",
+      "I will design 3 logo concepts for your fitness app and revise until you love one.\n\nMy portfolio: https://dribbble.com/kayla_branding\n\nHi,\n\nI see you are looking for a modern logo for your fitness app, you are in luck. I have designed brand identities for 3 health and wellness apps in the last year, including one that went on to be featured in the App Store after launch.\n\nHere is what you will get:\n\n\u2022 3 distinct logo directions, from minimal to bold, so you have real options\n\u2022 App-store-optimized icon version for both iOS and Android\n\u2022 Dark and light variants plus a one-color version for merch and print\n\u2022 Brand guideline PDF with exact spacing rules and hex codes\n\nShould we hop on a quick call to nail the exact vibe you are going for?",
   },
   {
     id: 3,
@@ -114,7 +114,7 @@ const DEMO_GIGS = [
     keywords: ["Shopify", "Next.js", "Performance"],
     upvotes: 24,
     proposal:
-      "Your checkout flow is likely losing more customers than analytics show. I rebuilt a similar Shopify store headless with Next.js last quarter, Lighthouse went from 34 to 96, and conversions jumped 42% in month one.\n\nMy approach:\n\n\u2022 Audit your Shopify analytics to find exact drop-off points\n\u2022 Next.js storefront with ISR, product pages under 1 second\n\u2022 Single-page checkout with Apple Pay & Google Pay\n\u2022 A/B testing baked in so you measure the lift with real data\n\nI can have a working prototype in 10 days.\n\nShould we start with a call to look at your current analytics together?",
+      "I will rebuild your Shopify store headless and get product pages loading under 1 second.\n\nMy work: https://github.com/tomwrites/headless-shopify\n\nHi,\n\nI see you are looking for a full-stack developer to take your Shopify store headless, you are in luck. I did exactly this for a similar brand last quarter. Lighthouse score went from 34 to 96 and conversions jumped 42% in the first month.\n\nHere is the plan:\n\n\u2022 Full audit of your current Shopify analytics to pinpoint where customers drop off\n\u2022 Next.js storefront with ISR so product pages load in under 1 second\n\u2022 Single-page checkout with Apple Pay and Google Pay already wired in\n\u2022 A/B testing built in from day one so you see the real lift in your numbers\n\nI can have a working prototype ready in 10 days.\n\nWant to look at your current analytics together on a quick call?",
   },
   {
     id: 4,
@@ -128,7 +128,7 @@ const DEMO_GIGS = [
     keywords: ["Video Editing", "YouTube"],
     upvotes: 5,
     proposal:
-      "The first 8 seconds of a YouTube video decide whether someone stays or bounces. I edit with that in mind, punchy cold opens, tight cuts, and on-brand motion graphics that keep viewers watching.\n\nI\u2019ve edited 120+ videos for tech and lifestyle channels, averaging 65%+ audience retention.\n\nWhat I\u2019d deliver per video:\n\n\u2022 Jump-cut editing with dynamic pacing\n\u2022 Custom lower-thirds, transitions & thumbnails\n\u2022 Color grading + audio cleanup\n\u2022 48-hour turnaround on first drafts\n\nWant to send me a raw clip so I can show you a sample edit?",
+      "I will edit your YouTube videos to hit 65% or higher audience retention, consistently.\n\nRecent work: https://youtube.com/@editsbymarcus\n\nHi,\n\nI see you are looking for a video editor for your startup YouTube channel, you are in luck. I have edited over 120 videos for tech and lifestyle creators with an average audience retention of 65%, which puts all of them above the platform average.\n\nHere is what I deliver on every video:\n\n\u2022 Punchy cold opens engineered to hook viewers in the first 8 seconds\n\u2022 Tight jump cuts with dynamic pacing so the energy never drops\n\u2022 Custom thumbnails, lower-thirds, and on-brand motion graphics\n\u2022 First draft back to you within 48 hours, revisions until it is right\n\nWant to send me a raw clip so I can show you exactly what the edit would look like?",
   },
   {
     id: 5,
@@ -142,7 +142,7 @@ const DEMO_GIGS = [
     keywords: ["WordPress", "PHP"],
     upvotes: 11,
     proposal:
-      "Agency sites need to do two things well: load fast and convert visitors into booked calls. Most WordPress builds fail at both.\n\nI\u2019ve built 15+ agency sites on WordPress, the last one cut page load from 4.2s to 1.1s and increased contact form submissions by 35%.\n\nHere\u2019s my plan:\n\n\u2022 Custom theme built on a lightweight starter, no bloated page builders\n\u2022 Mobile-first responsive design\n\u2022 SEO-optimized with schema markup and Core Web Vitals in the green\n\u2022 Delivered in 2 weeks with a CMS training walkthrough\n\nCan we hop on a quick call to look at your current site and discuss goals?",
+      "I will build your agency site on WordPress and get it loading under 1.5 seconds on the first visit.\n\nRecent builds: https://portfolio.devbynadia.com\n\nHi,\n\nI see you are looking for a WordPress developer to build your agency site, you are in luck. I have built 15 agency sites on WordPress and the most recent one dropped load time from 4.2 seconds to 1.1 seconds, which pushed contact form submissions up 35% that same month.\n\nHere is exactly what I will build:\n\n\u2022 Custom lightweight theme from scratch, no bloated page builders touching your code\n\u2022 Mobile-first layout so the site looks sharp on every screen size\n\u2022 Full SEO setup with schema markup and Core Web Vitals all in the green\n\u2022 Delivered in 2 weeks with a short CMS training video so your team can make updates\n\nCan we jump on a quick call to look at your current site and talk through the goals?",
   },
 ];
 
