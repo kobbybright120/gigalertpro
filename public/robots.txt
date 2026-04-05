@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+
+# Block private app routes from indexing
+Disallow: /dashboard
+Disallow: /profile
+Disallow: /proposals
+Disallow: /alerts
+Disallow: /auth
+
+# Block API endpoints
+Disallow: /api/
+
+# Sitemap location
+Sitemap: https://gigalertpro.com/sitemap.xml

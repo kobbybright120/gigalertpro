@@ -2,22 +2,295 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <!-- Primary favicon (versioned to bust caches) -->
-    <link rel="icon" href="/GigAlertAuth.svg?v=20260403" />
-    <!-- Apple touch icon (versioned) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- ═══════════════════════════════════════════
+         PRIMARY SEO
+    ═══════════════════════════════════════════ -->
+    <title>
+      GigAlertPro — Find Freelance Gigs on Reddit &amp; X Before Anyone Else
+    </title>
+    <meta
+      name="description"
+      content="GigAlertPro scans Reddit, X/Twitter, and Discord 24/7 for freelance gigs and client leads. Get instant alerts the second a gig is posted, generate an AI proposal in one click, and apply before the competition. Free forever plan, no credit card needed."
+    />
+    <meta
+      name="keywords"
+      content="freelance gig alerts, Reddit freelance jobs, find freelance clients, r/forhire scanner, freelance job notifications, AI proposal generator, freelance gig tracker, Reddit job alerts, X Twitter freelance, Discord gig scanner, real-time freelance opportunities, automated freelance job search, find clients Reddit, freelance leads, gig alert"
+    />
+    <meta name="author" content="GigAlertPro" />
+    <meta
+      name="robots"
+      content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1"
+    />
+    <link rel="canonical" href="https://gigalertpro.com/" />
+
+    <!-- ═══════════════════════════════════════════
+         OPEN GRAPH (Facebook, LinkedIn, Slack, etc.)
+    ═══════════════════════════════════════════ -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="GigAlertPro" />
+    <meta
+      property="og:title"
+      content="GigAlertPro — Find Freelance Gigs Before Anyone Else"
+    />
+    <meta
+      property="og:description"
+      content="Scan Reddit, X/Twitter &amp; Discord 24/7 for freelance gigs. Instant alerts + AI-written proposals in one click. Start free — no credit card needed."
+    />
+    <meta property="og:url" content="https://gigalertpro.com/" />
+    <meta property="og:image" content="https://gigalertpro.com/og-image.jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="GigAlertPro dashboard showing real-time freelance gig alerts from Reddit and X/Twitter"
+    />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- ═══════════════════════════════════════════
+         TWITTER / X CARD
+    ═══════════════════════════════════════════ -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@gigalertpro" />
+    <meta name="twitter:creator" content="@gigalertpro" />
+    <meta
+      name="twitter:title"
+      content="GigAlertPro — Find Freelance Gigs Before Anyone Else"
+    />
+    <meta
+      name="twitter:description"
+      content="Scan Reddit, X/Twitter &amp; Discord 24/7 for freelance gigs. Instant alerts + AI proposals. Free plan, no card needed."
+    />
+    <meta
+      name="twitter:image"
+      content="https://gigalertpro.com/og-image.jpeg"
+    />
+    <meta
+      name="twitter:image:alt"
+      content="GigAlertPro real-time freelance gig scanner"
+    />
+
+    <!-- ═══════════════════════════════════════════
+         MOBILE / BROWSER / APP
+    ═══════════════════════════════════════════ -->
+    <meta name="theme-color" content="#020617" />
+    <meta name="application-name" content="GigAlertPro" />
+    <meta name="apple-mobile-web-app-title" content="GigAlertPro" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <!-- ═══════════════════════════════════════════
+         FAVICONS
+    ═══════════════════════════════════════════ -->
+    <link rel="icon" href="/GigAlertAuth.svg?v=20260403" type="image/svg+xml" />
     <link
       rel="apple-touch-icon"
       sizes="180x180"
       href="/GigAlertAuth.svg?v=20260403"
     />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+
+    <!-- ═══════════════════════════════════════════
+         FONTS
+    ═══════════════════════════════════════════ -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <title>GigAlertPro</title>
+
+    <!-- ═══════════════════════════════════════════
+         JSON-LD STRUCTURED DATA
+    ═══════════════════════════════════════════ -->
+
+    <!-- SoftwareApplication -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "GigAlertPro",
+        "url": "https://gigalertpro.com",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web",
+        "description": "GigAlertPro scans Reddit, X/Twitter, and Discord 24/7 for freelance gigs and client leads. Get instant alerts the second a gig is posted and generate an AI-written proposal in one click.",
+        "screenshot": "https://gigalertpro.com/og-image.jpeg",
+        "featureList": [
+          "Real-time gig scanning across Reddit, X/Twitter, and Discord",
+          "Instant alerts within seconds of a gig being posted",
+          "AI-powered proposal generator",
+          "Gig quality scoring (0-100)",
+          "Keyword-based matching and filtering",
+          "Browser and email notifications",
+          "Multi-platform dashboard"
+        ],
+        "offers": [
+          {
+            "@type": "Offer",
+            "name": "Free Plan",
+            "price": "0",
+            "priceCurrency": "USD",
+            "description": "3 alerts per day, 1 platform (Reddit), 1 keyword. Free forever."
+          },
+          {
+            "@type": "Offer",
+            "name": "Pro Plan",
+            "price": "15",
+            "priceCurrency": "USD",
+            "description": "Unlimited alerts, all platforms, unlimited keywords, AI proposal generator, priority scanning every 2 minutes."
+          },
+          {
+            "@type": "Offer",
+            "name": "Team Plan",
+            "price": "29",
+            "priceCurrency": "USD",
+            "description": "Everything in Pro plus up to 3 team members, shared dashboard, and priority support."
+          }
+        ],
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": "4.9",
+          "ratingCount": "2400",
+          "bestRating": "5",
+          "worstRating": "1"
+        },
+        "author": {
+          "@type": "Organization",
+          "name": "GigAlertPro",
+          "url": "https://gigalertpro.com"
+        }
+      }
+    </script>
+
+    <!-- Organization -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "GigAlertPro",
+        "url": "https://gigalertpro.com",
+        "logo": "https://gigalertpro.com/GigAlertAuth.svg",
+        "description": "Real-time freelance gig scanner and AI proposal generator for freelancers.",
+        "sameAs": ["https://twitter.com/gigalertpro"],
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "email": "support@gigalertpro.com",
+          "contactType": "customer support",
+          "availableLanguage": "English"
+        }
+      }
+    </script>
+
+    <!-- WebSite with SearchAction for Google Sitelinks Searchbox -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "GigAlertPro",
+        "url": "https://gigalertpro.com",
+        "description": "Find freelance gigs on Reddit, X/Twitter, and Discord before anyone else.",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": {
+            "@type": "EntryPoint",
+            "urlTemplate": "https://gigalertpro.com/?q={search_term_string}"
+          },
+          "query-input": "required name=search_term_string"
+        }
+      }
+    </script>
+
+    <!-- FAQPage -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "How fast do freelance gigs show up on GigAlertPro?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Very fast. GigAlertPro scans Reddit, X/Twitter, and Discord every 1 to 2 minutes. Most gigs appear in your feed within seconds of being posted on the original platform. Pro users get alerts with no refreshing required, and our fastest users apply within 3 minutes of a gig going live."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How is GigAlertPro different from Upwork or Fiverr?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "On Upwork and Fiverr, you are competing with 50 to 100 other freelancers on every job. GigAlertPro scans places most freelancers never check — Reddit subreddits, X/Twitter posts, and Discord servers — and alerts you within seconds. You are often the first person to reply, which is how you win."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What platforms does GigAlertPro scan for freelance gigs?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "GigAlertPro scans 37+ sources including Reddit (34+ subreddits like r/forhire, r/freelance, r/hiring), X/Twitter freelance accounts, and Discord community servers. New sources are added regularly. One dashboard replaces hours of manual searching across all these platforms."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What does the AI proposal generator do?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "The AI proposal generator writes a personalized, ready-to-send freelance proposal in one click. It uses your profile, skills, and past wins to craft something that sounds like you — not a generic template. Freelancers report applying 10x faster. You generate, tweak a sentence or two, and send."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Is GigAlertPro free to use?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. GigAlertPro has a free plan that is free forever — no credit card required. The free plan includes 3 alerts per day, 1 platform (Reddit), and 1 keyword. Upgrade to Pro at $15/month for unlimited alerts, all platforms, AI proposals, and priority scanning every 2 minutes."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Can I cancel my GigAlertPro subscription anytime?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. Cancel anytime with one click from your account settings. No questions, no hidden fees, no lock-in. Your free plan remains active even after cancelling a paid subscription."
+            }
+          }
+        ]
+      }
+    </script>
+
+    <!-- BreadcrumbList -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://gigalertpro.com/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Pricing",
+            "item": "https://gigalertpro.com/#pricing"
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "name": "Features",
+            "item": "https://gigalertpro.com/#features"
+          }
+        ]
+      }
+    </script>
+
     <!-- Umami Analytics -->
     <script
       defer
