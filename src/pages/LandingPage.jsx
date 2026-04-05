@@ -266,8 +266,8 @@ export default function LandingPage() {
 
           <p className="mt-7 text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
             Reddit gig posts get 20+ applicants in the first 10 minutes.
-            GigAlertPro sends you instant browser alerts within seconds of
-            posting — so you apply first, not last. Try it free.
+            GigAlertPro sends you instant alerts within seconds of posting, so
+            you apply first, not last. Try it free.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-12">
@@ -407,28 +407,28 @@ export default function LandingPage() {
                 icon: Radio,
                 title: "Real-Time Gig Radar",
                 description:
-                  "We scan Reddit, Craigslist, and X every 2 minutes. You see gigs within seconds of being posted \u2014 not hours later. Early applicants get 3x more responses.",
+                  "We scan Reddit, Craigslist, and X every 2 minutes. You see gigs within seconds of being posted, not hours later. Early applicants get 3x more responses.",
                 accent: "from-[#00F0B5] to-[#00D4FF]",
               },
               {
                 icon: Globe,
                 title: "Multi-Platform Coverage",
                 description:
-                  "Reddit (34+ subs), Craigslist (10 cities), X/Twitter \u2014 all in one dashboard. Stop wasting 2+ hours a day jumping between tabs. One feed covers everything.",
+                  "Reddit (34+ subs), Craigslist (10 cities), X/Twitter, all in one dashboard. Stop wasting 2+ hours a day jumping between tabs. One feed covers everything.",
                 accent: "from-orange-400 to-orange-500",
               },
               {
                 icon: TrendingUp,
                 title: "Gig Quality Scoring",
                 description:
-                  "Every gig gets a 0\u2013100 score based on budget, keyword match, and competition level. Freelancers who focus on high-score gigs close 2x more deals.",
+                  "Every gig gets a 0 to 100 score based on budget, keyword match, and competition level. Freelancers who focus on high-score gigs close 2x more deals.",
                 accent: "from-[#f59e0b] to-[#fbbf24]",
               },
               {
                 icon: Bell,
-                title: "Instant Browser Alerts",
+                title: "Instant Alerts",
                 description:
-                  "Get a push notification the second a matching gig appears. No more refreshing feeds. Our fastest users apply within 3 minutes and consistently win the project.",
+                  "Get an instant alert the second a matching gig appears. No more refreshing feeds. Our fastest users apply within 3 minutes and consistently win the project.",
                 accent: "from-blue-400 to-blue-500",
               },
               {
@@ -483,13 +483,13 @@ export default function LandingPage() {
                 step: "01",
                 emoji: "\ud83c\udfaf",
                 title: "Tell Us What You Do",
-                desc: "Enter your skills \u2014 \u201cReact developer\u201d, \u201clogo design\u201d, \u201cvirtual assistant.\u201d Our radar starts scanning 37+ sources across Reddit, Craigslist, and X immediately. Takes 45 seconds.",
+                desc: "Enter your skills like \u201cReact developer\u201d, \u201clogo design\u201d, or \u201cvirtual assistant.\u201d Our radar starts scanning 37+ sources across Reddit, Craigslist, and X immediately. Takes 45 seconds.",
               },
               {
                 step: "02",
                 emoji: "\u26a1",
                 title: "Get Alerted Instantly",
-                desc: "The moment a matching gig is posted, you get a browser push notification. No refreshing. No scrolling. Every gig is scored 0\u2013100 so you know which ones are worth your time.",
+                desc: "The moment a matching gig is posted, you get an instant alert. No refreshing. No scrolling. Every gig is scored 0 to 100 so you know which ones are worth your time.",
               },
               {
                 step: "03",
@@ -598,7 +598,7 @@ export default function LandingPage() {
                 <PricingFeature text="Real-time gig scanning" />
                 <PricingFeature text="Gig quality scoring" />
                 <PricingFeature text="50 AI proposals per day" />
-                <PricingFeature text="Browser + email notifications" />
+                <PricingFeature text="Instant alerts + email notifications" />
                 <PricingFeature text="Freelancer profile hub" />
               </ul>
               <button
@@ -620,7 +620,7 @@ export default function LandingPage() {
             >
               <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
                 <span className="inline-flex items-center gap-1 px-3 py-1 bg-[#00F0B5] text-[#020617] text-xs font-bold rounded-full">
-                  <Star className="w-3 h-3" /> Most Popular — Save $48/yr
+                  <Star className="w-3 h-3" /> Most Popular · Save $48/yr
                 </span>
               </div>
               <div className="mb-6">
@@ -654,7 +654,7 @@ export default function LandingPage() {
                 <PricingFeature text="Gig quality scoring" highlighted />
                 <PricingFeature text="50 AI proposals per day" highlighted />
                 <PricingFeature
-                  text="Browser + email notifications"
+                  text="Instant alerts + email notifications"
                   highlighted
                 />
                 <PricingFeature text="Freelancer profile hub" highlighted />
@@ -797,12 +797,12 @@ export default function LandingPage() {
             {[
               {
                 q: "How fast do gigs actually show up?",
-                a: "Fast. We scan Reddit, Craigslist, and X every 1\u20132 minutes. Most gigs appear in your feed within seconds of being posted on the original platform. You'll get a browser push notification instantly \u2014 no refreshing, no checking back. Our fastest users apply within 3 minutes of a gig going live.",
+                a: "Fast. We scan Reddit, Craigslist, and X every 1 to 2 minutes. Most gigs appear in your feed within seconds of being posted on the original platform. You'll get an instant alert with no refreshing, no checking back. Our fastest users apply within 3 minutes of a gig going live.",
                 defaultOpen: true,
               },
               {
                 q: "How is this different from Upwork or Fiverr?",
-                a: "On Upwork and Fiverr, you\u2019re competing with 50\u2013100 other freelancers on every posted job. By the time you see it, the client is already drowning in proposals. GigAlertPro scans places most freelancers never check \u2014 Reddit subs, Craigslist gigs, X/Twitter posts \u2014 and alerts you in seconds. You\u2019re often the first or second person to reply. That\u2019s how you win.",
+                a: "On Upwork and Fiverr, you\u2019re competing with 50 to 100 other freelancers on every posted job. By the time you see it, the client is already drowning in proposals. GigAlertPro scans places most freelancers never check: Reddit subs, Craigslist gigs, X/Twitter posts. It alerts you in seconds. You\u2019re often the first or second person to reply. That\u2019s how you win.",
                 defaultOpen: true,
               },
               {
@@ -811,7 +811,7 @@ export default function LandingPage() {
               },
               {
                 q: "What does the AI proposal generator do?",
-                a: "It writes a personalized, ready-to-send proposal in one click. It pulls from your profile, skills, and past wins to craft something that sounds like you \u2014 not a generic template. Freelancers report applying 10x faster. You generate, tweak a sentence or two, and send. Done.",
+                a: "It writes a personalized, ready-to-send proposal in one click. It pulls from your profile, skills, and past wins to craft something that sounds like you, not a generic template. Freelancers report applying 10x faster. You generate, tweak a sentence or two, and send. Done.",
               },
               {
                 q: "Can I cancel anytime?",
