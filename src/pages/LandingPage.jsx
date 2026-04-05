@@ -7,7 +7,6 @@ import {
   ArrowRight,
   Sparkles,
   CheckCircle2,
-  Quote,
   Shield,
   Clock,
   Check,
@@ -17,7 +16,6 @@ import {
   TrendingUp,
   Search,
   Globe,
-  AlertTriangle,
   Radio,
   ChevronDown,
 } from "lucide-react";
@@ -230,7 +228,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-3">
             <Link
               to="/auth"
-              className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-[#00F0B5] text-[#020617] text-sm font-semibold rounded-full hover:bg-[#00dba5] hover:shadow-[0_0_24px_rgba(0,240,181,0.25)] transition-all duration-300"
+              className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-[#00F0B5] text-[#020617] text-sm font-semibold rounded-lg hover:bg-[#00dba5] transition-all duration-200"
             >
               Start Free Trial <ArrowRight className="w-4 h-4" />
             </Link>
@@ -240,10 +238,7 @@ export default function LandingPage() {
 
       {/* ── Hero ── */}
       <section ref={heroRef} className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSA2MCAwIEwgMCAwIDAgNjAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgwLDI0MCwxODEsMC4wMykiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-60" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-[#00F0B5]/[0.04] rounded-full blur-[100px]" />
-        <div className="absolute top-40 -left-40 w-[400px] h-[400px] bg-[#00D4FF]/[0.03] rounded-full blur-[80px]" />
-        <div className="absolute top-20 -right-40 w-[400px] h-[400px] bg-[#7c3aed]/[0.03] rounded-full blur-[80px]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-5%,rgba(0,240,181,0.06)_0%,transparent_100%)]" />
 
         <div
           className={`relative max-w-4xl mx-auto px-4 pt-28 pb-24 text-center transition-all duration-1000 ease-out ${heroVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
@@ -273,7 +268,7 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-12">
             <Link
               to="/auth"
-              className="group inline-flex items-center gap-2 px-8 py-4 bg-[#00F0B5] text-[#020617] font-bold rounded-full hover:bg-[#00dba5] hover:shadow-[0_0_32px_rgba(0,240,181,0.3)] transition-all duration-300 text-base"
+              className="group inline-flex items-center gap-2 px-8 py-4 bg-[#00F0B5] text-[#020617] font-bold rounded-lg hover:bg-[#00dba5] transition-all duration-200 text-base"
             >
               Start Free Trial
               <ArrowRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
@@ -294,20 +289,18 @@ export default function LandingPage() {
           <div className="flex items-center justify-center gap-3 mt-14">
             <div className="flex -space-x-2.5">
               {[
-                "from-yellow-400 to-orange-400",
-                "from-[#00F0B5] to-[#00D4FF]",
-                "from-[#7c3aed] to-[#a78bfa]",
-                "from-pink-400 to-rose-400",
-                "from-blue-400 to-cyan-400",
-              ].map((grad, i) => (
-                <div
+                "https://randomuser.me/api/portraits/women/44.jpg",
+                "https://randomuser.me/api/portraits/men/32.jpg",
+                "https://randomuser.me/api/portraits/men/68.jpg",
+                "https://randomuser.me/api/portraits/women/65.jpg",
+                "https://randomuser.me/api/portraits/men/45.jpg",
+              ].map((src, i) => (
+                <img
                   key={i}
-                  className={`w-8 h-8 rounded-full bg-gradient-to-br ${grad} border-2 border-[#020617] flex items-center justify-center`}
-                >
-                  <span className="text-[10px] font-bold text-[#020617]">
-                    {["SJ", "MT", "AK", "LR", "DP"][i]}
-                  </span>
-                </div>
+                  src={src}
+                  alt="freelancer"
+                  className="w-8 h-8 rounded-full border-2 border-[#020617] object-cover"
+                />
               ))}
             </div>
             <div className="text-left">
@@ -344,12 +337,14 @@ export default function LandingPage() {
       </section>
 
       {/* ── Problem Strip ── */}
-      <section className="relative border-y border-red-500/10 bg-red-500/[0.03]">
-        <div className="max-w-4xl mx-auto px-4 py-6 text-center">
-          <p className="text-base sm:text-lg font-bold text-red-400">
-            <AlertTriangle className="w-5 h-5 inline-block mr-2 -mt-0.5" />
-            The average Reddit gig post gets 20+ applicants in 10 minutes. If
-            you're not first, you're invisible.
+      <section className="relative border-y border-white/[0.05]">
+        <div className="max-w-5xl mx-auto px-4 py-5 text-center">
+          <p className="text-sm sm:text-base text-gray-400">
+            Reddit gig posts get{" "}
+            <span className="text-white font-semibold">
+              20+ applicants in the first 10 minutes.
+            </span>{" "}
+            If you&apos;re not first, you&apos;re invisible.
           </p>
         </div>
       </section>
@@ -371,7 +366,7 @@ export default function LandingPage() {
               className={`text-center transition-all duration-700 ease-out ${statsVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
               style={stagger(i)}
             >
-              <p className="text-3xl sm:text-4xl font-extrabold text-gradient">
+              <p className="text-3xl sm:text-4xl font-extrabold text-white">
                 {value}
               </p>
               <p className="text-sm text-gray-500 mt-1.5">{label}</p>
@@ -391,7 +386,7 @@ export default function LandingPage() {
             </p>
             <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
               Not just alerts.{" "}
-              <span className="text-gradient">
+              <span className="text-[#00F0B5]">
                 A complete system for winning gigs.
               </span>
             </h2>
@@ -474,7 +469,7 @@ export default function LandingPage() {
             </p>
             <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
               Three steps.{" "}
-              <span className="text-gradient">Apply first. Win.</span>
+              <span className="text-[#00F0B5]">Apply first. Win.</span>
             </h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -506,7 +501,7 @@ export default function LandingPage() {
                 <div className="glass-card rounded-2xl p-8 hover:border-[#00F0B5]/15 transition-all duration-300 h-full">
                   <div className="flex items-center gap-3 mb-4">
                     <span className="text-4xl">{emoji}</span>
-                    <span className="text-4xl font-black text-gradient opacity-30 group-hover:opacity-60 transition-opacity">
+                    <span className="text-4xl font-black text-[#00F0B5]/30 group-hover:text-[#00F0B5]/60 transition-colors">
                       {step}
                     </span>
                   </div>
@@ -566,7 +561,7 @@ export default function LandingPage() {
             </p>
             <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
               One plan. Everything included.{" "}
-              <span className="text-gradient">No surprises.</span>
+              <span className="text-[#00F0B5]">No surprises.</span>
             </h2>
             <p className="mt-4 text-gray-400 text-lg max-w-xl mx-auto">
               Start your free trial today. No credit card required. Cancel
@@ -629,7 +624,7 @@ export default function LandingPage() {
               </div>
               <div className="mb-8">
                 <div className="flex items-end gap-1">
-                  <span className="text-5xl font-extrabold text-gradient">
+                  <span className="text-5xl font-extrabold text-white">
                     $16
                   </span>
                   <span className="text-gray-500 text-sm pb-2">/month</span>
@@ -661,7 +656,7 @@ export default function LandingPage() {
               </ul>
               <button
                 onClick={() => handleCheckout("yearly")}
-                className="w-full py-3.5 bg-[#00F0B5] text-[#020617] font-bold rounded-xl hover:bg-[#00dba5] hover:shadow-[0_0_20px_rgba(0,240,181,0.25)] transition-all duration-300 flex items-center justify-center gap-2"
+                className="w-full py-3.5 bg-[#00F0B5] text-[#020617] font-bold rounded-xl hover:bg-[#00dba5] transition-all duration-200 flex items-center justify-center gap-2"
               >
                 Start Free Trial
                 <ArrowRight className="w-4 h-4" />
@@ -703,7 +698,7 @@ export default function LandingPage() {
                 { value: "4.9/5", label: "Average Rating" },
               ].map(({ value, label }, i) => (
                 <div key={label} style={stagger(i)}>
-                  <p className="text-2xl sm:text-3xl font-extrabold text-gradient">
+                  <p className="text-2xl sm:text-3xl font-extrabold text-white">
                     {value}
                   </p>
                   <p className="text-sm text-gray-500 mt-1">{label}</p>
@@ -721,7 +716,7 @@ export default function LandingPage() {
               </p>
               <h2 className="text-3xl sm:text-4xl font-extrabold leading-tight tracking-tight">
                 Freelancers are closing{" "}
-                <span className="text-gradient">$5K+ deals</span> by showing up
+                <span className="text-[#00F0B5]">$5K+ deals</span> by showing up
                 first.
               </h2>
 
@@ -735,7 +730,7 @@ export default function LandingPage() {
 
               <Link
                 to="/auth"
-                className="group inline-flex items-center gap-2 px-8 py-4 mt-12 bg-[#00F0B5] text-[#020617] font-bold rounded-full hover:bg-[#00dba5] hover:shadow-[0_0_32px_rgba(0,240,181,0.3)] transition-all duration-300 text-base"
+                className="group inline-flex items-center gap-2 px-8 py-4 mt-12 bg-[#00F0B5] text-[#020617] font-bold rounded-lg hover:bg-[#00dba5] transition-all duration-200 text-base"
               >
                 Start Free Trial
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
@@ -750,6 +745,7 @@ export default function LandingPage() {
                 name="Sarah J."
                 role="UI Designer"
                 amount="$3,000"
+                img="https://randomuser.me/api/portraits/women/44.jpg"
                 initials="SJ"
                 color="from-yellow-400 to-orange-400"
                 rating={5}
@@ -759,6 +755,7 @@ export default function LandingPage() {
                 name="Marcus T."
                 role="React Developer"
                 amount="$8,000"
+                img="https://randomuser.me/api/portraits/men/32.jpg"
                 initials="MT"
                 color="from-[#00F0B5] to-[#00D4FF]"
                 rating={5}
@@ -768,6 +765,7 @@ export default function LandingPage() {
                 name="Alex K."
                 role="Full-Stack Dev"
                 amount="$6,000"
+                img="https://randomuser.me/api/portraits/men/68.jpg"
                 initials="AK"
                 color="from-[#7c3aed] to-[#a78bfa]"
                 rating={5}
@@ -848,7 +846,7 @@ export default function LandingPage() {
               </p>
               <Link
                 to="/auth"
-                className="group inline-flex items-center gap-2 px-8 py-4 bg-[#00F0B5] text-[#020617] font-bold rounded-full hover:bg-[#00dba5] hover:shadow-[0_0_32px_rgba(0,240,181,0.3)] transition-all duration-300 text-base"
+                className="group inline-flex items-center gap-2 px-8 py-4 bg-[#00F0B5] text-[#020617] font-bold rounded-lg hover:bg-[#00dba5] transition-all duration-200 text-base"
               >
                 Start Free Trial
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
@@ -1310,23 +1308,20 @@ function LiveDemo() {
 
 function FeatureCard({ icon: Icon, title, description, badge, accent }) {
   return (
-    <div className="group glass-card rounded-2xl p-7 hover:border-[#00F0B5]/15 transition-all duration-300 relative overflow-hidden h-full">
-      <div
-        className={`absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r ${accent} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
-      />
-      <div className="flex items-start justify-between mb-6">
+    <div className="rounded-xl p-6 bg-[#0d1425] border border-white/[0.07] hover:border-[#00F0B5]/25 transition-colors duration-200 h-full">
+      <div className="flex items-start justify-between mb-5">
         <div
-          className={`w-12 h-12 rounded-xl bg-gradient-to-br ${accent} flex items-center justify-center opacity-90`}
+          className={`w-10 h-10 rounded-lg bg-gradient-to-br ${accent} flex items-center justify-center`}
         >
-          <Icon className="w-6 h-6 text-[#020617]" />
+          <Icon className="w-5 h-5 text-[#020617]" />
         </div>
         {badge && (
-          <span className="px-2.5 py-1 bg-white/[0.06] text-gray-300 text-xs font-semibold rounded-full border border-white/[0.06]">
+          <span className="text-[11px] font-semibold text-[#00F0B5] tracking-widest uppercase">
             {badge}
           </span>
         )}
       </div>
-      <h3 className="text-lg font-bold mb-2 text-white">{title}</h3>
+      <h3 className="text-base font-bold mb-2 text-white">{title}</h3>
       <p className="text-gray-400 text-sm leading-relaxed">{description}</p>
     </div>
   );
@@ -1388,16 +1383,16 @@ function TestimonialCard({
   name,
   role,
   amount,
+  img,
   initials,
   color,
   rating,
 }) {
   return (
-    <div className="glass-card rounded-2xl p-6 relative hover:border-white/10 transition-all duration-300">
-      <Quote className="w-5 h-5 text-[#00F0B5]/20 absolute top-6 right-6" />
+    <div className="rounded-xl p-6 relative bg-[#0d1425] border border-white/[0.07] hover:border-white/[0.13] transition-colors duration-200">
       {amount && (
         <div className="mb-3">
-          <span className="text-2xl font-extrabold text-gradient">
+          <span className="text-2xl font-extrabold text-[#00F0B5]">
             {amount}
           </span>
           <span className="text-sm text-gray-500 ml-2">deal closed</span>
@@ -1413,15 +1408,23 @@ function TestimonialCard({
           ))}
         </div>
       )}
-      <p className="text-gray-300 leading-relaxed mb-5 pr-6">
+      <p className="text-gray-300 leading-relaxed mb-5 text-sm">
         &ldquo;{quote}&rdquo;
       </p>
       <div className="flex items-center gap-3">
-        <div
-          className={`w-9 h-9 rounded-full bg-gradient-to-br ${color} flex items-center justify-center`}
-        >
-          <span className="text-xs font-bold text-[#020617]">{initials}</span>
-        </div>
+        {img ? (
+          <img
+            src={img}
+            alt={name}
+            className="w-10 h-10 rounded-full object-cover border border-white/10 flex-shrink-0"
+          />
+        ) : (
+          <div
+            className={`w-10 h-10 rounded-full bg-gradient-to-br ${color} flex items-center justify-center flex-shrink-0`}
+          >
+            <span className="text-xs font-bold text-[#020617]">{initials}</span>
+          </div>
+        )}
         <div>
           <p className="font-semibold text-sm text-white">{name}</p>
           <p className="text-xs text-gray-500">{role}</p>
