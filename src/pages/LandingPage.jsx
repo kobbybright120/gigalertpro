@@ -561,27 +561,6 @@ export default function LandingPage() {
         className="relative py-28 border-t border-white/[0.04]"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Results metrics bar */}
-          <div
-            className={`glass-card rounded-2xl p-8 mb-16 transition-all duration-700 ease-out ${proofVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
-          >
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-              {[
-                { value: "2,400+", label: "Active Freelancers" },
-                { value: "$2.4M+", label: "Projects Discovered" },
-                { value: "10hrs+", label: "Saved Per Week" },
-                { value: "4.9/5", label: "Average Rating" },
-              ].map(({ value, label }, i) => (
-                <div key={label} style={stagger(i)}>
-                  <p className="text-2xl sm:text-3xl font-extrabold text-white">
-                    {value}
-                  </p>
-                  <p className="text-sm text-gray-500 mt-1">{label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
             <div
               className={`transition-all duration-700 ease-out ${proofVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
