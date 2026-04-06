@@ -182,7 +182,10 @@ export function useGigAlerts(keywordList) {
       return;
     }
 
-    if (!userId) return;
+    if (!userId) {
+      if (!pollingRef.current) setLoading(false);
+      return;
+    }
     // Fetch gig alerts: use Vercel proxy (redditClient) for live Reddit data,
     // then persist to Supabase for history. The edge function can't reach Reddit
     // from cloud IPs, so the frontend fetches via the proxy instead.
@@ -281,8 +284,10 @@ export function useGigAlerts(keywordList) {
 
   // Initial fetch + re-fetch when keywords change
   useEffect(() => {
+    // Don't attempt to fetch until auth is initialized (unless demo mode)
+    if (!DISABLE_AUTH && !userId) return;
     fetchAlerts();
-  }, [fetchAlerts]);
+  }, [fetchAlerts, DISABLE_AUTH, userId]);
 
   // Auto-poll every 2 minutes (cache TTL is also 2 min, so data is fresh)
   useEffect(() => {
