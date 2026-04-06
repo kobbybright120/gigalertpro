@@ -44,6 +44,7 @@ const SUBREDDITS = [
   { name: "Jobs4Bitcoins", mode: "new", weight: 0.9 },
   { name: "WritingJobBoard", mode: "new", weight: 1.0 },
   { name: "VirtualAssistant4Hire", mode: "new", weight: 1.0 },
+  { name: "BPOinPH", mode: "new", weight: 1.0 },
   { name: "RecruitingHiringPH", mode: "new", weight: 1.0 },
   { name: "VancouverJobs", mode: "new", weight: 1.0 },
   { name: "remotelegaljobs", mode: "new", weight: 1.0 },
