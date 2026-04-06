@@ -291,13 +291,16 @@ export function useGigAlerts(keywordList) {
     );
     if (kws.length === 0) return;
 
-    const id = setInterval(() => {
-      pollingRef.current = true;
-      clearCache();
-      fetchAlerts().finally(() => {
-        pollingRef.current = false;
-      });
-    }, 30 * 1000);
+    const id = setInterval(
+      () => {
+        pollingRef.current = true;
+        clearCache();
+        fetchAlerts().finally(() => {
+          pollingRef.current = false;
+        });
+      },
+      2 * 60 * 1000,
+    );
 
     return () => clearInterval(id);
   }, [fetchAlerts, keywordList]);

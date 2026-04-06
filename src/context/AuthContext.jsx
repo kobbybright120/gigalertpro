@@ -14,32 +14,34 @@ export function AuthProvider({ children }) {
     VITE_SUPABASE_URL.includes("placeholder") ||
     !VITE_SUPABASE_ANON_KEY;
 
-  // Runtime diagnostic: in production builds this logs whether demo auth is enabled.
-  // This helps diagnose accidental demo-mode redirects (unauthenticated users
-  // being allowed into the app). We intentionally avoid printing any secret keys.
-  if (typeof window !== "undefined") {
+  // Runtime diagnostic: log once on mount (DEV shows config; PROD only warns)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
     try {
       const host = window.location.hostname || "";
       if (host.includes("vercel.app") || host.includes("gigalertpro")) {
-        // Non-sensitive info only
-        // eslint-disable-next-line no-console
-        console.info("[Auth] runtime config:", {
-          DISABLE_AUTH,
-          VITE_SUPABASE_URL: VITE_SUPABASE_URL || null,
-          host,
-        });
-        if (DISABLE_AUTH) {
+        if (import.meta.env.DEV) {
+          // Non-sensitive info only in DEV
           // eslint-disable-next-line no-console
-          console.warn(
-            "[Auth] WARNING: Demo auth (DISABLE_AUTH) is active in production.\n" +
-              "Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your Vercel Production envs and redeploy.",
-          );
+          console.info("[Auth] runtime config:", {
+            DISABLE_AUTH,
+            VITE_SUPABASE_URL: VITE_SUPABASE_URL || null,
+            host,
+          });
+        } else {
+          if (DISABLE_AUTH) {
+            // eslint-disable-next-line no-console
+            console.warn(
+              "[Auth] WARNING: Demo auth (DISABLE_AUTH) is active in production.\n" +
+                "Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your Vercel Production envs and redeploy.",
+            );
+          }
         }
       }
-    } catch (e) {
+    } catch {
       // ignore logging errors
     }
-  }
+  }, [DISABLE_AUTH, VITE_SUPABASE_URL]);
 
   useEffect(() => {
     if (DISABLE_AUTH) {
@@ -69,7 +71,7 @@ export function AuthProvider({ children }) {
             url.hash = "";
             url.search = "";
             window.history.replaceState({}, document.title, url.toString());
-          } catch (e) {
+          } catch {
             // ignore
           }
         }
@@ -77,7 +79,7 @@ export function AuthProvider({ children }) {
         // Finally, request the current session state
         const { data: { session } = {} } = await supabase.auth.getSession();
         setUser(session?.user ?? null);
-      } catch (err) {
+      } catch {
         setUser(null);
       } finally {
         setLoading(false);
@@ -100,7 +102,7 @@ export function AuthProvider({ children }) {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [DISABLE_AUTH]);
 
   async function signIn(email, password) {
     if (DISABLE_AUTH) return { success: true, user: null };

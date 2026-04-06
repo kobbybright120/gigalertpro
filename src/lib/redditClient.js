@@ -49,7 +49,7 @@ const SUBREDDITS = [
 ];
 
 // ── Cache (persisted in sessionStorage to survive HMR reloads) ───────────────
-const CACHE_TTL_MS = 20 * 1000; // 20 sec — keep data as fresh as possible
+const CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes — keep data reasonably fresh
 const CACHE_KEY = "gigalertpro_reddit_cache";
 function loadCache() {
   try {
@@ -678,10 +678,12 @@ async function fetchAllPostsFromProxy() {
       return [];
     }
     const json = await resp.json();
-    console.log(
-      `[GigAlertPro] Reddit API returned ${json.post_count || 0} posts (${json.feed || "unknown"})`,
-      json.diagnostics || "no diagnostics",
-    );
+    if (!IS_PROD) {
+      console.log(
+        `[GigAlertPro] Reddit API returned ${json.post_count || 0} posts (${json.feed || "unknown"})`,
+        json.diagnostics || "no diagnostics",
+      );
+    }
     return (json.posts || []).map((p) => ({
       ...p,
       _weight: SUBREDDITS.find((s) => s.name === p._sub)?.weight || 1.0,
@@ -708,9 +710,11 @@ async function fetchCommunityPostsFromProxy() {
       return [];
     }
     const json = await resp.json();
-    console.log(
-      `[GigAlertPro] Community API returned ${json.post_count || 0} posts (${json.feed || "unknown"})`,
-    );
+    if (!IS_PROD) {
+      console.log(
+        `[GigAlertPro] Community API returned ${json.post_count || 0} posts (${json.feed || "unknown"})`,
+      );
+    }
     return (json.posts || []).map((p) => ({
       ...p,
       _weight: 1.0,
