@@ -79,6 +79,8 @@ const DEMO_GIGS = [
   {
     id: 1,
     title: "React Developer for SaaS Dashboard",
+    headline: "We're hiring a React developer to build a SaaS dashboard",
+    statusLabel: "Hiring",
     source: "Reddit",
     sourceColor: "text-orange-400",
     sub: "r/forhire",
@@ -93,6 +95,8 @@ const DEMO_GIGS = [
   {
     id: 2,
     title: "Need a Modern Logo for Fitness App",
+    headline: "We're hiring a logo designer for a fitness app",
+    statusLabel: "Hiring",
     source: "Craigslist",
     sourceColor: "text-violet-400",
     sub: "New York",
@@ -107,6 +111,9 @@ const DEMO_GIGS = [
   {
     id: 3,
     title: "Full-Stack Dev for Headless Shopify Rebuild",
+    headline:
+      "Hiring: full-stack developer to rebuild a headless Shopify store",
+    statusLabel: "Hiring",
     source: "Reddit",
     sourceColor: "text-orange-400",
     sub: "r/freelance",
@@ -121,6 +128,8 @@ const DEMO_GIGS = [
   {
     id: 4,
     title: "Video Editor for YouTube Channel",
+    headline: "We're hiring a video editor for a high-growth YouTube channel",
+    statusLabel: "Hiring",
     source: "X / Twitter",
     sourceColor: "text-sky-400",
     sub: "@startupgigs",
@@ -135,6 +144,8 @@ const DEMO_GIGS = [
   {
     id: 5,
     title: "WordPress Developer for Agency Site",
+    headline: "Hiring: WordPress developer to build an agency website",
+    statusLabel: "Hiring",
     source: "Reddit",
     sourceColor: "text-orange-400",
     sub: "r/hiring",
@@ -960,27 +971,35 @@ function LiveDemo() {
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <h4 className="text-xs font-semibold text-white leading-snug line-clamp-1">
-                      {gig.title}
-                    </h4>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        {gig.statusLabel && (
+                          <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 font-semibold uppercase tracking-wide">
+                            {gig.statusLabel}
+                          </span>
+                        )}
+                        <h4 className="text-sm font-semibold text-white leading-snug line-clamp-2">
+                          {gig.headline || gig.title}
+                        </h4>
+                      </div>
+                      <p className="text-[11px] text-gray-500 mt-1 line-clamp-1">
+                        {gig.title}
+                      </p>
+                    </div>
                     <span
                       className={`text-lg font-extrabold shrink-0 ${gig.score >= 85 ? "text-[#00F0B5]" : gig.score >= 70 ? "text-yellow-400" : "text-gray-500"}`}
                     >
                       {gig.score}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 mt-1.5">
-                    <span
-                      className={`text-[10px] font-semibold ${gig.sourceColor}`}
-                    >
+                  <div className="flex items-center gap-2 mt-2 text-[11px]">
+                    <span className={`font-semibold ${gig.sourceColor}`}>
                       {gig.source}
                     </span>
-                    <span className="text-[10px] text-gray-600">&middot;</span>
-                    <span className="text-[10px] text-gray-500">{gig.sub}</span>
-                    <span className="text-[10px] text-gray-600">&middot;</span>
-                    <span className="text-[10px] text-gray-500">
-                      {gig.time}
-                    </span>
+                    <span className="text-gray-600">&middot;</span>
+                    <span className="text-gray-500">{gig.sub}</span>
+                    <span className="text-gray-600">&middot;</span>
+                    <span className="text-gray-500">{gig.time}</span>
                   </div>
                 </button>
               ))}
@@ -1002,9 +1021,19 @@ function LiveDemo() {
           ) : (
             <div className="space-y-4 flex-1 flex flex-col">
               <div>
-                <h4 className="text-sm font-bold text-white leading-snug mb-1">
-                  {active.title}
-                </h4>
+                <div className="flex items-center gap-2 mb-1">
+                  {active.statusLabel && (
+                    <span className="inline-block text-[11px] mr-2 px-2 py-0.5 bg-emerald-500/10 text-emerald-300 rounded-full font-semibold uppercase tracking-wide">
+                      {active.statusLabel}
+                    </span>
+                  )}
+                  <h4 className="text-sm font-bold text-white leading-snug">
+                    {active.headline || active.title}
+                  </h4>
+                </div>
+                {active.title && active.headline && (
+                  <p className="text-xs text-gray-500 mb-1">{active.title}</p>
+                )}
                 <div className="flex items-center gap-2 text-[11px]">
                   <span className={`font-semibold ${active.sourceColor}`}>
                     {active.source}

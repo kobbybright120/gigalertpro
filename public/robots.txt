@@ -13,3 +13,4 @@ Disallow: /api/
 
 # Sitemap location
 Sitemap: https://gigalertpro.com/sitemap.xml
+ 
