@@ -96,6 +96,7 @@ const COMBINED_SUBS_2 = [
   "DevsForHire",
   "Jobs4Bitcoins",
   "WritingJobBoard",
+  "VirtualAssistant4Hire",
 ];
 const SEARCH_SUBS = [
   { name: "forhire", search: "flair:Hiring" },
