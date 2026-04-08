@@ -184,7 +184,8 @@ const NITTER_UA = "GigAlertPro/1.0 (+https://gigalertpro.com)";
 // ── Source 3: Threads.net Config (HTML Scraping — No API) ────────────────────
 
 const THREADS_BASE = "https://www.threads.net";
-const THREADS_UA = CL_UA; // browser-like UA for Threads
+const THREADS_UA =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"; // browser-like UA for Threads
 const THREADS_MAX_POSTS = parseInt(process.env.THREADS_MAX_POSTS || "150", 10);
 const THREADS_DETAIL_LIMIT = parseInt(
   process.env.THREADS_DETAIL_LIMIT || "8",
