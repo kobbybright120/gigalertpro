@@ -41,7 +41,9 @@ function encodeId(str) {
 }
 
 async function crawlSeeds(seeds) {
-  const browser = await chromium.launch({ headless: process.env.PW_HEADLESS !== "false" });
+  const browser = await chromium.launch({
+    headless: process.env.PW_HEADLESS !== "false",
+  });
   const context = await browser.newContext({ userAgent: "GigAlertPro/1.0" });
   const page = await context.newPage();
   const collected = [];
@@ -62,24 +64,51 @@ async function crawlSeeds(seeds) {
             try {
               const timeEl = el.querySelector("time");
               const time = timeEl ? timeEl.getAttribute("datetime") : null;
-              const authorEl = el.querySelector('a[href*="/@"]') || el.querySelector("a");
+              const authorEl =
+                el.querySelector('a[href*="/@"]') || el.querySelector("a");
               const author = authorEl ? authorEl.innerText.trim() : null;
               const contentEl = el.querySelector('div[dir="auto"]') || el;
               let text = contentEl?.innerText || "";
               text = text.replace(/\s+/g, " ").trim();
-              const linkEl = el.querySelector('a[href*="/post/"]') || el.querySelector('a[href*="/status/"]') || el.querySelector('a');
+              const linkEl =
+                el.querySelector('a[href*="/post/"]') ||
+                el.querySelector('a[href*="/status/"]') ||
+                el.querySelector("a");
               const url = linkEl ? linkEl.href : window.location.href;
-              out.push({ title: text.slice(0, 120), body_preview: text.slice(0, 400), author, posted_at: time, url });
+              out.push({
+                title: text.slice(0, 120),
+                body_preview: text.slice(0, 400),
+                author,
+                posted_at: time,
+                url,
+              });
             } catch (e) {
               /* ignore */
             }
           }
         } else {
           // fallback to meta tags / single page
-          const title = document.querySelector('meta[property="og:title"]')?.content || document.querySelector('meta[name="twitter:title"]')?.content || document.title || "";
-          const description = document.querySelector('meta[property="og:description"]')?.content || document.querySelector('meta[name="twitter:description"]')?.content || "";
-          const time = document.querySelector('time')?.getAttribute('datetime') || null;
-          out.push({ title: title.slice(0, 120), body_preview: description.slice(0, 400), author: document.querySelector('meta[name="author"]')?.content || null, posted_at: time, url: window.location.href });
+          const title =
+            document.querySelector('meta[property="og:title"]')?.content ||
+            document.querySelector('meta[name="twitter:title"]')?.content ||
+            document.title ||
+            "";
+          const description =
+            document.querySelector('meta[property="og:description"]')
+              ?.content ||
+            document.querySelector('meta[name="twitter:description"]')
+              ?.content ||
+            "";
+          const time =
+            document.querySelector("time")?.getAttribute("datetime") || null;
+          out.push({
+            title: title.slice(0, 120),
+            body_preview: description.slice(0, 400),
+            author:
+              document.querySelector('meta[name="author"]')?.content || null,
+            posted_at: time,
+            url: window.location.href,
+          });
         }
 
         return out;
@@ -97,10 +126,15 @@ async function crawlSeeds(seeds) {
 
 async function main() {
   try {
-    const raw = await fs.readFile(new URL("./threads-seeds.json", import.meta.url), "utf-8");
+    const raw = await fs.readFile(
+      new URL("./threads-seeds.json", import.meta.url),
+      "utf-8",
+    );
     const seeds = JSON.parse(raw || "[]");
     if (!Array.isArray(seeds) || seeds.length === 0) {
-      console.error("No seeds configured. Edit scripts/threads-seeds.json to add Threads URLs to crawl.");
+      console.error(
+        "No seeds configured. Edit scripts/threads-seeds.json to add Threads URLs to crawl.",
+      );
       process.exit(1);
     }
 
@@ -115,10 +149,19 @@ async function main() {
     }
 
     const results = Array.from(map.values());
-    const payload = JSON.stringify({ posts: results, post_count: results.length, cached_at: new Date().toISOString(), feed: "threads-playwright" });
+    const payload = JSON.stringify({
+      posts: results,
+      post_count: results.length,
+      cached_at: new Date().toISOString(),
+      feed: "threads-playwright",
+    });
 
     await redisSet("gigalertpro:threads:latest", payload, 3600);
-    console.log("Wrote", results.length, "threads posts to Upstash (key: gigalertpro:threads:latest)");
+    console.log(
+      "Wrote",
+      results.length,
+      "threads posts to Upstash (key: gigalertpro:threads:latest)",
+    );
   } catch (err) {
     console.error(err);
     process.exit(1);

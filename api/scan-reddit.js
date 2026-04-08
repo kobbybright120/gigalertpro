@@ -154,9 +154,13 @@ function xmlAttr(xml, tag, attr) {
 // ── Lightweight extraction helpers (budget, category, posted_at) ──────────
 function extractBudget(text) {
   if (!text) return null;
-  const range = text.match(/\$\s?[\d,]+(?:\.\d{1,2})?(?:k)?\s*[-–—to]+\s*\$?\s?[\d,]+(?:\.\d{1,2})?(?:k)?/i);
+  const range = text.match(
+    /\$\s?[\d,]+(?:\.\d{1,2})?(?:k)?\s*[-–—to]+\s*\$?\s?[\d,]+(?:\.\d{1,2})?(?:k)?/i,
+  );
   if (range) return range[0].replace(/\s+/g, " ").trim();
-  const hourly = text.match(/\$\s?[\d,]+(?:\.\d{1,2})?\s*(?:\/\s*h(?:ou)?r|per\s+h(?:ou)?r)/i);
+  const hourly = text.match(
+    /\$\s?[\d,]+(?:\.\d{1,2})?\s*(?:\/\s*h(?:ou)?r|per\s+h(?:ou)?r)/i,
+  );
   if (hourly) return hourly[0].replace(/\s+/g, " ").trim();
   const kMatch = text.match(/\$\s?[\d,.]+\s*k\b/i);
   if (kMatch) return kMatch[0].replace(/\s+/g, "");
@@ -169,7 +173,10 @@ function detectCategory(text) {
   const t = text.toLowerCase();
   if (/\bvirtual\s?assistant|\bva\b/.test(t)) return "Virtual Assistant";
   if (/\bdesign|logo|ui\/ux|figma|photoshop/.test(t)) return "Design";
-  if (/\bdevelop|program|software|react|node|python|javascript|typescript/.test(t)) return "Development";
+  if (
+    /\bdevelop|program|software|react|node|python|javascript|typescript/.test(t)
+  )
+    return "Development";
   if (/\bwriter|copywriting|content|ghostwrit|edit/.test(t)) return "Writing";
   if (/\bmarketing|seo|social\s?media/.test(t)) return "Marketing";
   return null;
