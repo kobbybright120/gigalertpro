@@ -53,15 +53,19 @@ const SUBREDDITS = [
   { name: "remotelegaljobs", mode: "new", weight: 1.0 },
 ];
 
-// ── Cache (persisted in sessionStorage to survive HMR reloads) ───────────────
-const CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes — keep data reasonably fresh
+// ── Cache (persisted in localStorage — survives tab close + app reopen) ────────
+// FRESH_TTL: skip refetch if data is less than 2 min old
+// STALE_TTL: show cached data (stale-while-revalidate) up to 30 min
+const FRESH_TTL_MS = 2 * 60 * 1000; // 2 min
+const STALE_TTL_MS = 30 * 60 * 1000; // 30 min
 const CACHE_KEY = "gigalertpro_reddit_cache";
 function loadCache() {
   try {
-    const raw = sessionStorage.getItem(CACHE_KEY);
+    const raw = localStorage.getItem(CACHE_KEY);
     if (raw) {
       const c = JSON.parse(raw);
-      if (c.data && c.ts && Date.now() - c.ts < CACHE_TTL_MS) return c;
+      // Keep stale data up to 30 min — show instantly while refreshing in background
+      if (c.data && c.ts && Date.now() - c.ts < STALE_TTL_MS) return c;
     }
   } catch {
     /* ignore */
@@ -70,7 +74,7 @@ function loadCache() {
 }
 function saveCache(c) {
   try {
-    sessionStorage.setItem(CACHE_KEY, JSON.stringify(c));
+    localStorage.setItem(CACHE_KEY, JSON.stringify(c));
   } catch {
     /* ignore */
   }
@@ -980,12 +984,35 @@ function computeScore(
 const IS_PROD = import.meta.env.PROD;
 
 /**
+ * Fetch a URL with exponential-backoff retry (2 attempts after first try).
+ * Handles rate-limits (429) and transient network errors silently.
+ */
+async function fetchWithRetry(url, options = {}, maxAttempts = 3) {
+  let lastErr;
+  for (let i = 0; i < maxAttempts; i++) {
+    try {
+      const resp = await fetch(url, options);
+      if (resp.status === 429) {
+        // Rate limit — wait and retry
+        await delay(1500 * Math.pow(2, i));
+        continue;
+      }
+      return resp;
+    } catch (err) {
+      lastErr = err;
+      if (i < maxAttempts - 1) await delay(1000 * Math.pow(2, i));
+    }
+  }
+  throw lastErr || new Error("fetch failed");
+}
+
+/**
  * PRODUCTION: Single fetch to our Vercel serverless proxy (CDN-cached).
  * Returns all posts from all subreddits in one request.
  */
 async function fetchAllPostsFromProxy() {
   try {
-    const resp = await fetch("/api/scan-reddit", {
+    const resp = await fetchWithRetry("/api/scan-reddit", {
       headers: { Accept: "application/json" },
     });
     if (!resp.ok) {
@@ -1017,7 +1044,7 @@ async function fetchAllPostsFromProxy() {
  */
 async function fetchCommunityPostsFromProxy() {
   try {
-    const resp = await fetch("/api/x-feed", {
+    const resp = await fetchWithRetry("/api/x-feed", {
       headers: { Accept: "application/json" },
     });
     if (!resp.ok) {
@@ -1090,6 +1117,10 @@ async function fetchSubreddit(sub) {
 
 /**
  * Fetches real Reddit JOB POSTINGS matching keywords.
+ * Implements stale-while-revalidate:
+ *   - Returns fresh cache (< 2 min) instantly without fetching
+ *   - Returns stale cache (< 30 min) instantly, then ALSO fetches fresh in background
+ *   - Fetches from API if no cache exists
  * Returns scored, categorized, deduplicated results — most relevant first.
  */
 export async function fetchRedditGigs(keywords) {
@@ -1098,29 +1129,61 @@ export async function fetchRedditGigs(keywords) {
   const lowerKws = keywords.map((k) => k.toLowerCase().trim()).filter(Boolean);
   if (lowerKws.length === 0) return [];
 
-  // Return cache if still fresh
-  if (cache.data && Date.now() - cache.ts < CACHE_TTL_MS) {
+  const now = Date.now();
+  const isFresh = cache.data && now - cache.ts < FRESH_TTL_MS;
+  const isStale = cache.data && !isFresh && now - cache.ts < STALE_TTL_MS;
+
+  // Fresh cache — return immediately, skip any fetch
+  if (isFresh) {
     return matchAndScore(cache.data, lowerKws);
   }
 
-  // Both dev and prod read from Upstash via proxy endpoints
-  // (dev uses Vite middleware, prod uses Vercel serverless)
+  // Stale cache — return it immediately, then silently refresh in background
+  if (isStale) {
+    // Don't await — fire and forget so the UI gets data right away
+    _refreshCacheInBackground();
+    return matchAndScore(cache.data, lowerKws);
+  }
+
+  // No usable cache — fetch synchronously (first load or explicit clearCache())
   const [redditPosts, xPosts] = await Promise.all([
     fetchAllPostsFromProxy(),
     fetchCommunityPostsFromProxy(),
   ]);
   const allPosts = [...redditPosts, ...xPosts];
-
   cache = { data: allPosts, ts: Date.now() };
   saveCache(cache);
   return matchAndScore(allPosts, lowerKws);
 }
 
-/** Clear the post cache (useful after keyword changes) */
+/** Background refresh — updates module-level cache without blocking the caller */
+async function _refreshCacheInBackground() {
+  try {
+    const [redditPosts, xPosts] = await Promise.all([
+      fetchAllPostsFromProxy(),
+      fetchCommunityPostsFromProxy(),
+    ]);
+    const allPosts = [...redditPosts, ...xPosts];
+    cache = { data: allPosts, ts: Date.now() };
+    saveCache(cache);
+  } catch {
+    /* silently ignore background refresh failures */
+  }
+}
+
+/**
+ * Returns the Unix-ms timestamp of the last successful cache save.
+ * Use this in the UI to show "Updated X ago".
+ */
+export function getCacheTimestamp() {
+  return cache.ts > 0 ? cache.ts : null;
+}
+
+/** Clear the post cache (forces a fresh fetch on next call) */
 export function clearCache() {
   cache = { data: null, ts: 0 };
   try {
-    sessionStorage.removeItem(CACHE_KEY);
+    localStorage.removeItem(CACHE_KEY);
   } catch {
     /* ignore */
   }

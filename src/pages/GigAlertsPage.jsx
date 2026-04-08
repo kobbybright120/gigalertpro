@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Plus,
@@ -25,6 +25,17 @@ import {
 } from "../lib/useSupabase";
 import { useNewGigCount } from "../context/NewGigCountContext";
 
+/** Format a Unix-ms timestamp as a relative string ("2 min ago") */
+function formatUpdated(ts, now) {
+  if (!ts || !now) return null;
+  const diff = Math.floor((now - ts) / 1000);
+  if (diff < 60) return "just now";
+  const mins = Math.floor(diff / 60);
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.floor(mins / 60);
+  return `${hrs}h ago`;
+}
+
 export default function GigAlertsPage() {
   const navigate = useNavigate();
   const [input, setInput] = useState("");
@@ -34,17 +45,31 @@ export default function GigAlertsPage() {
   const [proposalGig, setProposalGig] = useState(null); // gig selected for AI proposal
 
   const { keywords, addKeyword, removeKeyword } = useKeywords();
-  const { alerts, loading: alertsLoading } = useGigAlerts(keywords);
+  const {
+    alerts,
+    loading: alertsLoading,
+    lastUpdated,
+    refetch,
+  } = useGigAlerts(keywords);
   const { saveProposal } = useProposals();
   const { savedIds, toggleSave } = useSavedGigs();
   const { reset: resetGigCount } = useNewGigCount();
   const { profile } = useProfile();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
 
-  // Derive last-updated time from alert freshness
-  const lastUpdated = useMemo(
-    () => (alerts.length > 0 && !alertsLoading ? new Date() : null),
-    [alerts.length, alertsLoading],
-  );
+  // Tick every 30 seconds so "Updated X min ago" stays fresh
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  async function handleManualRefresh() {
+    setIsRefreshing(true);
+    await refetch();
+    setNow(Date.now());
+    setIsRefreshing(false);
+  }
 
   // Clear the badge whenever the user is on this page
   useEffect(() => {
@@ -268,15 +293,25 @@ export default function GigAlertsPage() {
           </div>
         )}
 
-        {/* Last updated */}
-        {lastUpdated && !alertsLoading && (
-          <div className="flex items-center gap-2 text-xs text-gray-600">
-            <RefreshCw className="w-3 h-3" />
-            Updated{" "}
-            {lastUpdated.toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
+        {/* Last updated + refresh */}
+        {!alertsLoading && (
+          <div className="flex items-center gap-3">
+            {lastUpdated && (
+              <span className="text-xs text-gray-600">
+                Updated {formatUpdated(lastUpdated, now)}
+              </span>
+            )}
+            <button
+              onClick={handleManualRefresh}
+              disabled={isRefreshing}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 glass-card rounded-lg text-xs font-semibold text-gray-400 hover:text-[#00F0B5] border border-white/[0.04] hover:border-[#00F0B5]/20 transition-all duration-200 disabled:opacity-50"
+              title="Refresh gigs"
+            >
+              <RefreshCw
+                className={`w-3 h-3 ${isRefreshing ? "animate-spin" : ""}`}
+              />
+              Refresh
+            </button>
           </div>
         )}
       </div>
@@ -368,17 +403,51 @@ export default function GigAlertsPage() {
             />
           ))
         ) : (
-          <div className="glass-card rounded-2xl p-14 text-center">
+          <div className="glass-card rounded-2xl p-12 text-center">
             <div className="w-16 h-16 rounded-2xl bg-white/[0.04] flex items-center justify-center mx-auto mb-5">
               <AlertCircle className="w-8 h-8 text-gray-600" />
             </div>
             <h3 className="text-lg font-bold text-white mb-2">
               No matches yet
             </h3>
-            <p className="text-gray-500 text-sm max-w-md mx-auto">
-              No gigs matched your keywords right now. New gigs are scanned
-              every few minutes — check back soon!
+            <p className="text-gray-500 text-sm max-w-md mx-auto mb-5">
+              No gigs found for your keywords right now. Gigs refresh every few
+              minutes — or try a broader term:
             </p>
+            {/* Keyword suggestions based on what's tracked */}
+            <div className="flex flex-wrap gap-2 justify-center">
+              {[
+                "react developer",
+                "python",
+                "logo design",
+                "video editor",
+                "seo",
+                "virtual assistant",
+                "copywriting",
+                "data entry",
+                "wordpress",
+                "shopify",
+              ]
+                .filter(
+                  (s) =>
+                    !keywords.some(
+                      (k) =>
+                        k.keyword === s ||
+                        s.includes(k.keyword) ||
+                        k.keyword.includes(s),
+                    ),
+                )
+                .slice(0, 6)
+                .map((sug) => (
+                  <button
+                    key={sug}
+                    onClick={() => addKeyword(sug)}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#00F0B5]/[0.06] border border-[#00F0B5]/15 text-[#00F0B5] hover:bg-[#00F0B5]/[0.12] transition-colors"
+                  >
+                    + {sug}
+                  </button>
+                ))}
+            </div>
           </div>
         )}
       </div>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { supabase } from "./supabase";
 import { useAuth } from "../context/AuthContext";
-import { fetchRedditGigs, clearCache } from "./redditClient";
+import { fetchRedditGigs, clearCache, getCacheTimestamp } from "./redditClient";
 import { notifyNewGigs, seedSeenIds } from "./gigNotifications";
 import { useNewGigCount } from "../context/NewGigCountContext";
 
@@ -158,6 +158,14 @@ export function useKeywords() {
   };
 }
 
+// Adaptive poll intervals: back off gradually when no new gigs are found
+const POLL_INTERVALS = [
+  2 * 60 * 1000, // 2 min  (normal — fresh keywords / just got new gigs)
+  4 * 60 * 1000, // 4 min  (quiet — nothing new after 2 polls)
+  8 * 60 * 1000, // 8 min  (very quiet — nothing new after 4 polls)
+  10 * 60 * 1000, // 10 min (idle — max backoff)
+];
+
 // ── Gig Alerts (matched posts) with keyword filtering + auto-poll ──
 export function useGigAlerts(keywordList) {
   const { user } = useAuth();
@@ -165,7 +173,9 @@ export function useGigAlerts(keywordList) {
   const { bump } = useNewGigCount();
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState(() => getCacheTimestamp());
   const pollingRef = useRef(false);
+  const pollMissesRef = useRef(0); // consecutive polls with no new gigs
 
   const fetchAlerts = useCallback(async () => {
     // Only show skeleton on the first/keyword-change fetch, not on polls
@@ -186,11 +196,20 @@ export function useGigAlerts(keywordList) {
         // On first load, seed seen IDs; on polls, notify new gigs
         if (pollingRef.current) {
           const newCount = notifyNewGigs(results);
-          if (newCount > 0) bump(newCount);
+          if (newCount > 0) {
+            bump(newCount);
+            pollMissesRef.current = 0; // reset backoff — fresh gigs found
+          } else {
+            pollMissesRef.current = Math.min(
+              pollMissesRef.current + 1,
+              POLL_INTERVALS.length - 1,
+            );
+          }
         } else {
           seedSeenIds(results);
         }
         setAlerts(results);
+        setLastUpdated(Date.now());
       } catch {
         // On poll failure keep existing results; on first fetch show empty
         if (!pollingRef.current) setAlerts([]);
@@ -254,11 +273,20 @@ export function useGigAlerts(keywordList) {
 
       if (pollingRef.current) {
         const newCount = notifyNewGigs(liveResults);
-        if (newCount > 0) bump(newCount);
+        if (newCount > 0) {
+          bump(newCount);
+          pollMissesRef.current = 0;
+        } else {
+          pollMissesRef.current = Math.min(
+            pollMissesRef.current + 1,
+            POLL_INTERVALS.length - 1,
+          );
+        }
       } else {
         seedSeenIds(liveResults);
       }
       setAlerts(liveResults);
+      setLastUpdated(Date.now());
     } catch (err) {
       console.warn("[GigAlertPro] Live fetch failed, falling back to DB:", err);
       // Fallback: read from Supabase if the proxy is unavailable
@@ -295,6 +323,7 @@ export function useGigAlerts(keywordList) {
         seedSeenIds(results);
       }
       setAlerts(results);
+      setLastUpdated(Date.now());
     }
     setLoading(false);
   }, [userId, keywordList, bump]);
@@ -306,7 +335,8 @@ export function useGigAlerts(keywordList) {
     fetchAlerts();
   }, [fetchAlerts, DISABLE_AUTH, userId]);
 
-  // Auto-poll every 2 minutes — pauses when tab is hidden, resumes + fetches on tab return
+  // Auto-poll with adaptive backoff — pauses when tab is hidden, resumes + fetches on tab return
+  // Interval starts at 2 min, backs off to 10 min when no new gigs are found
   useEffect(() => {
     const kws = (keywordList || []).map((k) =>
       typeof k === "string" ? k : k.keyword,
@@ -317,16 +347,21 @@ export function useGigAlerts(keywordList) {
 
     function startPolling() {
       if (intervalId) return;
-      intervalId = setInterval(
-        () => {
-          pollingRef.current = true;
-          clearCache();
-          fetchAlerts().finally(() => {
-            pollingRef.current = false;
-          });
-        },
-        2 * 60 * 1000,
-      );
+      // Pick interval based on how many polls had no new gigs
+      const ms =
+        POLL_INTERVALS[
+          Math.min(pollMissesRef.current, POLL_INTERVALS.length - 1)
+        ];
+      intervalId = setInterval(() => {
+        pollingRef.current = true;
+        clearCache();
+        fetchAlerts().finally(() => {
+          pollingRef.current = false;
+          // Restart with updated interval after each poll (adaptive backoff)
+          stopPolling();
+          startPolling();
+        });
+      }, ms);
     }
 
     function stopPolling() {
@@ -360,7 +395,7 @@ export function useGigAlerts(keywordList) {
     };
   }, [fetchAlerts, keywordList]);
 
-  return { alerts, loading, refetch: fetchAlerts };
+  return { alerts, loading, lastUpdated, refetch: fetchAlerts };
 }
 
 // ── User Alert Notifications (unread count + list) ──
