@@ -1222,25 +1222,27 @@ function matchAndScore(posts, lowerKws) {
     // ── Regex filters (ONLY for posts the AI hasn't classified) ──
     // If the AI already approved a post, trust it — don't second-guess with regex.
     const isXPost = p._sub === "nitter" || p._source_platform === "X";
+    const isCLPost = p._sub === "craigslist" || p._source_platform === "Craigslist";
 
     if (!aiApproved) {
-      // ── Skip self-promotions (freelancer ads) — skip for X/Nitter posts
-      //    (tweets are pre-screened by search query and have different norms) ──
+      // ── Skip self-promotions (freelancer ads) — skip for X/Nitter & CL posts
+      //    (tweets are pre-screened by search query; CL posts are real gig listings) ──
       if (
         !isXPost &&
+        !isCLPost &&
         isSelfPromotion(p.title || "", p.selftext || "", p.link_flair_text)
       )
         continue;
 
-      // ── X/Tweet: strict quality gate ─ only show actionable job/gig posts ──
+      // ── X/Tweet quality gate ──
       if (isXPost) {
         const tweetText = (p.title || "") + " " + (p.selftext || "");
         // Reject non-tech "developer" (real estate, housing, etc.)
         if (NON_TECH_DEVELOPER_RX.test(tweetText)) continue;
         // Reject replies, retweets, stories, negations, commentary
         if (X_REJECT_PATTERNS.some((rx) => rx.test(tweetText))) continue;
-        // Tweet body must contain at least one STRONG hiring signal
-        if (!X_HIRING_SIGNALS.some((rx) => rx.test(tweetText))) continue;
+        // Hiring signal is preferred but NOT required when user keywords match
+        // (this lets niche gigs through even if they don't say "hiring")
       }
     }
 
@@ -1249,11 +1251,21 @@ function matchAndScore(posts, lowerKws) {
     const bodyLower = (p.selftext || "").toLowerCase();
     // For X posts, also match against the Nitter search query (stored in flair)
     const flairLower = isXPost ? (p.link_flair_text || "").toLowerCase() : "";
+    // For Craigslist, also match against compensation and location fields
+    const clExtra = isCLPost
+      ? ((p.compensation || "") + " " + (p.location || "")).toLowerCase()
+      : "";
     const combined =
-      titleLower + " " + bodyLower + (flairLower ? " " + flairLower : "");
+      titleLower +
+      " " +
+      bodyLower +
+      (flairLower ? " " + flairLower : "") +
+      (clExtra ? " " + clExtra : "");
 
-    // Scan first 600 chars of body (increased from 300 for better niche coverage)
-    const bodyHead = bodyLower.slice(0, 600);
+    // For Reddit: scan first 600 chars of body (where the actual job description is).
+    // For Craigslist/X: scan full body — CL bodies ARE the gig description, X tweets are short.
+    const bodyHead =
+      isCLPost || isXPost ? bodyLower : bodyLower.slice(0, 600);
 
     let titleHits = 0;
     const matched = expandedKws.filter((kw) => {
@@ -1262,7 +1274,8 @@ function matchAndScore(posts, lowerKws) {
         const inTitle = titleLower.includes(kw);
         const inBody =
           bodyLower.includes(kw) ||
-          (flairLower ? flairLower.includes(kw) : false);
+          (flairLower ? flairLower.includes(kw) : false) ||
+          (clExtra ? clExtra.includes(kw) : false);
         if (inTitle) titleHits++;
         return inTitle || inBody;
       } else {
@@ -1277,12 +1290,15 @@ function matchAndScore(posts, lowerKws) {
         }
         const inFlair = flairLower ? rx.test(flairLower) : false;
         if (inFlair) return true;
+        if (clExtra && rx.test(clExtra)) return true;
         return rx.test(bodyHead);
       }
     });
 
-    // All posts (Reddit + Craigslist) require at least one keyword match
-    if (matched.length === 0) continue;
+    // X posts without hiring signal AND zero keyword matches → skip
+    // (relaxed from hard reject: if keywords match, we show the tweet)
+    if (isXPost && matched.length === 0) continue;
+    if (!isXPost && matched.length === 0) continue;
 
     // Map matched expanded keywords back to user's original keywords for display
     const matchedOriginal = [
@@ -1299,13 +1315,19 @@ function matchAndScore(posts, lowerKws) {
 
     // ── Score ──
     // Use expanded match count for scoring (more matches = higher relevance)
-    const score = computeScore(
+    let score = computeScore(
       p,
       matched.length,
       expandedKws.length,
       p._weight || 1.0,
       titleHits,
     );
+
+    // ── Craigslist score boosts ──
+    // CL posts with explicit compensation are high-intent real gigs
+    if (isCLPost && p.compensation) score = Math.min(100, score + 10);
+    // CL posts always have a real body (detail page was fetched) → slight boost
+    if (isCLPost && (p.selftext || "").length > 100) score = Math.min(100, score + 5);
 
     // ── Skip low-relevance posts (spammy pitches that barely match) ──
     if (score < 10) continue;
@@ -1391,7 +1413,7 @@ function matchAndScore(posts, lowerKws) {
           ? `https://www.reddit.com${p.permalink}`
           : p.permalink || "",
       subreddit: p._sub || p.subreddit,
-      budget,
+      budget: budget || p.compensation || null,
       author: p.author || "unknown",
       reddit_created: p.created_utc
         ? new Date(p.created_utc * 1000).toISOString()
@@ -1405,6 +1427,7 @@ function matchAndScore(posts, lowerKws) {
       upvotes: p.ups || 0,
       flair: p.link_flair_text || null,
       source_platform: p._source_platform || "Reddit",
+      location: p.location || null,
     });
   }
 

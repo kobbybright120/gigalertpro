@@ -396,6 +396,7 @@ export default function GigAlertsPage() {
                 comment_count: alert.comment_count,
                 upvotes: alert.upvotes,
                 source_platform: alert.source_platform || "Reddit",
+                location: alert.location || null,
               }}
               onGenerateProposal={handleGenerateProposal}
               onSaveGig={(gig) => toggleSave(gig.id)}

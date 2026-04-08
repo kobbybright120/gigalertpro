@@ -39,8 +39,8 @@ const CL_CITIES = (
   .map((c) => c.trim())
   .filter(Boolean);
 
-// Craigslist gig categories: cpg=computer, crg=creative, wrg=writing, ggg=all gigs
-const CL_CATEGORIES = (process.env.CL_CATEGORIES || "cpg,crg,wrg")
+// Craigslist gig categories: cpg=computer, crg=creative, wrg=writing, ggg=all gigs, evg=event
+const CL_CATEGORIES = (process.env.CL_CATEGORIES || "cpg,crg,wrg,ggg")
   .split(",")
   .map((c) => c.trim())
   .filter(Boolean);
@@ -79,6 +79,9 @@ const NITTER_SEARCHES = (
     "hiring animator",
     "need a logo designer",
     "looking for graphic designer",
+    "need a designer freelance",
+    "hiring thumbnail designer",
+    "hiring brand designer",
     // ── Development & Tech ──
     "hiring web developer",
     "hiring frontend developer",
@@ -92,6 +95,16 @@ const NITTER_SEARCHES = (
     "hiring Shopify developer",
     "need a developer",
     "looking for programmer",
+    "hiring React developer",
+    "hiring Python developer",
+    "hiring WordPress developer",
+    "hiring flutter developer",
+    "hiring iOS developer",
+    "hiring Android developer",
+    "hiring DevOps engineer",
+    "need a full stack developer",
+    "hiring Webflow developer",
+    "hiring no-code developer",
     // ── Writing & Content ──
     "hiring copywriter",
     "hiring content writer",
@@ -100,6 +113,9 @@ const NITTER_SEARCHES = (
     "hiring editor proofreader",
     "need a writer",
     "looking for blogger",
+    "hiring SEO writer",
+    "hiring scriptwriter",
+    "need a content creator",
     // ── Marketing & Sales ──
     "hiring social media manager",
     "hiring SEO specialist",
@@ -108,6 +124,11 @@ const NITTER_SEARCHES = (
     "hiring email marketer",
     "need a marketer",
     "hiring sales freelancer",
+    "hiring PPC specialist",
+    "hiring Google Ads expert",
+    "hiring Facebook Ads freelancer",
+    "hiring community manager",
+    "hiring lead generation",
     // ── Business & Admin ──
     "hiring virtual assistant",
     "hiring data entry",
@@ -116,14 +137,31 @@ const NITTER_SEARCHES = (
     "hiring executive assistant",
     "need a VA",
     "hiring bookkeeper",
+    "hiring accountant freelance",
+    "hiring admin assistant remote",
+    // ── Video & Audio ──
+    "hiring podcast editor",
+    "hiring voiceover artist",
+    "hiring voice actor",
+    "hiring music producer",
+    "hiring audio engineer",
+    "hiring sound designer",
+    "hiring YouTube editor",
+    // ── Data & AI ──
+    "hiring data analyst freelance",
+    "hiring data scientist",
+    "need a data scraper",
+    "hiring automation expert",
+    "hiring chatbot developer",
     // ── Specialized Niches ──
     "hiring translator",
-    "hiring voice actor",
-    "hiring voiceover artist",
-    "hiring music producer",
     "hiring photographer",
     "hiring 3D artist",
     "hiring transcriptionist",
+    "hiring CAD designer",
+    "hiring Blender artist",
+    "hiring tutor online",
+    "hiring coach freelance",
     // ── General / Remote ──
     "freelance gig",
     "freelance opportunity",
@@ -132,6 +170,8 @@ const NITTER_SEARCHES = (
     "need a freelancer",
     "hiring freelancer",
     "remote job hiring",
+    "contract work hiring",
+    "part-time freelance",
   ].join(",")
 )
   .split(",")

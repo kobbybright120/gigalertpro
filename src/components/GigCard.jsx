@@ -8,6 +8,7 @@ import {
   Globe,
   ArrowBigUp,
   Bookmark,
+  MapPin,
 } from "lucide-react";
 
 function ScoreBadge({ score }) {
@@ -125,6 +126,12 @@ export default function GigCard({
           <span className="inline-flex items-center gap-1 text-gray-500">
             <Clock className="w-3.5 h-3.5" />
             {gig.postedAt}
+          </span>
+        )}
+        {gig.location && (
+          <span className="inline-flex items-center gap-1 text-gray-500">
+            <MapPin className="w-3.5 h-3.5" />
+            {gig.location}
           </span>
         )}
         {gig.upvotes > 0 && (

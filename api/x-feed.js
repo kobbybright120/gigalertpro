@@ -26,34 +26,61 @@ const NITTER_SEARCHES = [
   "hiring video editor",
   "hiring animator",
   "hiring illustrator",
+  "need a designer freelance",
+  "hiring thumbnail designer",
   // Development & Tech
   "hiring web developer",
   "hiring software engineer",
   "hiring mobile app developer",
   "hiring game developer",
+  "hiring React developer",
+  "hiring Python developer",
+  "hiring WordPress developer",
+  "hiring Shopify developer",
+  "need a developer",
+  "looking for programmer",
   // Writing & Content
   "hiring copywriter",
   "hiring content writer",
   "hiring ghostwriter",
+  "hiring SEO writer",
+  "need a content creator",
   // Marketing & Sales
   "hiring social media manager",
   "hiring SEO specialist",
   "hiring digital marketer",
+  "hiring PPC specialist",
+  "hiring lead generation",
   // Business & Admin
   "hiring virtual assistant",
   "hiring project manager",
   "hiring customer support",
+  "hiring data entry",
+  "need a VA",
+  // Video & Audio
+  "hiring podcast editor",
+  "hiring voiceover artist",
+  "hiring YouTube editor",
+  "hiring music producer",
+  // Data & AI
+  "hiring data analyst freelance",
+  "need a data scraper",
+  "hiring automation expert",
   // Specialized
   "hiring translator",
   "hiring voice actor",
-  "hiring music producer",
   "hiring photographer",
+  "hiring 3D artist",
+  "hiring transcriptionist",
+  "hiring tutor online",
   // General
   "freelance gig",
   "freelance opportunity",
   "looking for freelancer",
   "need a freelancer",
   "remote freelance job",
+  "hiring freelancer",
+  "contract work hiring",
 ];
 
 const NITTER_UA = "GigAlertPro/1.0 (+https://gigalertpro.com)";
