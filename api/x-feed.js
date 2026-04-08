@@ -6,84 +6,37 @@
 //   → Zero external calls per user request, instant KV read.
 //
 // FALLBACK (no Redis data):
-//   Falls back to live Nitter RSS + Threads scrape so the feed is never empty.
+//   Falls back to a *tiny* live Nitter RSS fetch (a few queries only) so the
+//   feed is never fully empty.  Threads scrape is NOT done here — it's too
+//   slow for a serverless function. Threads data comes from the cron job only.
 // ─────────────────────────────────────────────────────────────────────────────
+
+// Hard deadline for the entire handler (Vercel free = 10 s, Pro = 60 s).
+// We aim to finish well within the limit so the user never sees a 504.
+const HANDLER_DEADLINE_MS = 8000;
 
 const REDIS_KEY = "gigalertpro:x:latest";
 
 // ── Nitter live-fallback config ──────────────────────────────────────────────
+// Keep this list SHORT — each query can take up to 5 s in the worst case.
+// The cron job handles the full 65+ search list; this is just a safety net.
 
 const NITTER_INSTANCES = [
   "nitter.perennialte.ch",
   "xcancel.com",
-  "nitter.privacyredirect.com",
-  "nitter.net",
 ];
 
-const NITTER_SEARCHES = [
-  // Design & Creative
+const NITTER_FALLBACK_SEARCHES = [
   "hiring graphic designer",
-  "hiring video editor",
-  "hiring animator",
-  "hiring illustrator",
-  "need a designer freelance",
-  "hiring thumbnail designer",
-  // Development & Tech
   "hiring web developer",
-  "hiring software engineer",
-  "hiring mobile app developer",
-  "hiring game developer",
-  "hiring React developer",
-  "hiring Python developer",
-  "hiring WordPress developer",
-  "hiring Shopify developer",
-  "need a developer",
-  "looking for programmer",
-  // Writing & Content
-  "hiring copywriter",
-  "hiring content writer",
-  "hiring ghostwriter",
-  "hiring SEO writer",
-  "need a content creator",
-  // Marketing & Sales
-  "hiring social media manager",
-  "hiring SEO specialist",
-  "hiring digital marketer",
-  "hiring PPC specialist",
-  "hiring lead generation",
-  // Business & Admin
   "hiring virtual assistant",
-  "hiring project manager",
-  "hiring customer support",
-  "hiring data entry",
-  "need a VA",
-  // Video & Audio
-  "hiring podcast editor",
-  "hiring voiceover artist",
-  "hiring YouTube editor",
-  "hiring music producer",
-  // Data & AI
-  "hiring data analyst freelance",
-  "need a data scraper",
-  "hiring automation expert",
-  // Specialized
-  "hiring translator",
-  "hiring voice actor",
-  "hiring photographer",
-  "hiring 3D artist",
-  "hiring transcriptionist",
-  "hiring tutor online",
-  // General
-  "freelance gig",
+  "hiring video editor",
   "freelance opportunity",
-  "looking for freelancer",
   "need a freelancer",
-  "remote freelance job",
-  "hiring freelancer",
-  "contract work hiring",
 ];
 
 const NITTER_UA = "GigAlertPro/1.0 (+https://gigalertpro.com)";
+const FETCH_TIMEOUT_MS = 4000; // per-fetch timeout
 
 // ── Upstash Redis REST ───────────────────────────────────────────────────────
 
@@ -101,6 +54,7 @@ async function redisGet(key) {
   try {
     const resp = await fetch(`${url}/get/${encodeURIComponent(key)}`, {
       headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(3000), // 3 s max for Redis read
     });
     if (!resp.ok) return null;
     const json = await resp.json();
@@ -127,6 +81,7 @@ async function redisSet(key, value, ttlSeconds) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(["SET", key, value, "EX", ttlSeconds]),
+      signal: AbortSignal.timeout(3000),
     });
   } catch {
     /* best effort */
@@ -200,13 +155,17 @@ function parseNitterRss(xml, searchQuery) {
   return items;
 }
 
-async function fetchNitterLive() {
+async function fetchNitterLive(deadline) {
   const allPosts = [];
   const diagnostics = [];
 
-  for (const query of NITTER_SEARCHES) {
+  for (const query of NITTER_FALLBACK_SEARCHES) {
+    // Bail if we're running out of time
+    if (Date.now() >= deadline) break;
+
     let fetched = false;
     for (const instance of NITTER_INSTANCES) {
+      if (Date.now() >= deadline) break;
       const url = `https://${instance}/search/rss?f=tweets&q=${query.replace(/\s+/g, "+")}`;
       try {
         const resp = await fetch(url, {
@@ -215,6 +174,7 @@ async function fetchNitterLive() {
             Accept: "application/rss+xml, text/xml",
           },
           redirect: "follow",
+          signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
         });
         if (!resp.ok) continue;
         const xml = await resp.text();
@@ -261,116 +221,11 @@ async function fetchNitterLive() {
   };
 }
 
-// ── Threads fallback (lightweight scrape for serverless) ─────────────────────
-
-const THREADS_FALLBACK_TAGS = [
-  "hiring",
-  "freelance",
-  "remotejobs",
-  "hiringnow",
-  "freelancework",
-];
-
-const THREADS_FALLBACK_UA =
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
-
-function threadsMeta(html, prop) {
-  const rx = new RegExp(
-    `<meta[^>]+(?:property|name)=["']${prop}["'][^>]+content=["']([^"']+)["']`,
-    "i",
-  );
-  const m = html.match(rx);
-  if (m) return m[1];
-  const rx2 = new RegExp(
-    `<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']${prop}["']`,
-    "i",
-  );
-  const m2 = html.match(rx2);
-  return m2 ? m2[1] : null;
-}
-
-function extractThreadsPostLinks(html) {
-  const posts = [];
-  const seen = new Set();
-  const linkRx = /\/@([a-zA-Z0-9_.]+)\/post\/([a-zA-Z0-9_-]+)/g;
-  let m;
-  while ((m = linkRx.exec(html)) !== null) {
-    const key = `${m[1]}/${m[2]}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    posts.push({ user: m[1], code: m[2] });
-  }
-  return posts;
-}
-
-async function fetchThreadsLive() {
-  const allPosts = [];
-
-  for (const tag of THREADS_FALLBACK_TAGS) {
-    try {
-      const url = `https://www.threads.net/search?q=%23${encodeURIComponent(tag)}&serp_type=default`;
-      const resp = await fetch(url, {
-        headers: {
-          "User-Agent": THREADS_FALLBACK_UA,
-          Accept: "text/html",
-        },
-        redirect: "follow",
-      });
-      if (!resp.ok) continue;
-      const html = await resp.text();
-
-      // Try to find post links and fetch first 3
-      const links = extractThreadsPostLinks(html).slice(0, 3);
-      for (const link of links) {
-        try {
-          const postUrl = `https://www.threads.net/@${link.user}/post/${link.code}`;
-          const postResp = await fetch(postUrl, {
-            headers: { "User-Agent": THREADS_FALLBACK_UA, Accept: "text/html" },
-            redirect: "follow",
-          });
-          if (!postResp.ok) continue;
-          const postHtml = await postResp.text();
-          const desc =
-            threadsMeta(postHtml, "og:description") ||
-            threadsMeta(postHtml, "twitter:description") ||
-            "";
-          const text = desc
-            .replace(/^\d+\s*(likes?|replies|reposts?),?\s*/gi, "")
-            .replace(/^@\w+\s*:\s*/i, "")
-            .trim();
-          if (text.length < 10) continue;
-
-          allPosts.push({
-            id: `threads_${link.code}`,
-            name: `threads_${link.code}`,
-            title: text.slice(0, 300),
-            selftext: text.slice(0, 2000),
-            author: link.user,
-            author_name: `@${link.user}`,
-            permalink: `https://www.threads.net/@${link.user}/post/${link.code}`,
-            subreddit: null,
-            created_utc: Math.floor(Date.now() / 1000),
-            num_comments: 0,
-            ups: 0,
-            link_flair_text: "Threads",
-            _sub: "threads",
-            source: `threads-tag-${tag}`,
-          });
-        } catch {
-          continue;
-        }
-      }
-    } catch {
-      continue;
-    }
-  }
-
-  return allPosts;
-}
-
 // ── Handler ──────────────────────────────────────────────────────────────────
 
 export default async function handler(req, res) {
+  const deadline = Date.now() + HANDLER_DEADLINE_MS;
+
   // CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
@@ -391,24 +246,9 @@ export default async function handler(req, res) {
       return res.status(200).send(cached);
     }
 
-    // ── 2) Fallback: live Nitter RSS + Threads scrape ──
-    console.log(
-      "[x-feed] Redis miss — falling back to live Nitter + Threads fetch",
-    );
-    const [nitterData, threadsPosts] = await Promise.all([
-      fetchNitterLive(),
-      fetchThreadsLive(),
-    ]);
-
-    // Merge Nitter + Threads posts
-    const mergedPosts = [...nitterData.posts, ...threadsPosts];
-    const data = {
-      posts: mergedPosts,
-      cached_at: new Date().toISOString(),
-      post_count: mergedPosts.length,
-      feed: "live-fallback",
-      diagnostics: nitterData.diagnostics,
-    };
+    // ── 2) Fallback: lightweight Nitter RSS fetch (no Threads — too slow) ──
+    console.log("[x-feed] Redis miss — falling back to lite Nitter fetch");
+    const data = await fetchNitterLive(deadline);
 
     // Auto-populate Redis so subsequent requests are instant
     if (data.posts.length > 0) {
@@ -424,6 +264,9 @@ export default async function handler(req, res) {
     return res.status(200).json(data);
   } catch (err) {
     console.error("[x-feed] Error:", err);
-    return res.status(500).json({ error: "Internal server error", posts: [] });
+    // Return empty array instead of 500 so the UI doesn't break
+    return res
+      .status(200)
+      .json({ error: err.message, posts: [], post_count: 0 });
   }
 }
