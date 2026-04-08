@@ -124,6 +124,9 @@ export default function GigAlertsPage() {
   const threadsCount = alerts.filter(
     (a) => a.source_platform === "Threads",
   ).length;
+  const remotiveCount = alerts.filter(
+    (a) => a.source_platform === "Remotive",
+  ).length;
 
   // Collect unique categories from current alerts
   const categorySet = new Set(alerts.map((a) => a.category).filter(Boolean));
@@ -150,7 +153,8 @@ export default function GigAlertsPage() {
             Gig Alerts
           </h1>
           <p className="text-gray-500 mt-1.5 text-sm">
-            Real-time gig matching across Reddit, Craigslist, X & Threads
+            Real-time gig matching across Reddit, Craigslist, X, Threads &
+            Remotive
           </p>
         </div>
         <span className="inline-flex items-center gap-2 px-4 py-2 glass-card rounded-full border border-[#00F0B5]/15 shrink-0">
@@ -221,6 +225,7 @@ export default function GigAlertsPage() {
               },
               { key: "x", label: "𝕏 / Twitter", count: xCount },
               { key: "threads", label: "Threads", count: threadsCount },
+              { key: "remotive", label: "Remotive", count: remotiveCount },
             ].map(({ key, label, count }) => (
               <button
                 key={key}

@@ -32,6 +32,14 @@ const MAX_POSTS = parseInt(process.env.X_MAX_POSTS || "300", 10);
 const SEEN_KEY = "gigalertpro:seen:x"; // dedup set — tracks classified post IDs
 const SEEN_TTL = 86400; // 24 hours
 
+// Script-level deadline — abort slow sources before GitHub Actions kills the job.
+// Must be less than the workflow timeout-minutes to leave time for classification + Redis write.
+const SCRIPT_START = Date.now();
+const SCRIPT_DEADLINE_MS = parseInt(
+  process.env.SCRIPT_DEADLINE_MS || String(9 * 60 * 1000),
+  10,
+); // 9 min
+
 // Craigslist cities to scan (subdomain format)
 const CL_CITIES = (
   process.env.CL_CITIES ||
@@ -1111,13 +1119,17 @@ async function fetchThreadsListingPage(url, source, label) {
 /**
  * Fetch all Threads data: hashtag pages + search pages.
  */
-async function fetchAllThreads() {
+async function fetchAllThreads(deadline) {
   const allPosts = [];
   const diagnostics = [];
   let successCount = 0;
 
   // ── Hashtag pages ──
   for (const tag of THREADS_TAGS) {
+    if (deadline && Date.now() >= deadline) {
+      console.log(`  [threads] ⏱ Deadline reached — skipping remaining tags`);
+      break;
+    }
     const url = `${THREADS_BASE}/search?q=%23${encodeURIComponent(tag)}&serp_type=default`;
     console.log(`  [threads] Tag: #${tag}`);
 
@@ -1137,6 +1149,12 @@ async function fetchAllThreads() {
 
   // ── Search queries ──
   for (const query of THREADS_SEARCHES) {
+    if (deadline && Date.now() >= deadline) {
+      console.log(
+        `  [threads] ⏱ Deadline reached — skipping remaining searches`,
+      );
+      break;
+    }
     const url = `${THREADS_BASE}/search?q=${encodeURIComponent(query)}&serp_type=default`;
     console.log(`  [threads] Search: "${query}"`);
 
@@ -1256,7 +1274,8 @@ async function fetchRemotive() {
           selftext: body,
           author: job.company_name || "unknown",
           author_name: job.company_name || "unknown",
-          permalink: job.url || `https://remotive.com/remote-jobs/${cat}/${job.id}`,
+          permalink:
+            job.url || `https://remotive.com/remote-jobs/${cat}/${job.id}`,
           subreddit: null,
           created_utc: createdUtc,
           num_comments: 0,
@@ -1309,24 +1328,38 @@ async function fetchAllPosts() {
   diagnostics.nitter = nitter.diagnostics;
   console.log(`[fetcher] Nitter: ${nitter.posts.length} fetched`);
 
-  // ── Threads ──
-  console.log("\n[fetcher] === Threads.net ===");
-  const threads = await fetchAllThreads();
-  diagnostics.threads = threads.diagnostics;
-  console.log(`[fetcher] Threads: ${threads.posts.length} fetched`);
-
   // Deduplicate across all sources
   const seen = new Set();
   const allPosts = [];
-  for (const p of [
-    ...remotive.posts,
-    ...cl.posts,
-    ...nitter.posts,
-    ...threads.posts,
-  ]) {
+  for (const p of [...remotive.posts, ...cl.posts, ...nitter.posts]) {
     if (!seen.has(p.id)) {
       seen.add(p.id);
       allPosts.push(p);
+    }
+  }
+
+  // ── Threads (budget remaining time — abort before GitHub Actions kills us) ──
+  const threadsDeadline = SCRIPT_START + SCRIPT_DEADLINE_MS - 90_000; // leave 90s for classify + Redis
+  const threadsTimeLeft = Math.max(0, threadsDeadline - Date.now());
+  if (threadsTimeLeft < 10_000) {
+    console.log(
+      `\n[fetcher] === Threads.net === SKIPPED (only ${(threadsTimeLeft / 1000).toFixed(0)}s left)`,
+    );
+    diagnostics.threads = [
+      { type: "skip", error: "Deadline — not enough time" },
+    ];
+  } else {
+    console.log(
+      `\n[fetcher] === Threads.net === (${(threadsTimeLeft / 1000).toFixed(0)}s budget)`,
+    );
+    const threads = await fetchAllThreads(threadsDeadline);
+    diagnostics.threads = threads.diagnostics;
+    console.log(`[fetcher] Threads: ${threads.posts.length} fetched`);
+    for (const p of threads.posts) {
+      if (!seen.has(p.id)) {
+        seen.add(p.id);
+        allPosts.push(p);
+      }
     }
   }
 
