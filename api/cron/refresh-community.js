@@ -117,7 +117,13 @@ async function fetchNitterQuick(deadline) {
           const link = xmlText(entry, "link");
           const statusMatch = link.match(/\/status\/(\d+)/);
           const tweetId = statusMatch ? statusMatch[1] : link;
-          const creator = (xmlText(entry, "dc:creator") || xmlText(entry, "creator") || "").replace(/^@/, "").trim();
+          const creator = (
+            xmlText(entry, "dc:creator") ||
+            xmlText(entry, "creator") ||
+            ""
+          )
+            .replace(/^@/, "")
+            .trim();
           const pubDate = xmlText(entry, "pubDate");
 
           posts.push({
@@ -129,7 +135,9 @@ async function fetchNitterQuick(deadline) {
             author_name: `@${creator || "unknown"}`,
             permalink: link.replace(/https?:\/\/[^/]+/, "https://x.com").trim(),
             subreddit: null,
-            created_utc: pubDate ? Math.floor(new Date(pubDate).getTime() / 1000) : Math.floor(Date.now() / 1000),
+            created_utc: pubDate
+              ? Math.floor(new Date(pubDate).getTime() / 1000)
+              : Math.floor(Date.now() / 1000),
             num_comments: 0,
             ups: 0,
             link_flair_text: query,
@@ -159,15 +167,23 @@ async function fetchCraigslistQuick(deadline) {
     for (const cat of CL_CATEGORIES) {
       if (Date.now() >= deadline) break;
       try {
-        const resp = await fetch(`https://${city}.craigslist.org/search/${cat}`, {
-          headers: { "User-Agent": UA, Accept: "text/html" },
-          signal: AbortSignal.timeout(FETCH_TIMEOUT),
-        });
+        const resp = await fetch(
+          `https://${city}.craigslist.org/search/${cat}`,
+          {
+            headers: { "User-Agent": UA, Accept: "text/html" },
+            signal: AbortSignal.timeout(FETCH_TIMEOUT),
+          },
+        );
         if (!resp.ok) continue;
         const html = await resp.text();
-        if (html.includes("has been blocked") || !html.includes('<div class="title">')) continue;
+        if (
+          html.includes("has been blocked") ||
+          !html.includes('<div class="title">')
+        )
+          continue;
 
-        const re = /<a href="(https:\/\/[^"]+\.html)"[^>]*>[\s\S]*?<div class="title">([^<]+)<\/div>[\s\S]*?<\/a>/g;
+        const re =
+          /<a href="(https:\/\/[^"]+\.html)"[^>]*>[\s\S]*?<div class="title">([^<]+)<\/div>[\s\S]*?<\/a>/g;
         let m;
         while ((m = re.exec(html)) !== null) {
           const url = m[1];
@@ -216,7 +232,9 @@ export default async function handler(req, res) {
     ]);
 
     const freshPosts = [...nitterPosts, ...clPosts];
-    console.log(`[cron] Fetched ${nitterPosts.length} Nitter + ${clPosts.length} CL = ${freshPosts.length} fresh`);
+    console.log(
+      `[cron] Fetched ${nitterPosts.length} Nitter + ${clPosts.length} CL = ${freshPosts.length} fresh`,
+    );
 
     // Read existing Redis data and merge (don't overwrite, MERGE)
     let existing = [];
@@ -226,7 +244,9 @@ export default async function handler(req, res) {
         const parsed = JSON.parse(raw);
         existing = parsed.posts || [];
       }
-    } catch { /* start fresh */ }
+    } catch {
+      /* start fresh */
+    }
 
     // Merge: fresh first, then existing, dedup
     const seen = new Set();
@@ -248,7 +268,9 @@ export default async function handler(req, res) {
     });
 
     await redisSet(REDIS_KEY, payload, 86400); // 24h TTL since this runs every 6h
-    console.log(`[cron] Stored ${capped.length} posts (${freshPosts.length} new, ${existing.length} existing)`);
+    console.log(
+      `[cron] Stored ${capped.length} posts (${freshPosts.length} new, ${existing.length} existing)`,
+    );
 
     return res.status(200).json({
       ok: true,

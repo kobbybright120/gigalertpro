@@ -240,7 +240,9 @@ export default async function handler(req, res) {
 
     if (cached || threadsCached) {
       let mainData = cached ? JSON.parse(cached) : { posts: [] };
-      let threadsData = threadsCached ? JSON.parse(threadsCached) : { posts: [] };
+      let threadsData = threadsCached
+        ? JSON.parse(threadsCached)
+        : { posts: [] };
 
       // Normalize Playwright-crawler posts to match expected schema
       const threadsPosts = (threadsData.posts || []).map((p) => ({
@@ -278,12 +280,17 @@ export default async function handler(req, res) {
 
       const result = JSON.stringify({
         posts: merged,
-        cached_at: mainData.cached_at || threadsData.cached_at || new Date().toISOString(),
+        cached_at:
+          mainData.cached_at ||
+          threadsData.cached_at ||
+          new Date().toISOString(),
         post_count: merged.length,
-        feed: cached ? (mainData.feed || "x-cached") : "threads-only",
+        feed: cached ? mainData.feed || "x-cached" : "threads-only",
       });
 
-      console.log(`[x-feed] Serving from Redis: ${(mainData.posts || []).length} main + ${threadsPosts.length} threads = ${merged.length} total`);
+      console.log(
+        `[x-feed] Serving from Redis: ${(mainData.posts || []).length} main + ${threadsPosts.length} threads = ${merged.length} total`,
+      );
       res.setHeader(
         "Cache-Control",
         "public, s-maxage=30, stale-while-revalidate=30",
