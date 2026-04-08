@@ -1099,7 +1099,9 @@ async function fetchThreadsListingPage(url, source, label) {
     if (pageMeta) {
       const age = Math.floor(Date.now() / 1000) - (pageMeta.created_utc || 0);
       if (age <= THREADS_MAX_AGE_S) return { posts: [pageMeta], error: null };
-      console.log(`    → 1 post found but older than ${THREADS_MAX_AGE_DAYS}d — skipped`);
+      console.log(
+        `    → 1 post found but older than ${THREADS_MAX_AGE_DAYS}d — skipped`,
+      );
       return { posts: [], error: null };
     }
     return { posts: [], error: "No post links found" };
