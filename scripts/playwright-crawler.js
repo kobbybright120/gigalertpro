@@ -79,7 +79,9 @@ async function crawlSeeds(seeds) {
         // Fallback: Threads may use div-based layout without <article>
         if (containers.length === 0) {
           containers = Array.from(
-            document.querySelectorAll('div[role="article"], div[data-pressable-container]'),
+            document.querySelectorAll(
+              'div[role="article"], div[data-pressable-container]',
+            ),
           );
         }
         if (containers.length > 0) {
