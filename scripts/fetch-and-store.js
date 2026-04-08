@@ -65,7 +65,8 @@ const USER_AGENT =
   "Mozilla/5.0 (compatible; GigAlertPro/1.0; +https://gigalertpro.com)";
 
 const REDIS_KEY = "gigalertpro:latest";
-const REDIS_TTL = 3600; // 1 hour TTL (cron refreshes every 2 min, this is just a safety net)
+const REDIS_TTL = parseInt(process.env.REDDIT_REDIS_TTL || "25200", 10); // 7 hours — survives GitHub cron throttling
+const MAX_POSTS = parseInt(process.env.REDDIT_MAX_POSTS || "300", 10);
 const SEEN_KEY = "gigalertpro:seen:reddit"; // dedup set — tracks classified post IDs
 const SEEN_TTL = 86400; // 24 hours
 
@@ -320,6 +321,24 @@ async function markSeen(ids) {
   }
 }
 
+async function redisGet(key) {
+  try {
+    const resp = await fetch(`${UPSTASH_REDIS_REST_URL}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${UPSTASH_REDIS_REST_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(["GET", key]),
+    });
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return data.result || null;
+  } catch {
+    return null;
+  }
+}
+
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -333,9 +352,23 @@ async function main() {
   console.log("[fetcher] Diagnostics:", JSON.stringify(diagnostics));
 
   if (allPosts.length === 0) {
-    console.warn(
-      "[fetcher] 0 posts — skipping Redis write to preserve last-good data",
-    );
+    console.warn("[fetcher] 0 posts fetched from all sources");
+    // Refresh TTL on existing Redis data so it doesn't expire between runs
+    try {
+      const existingRaw = await redisGet(REDIS_KEY);
+      if (existingRaw) {
+        await redisSet(REDIS_KEY, existingRaw, REDIS_TTL);
+        console.warn(
+          "[fetcher] Refreshed TTL on existing Redis data — Reddit may be rate-limiting",
+        );
+      } else {
+        console.warn(
+          "[fetcher] No existing Redis data to refresh — users will see empty feed",
+        );
+      }
+    } catch {
+      /* best effort */
+    }
     process.exit(0);
   }
 
@@ -359,33 +392,23 @@ async function main() {
   // ── Merge: read existing stored gigs and merge with fresh ones ──
   let existingGigs = [];
   try {
-    const existingRaw = await fetch(`${UPSTASH_REDIS_REST_URL}`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${UPSTASH_REDIS_REST_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(["GET", REDIS_KEY]),
-    });
-    if (existingRaw.ok) {
-      const data = await existingRaw.json();
-      if (data.result) {
-        const parsed = JSON.parse(data.result);
-        existingGigs = parsed.posts || [];
-      }
+    const existingRaw = await redisGet(REDIS_KEY);
+    if (existingRaw) {
+      const parsed = JSON.parse(existingRaw);
+      existingGigs = parsed.posts || [];
     }
   } catch {
     /* start fresh if read fails */
   }
 
-  // Merge: fresh gigs + existing, dedup by ID, sort newest first
+  // Merge: fresh gigs + existing, dedup by ID, sort newest first, cap at MAX_POSTS
   const mergedMap = new Map();
   for (const g of [...freshGigs, ...existingGigs]) {
     if (!mergedMap.has(g.id)) mergedMap.set(g.id, g);
   }
-  const filteredPosts = [...mergedMap.values()].sort(
-    (a, b) => (b.created_utc || 0) - (a.created_utc || 0),
-  );
+  const filteredPosts = [...mergedMap.values()]
+    .sort((a, b) => (b.created_utc || 0) - (a.created_utc || 0))
+    .slice(0, MAX_POSTS);
 
   if (filteredPosts.length === 0) {
     console.warn(
