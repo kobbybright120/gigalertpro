@@ -1343,11 +1343,17 @@ async function main() {
       const existingRaw = await redisGet(REDIS_KEY);
       if (existingRaw) {
         await redisSet(REDIS_KEY, existingRaw, REDIS_TTL);
-        console.warn("[fetcher] Refreshed TTL on existing Redis data — sources may be blocked/unavailable");
+        console.warn(
+          "[fetcher] Refreshed TTL on existing Redis data — sources may be blocked/unavailable",
+        );
       } else {
-        console.warn("[fetcher] No existing Redis data to refresh — users will see empty feed");
+        console.warn(
+          "[fetcher] No existing Redis data to refresh — users will see empty feed",
+        );
       }
-    } catch { /* best effort */ }
+    } catch {
+      /* best effort */
+    }
     process.exit(0);
   }
 

@@ -2,21 +2,23 @@ name: Crawl Threads (Playwright)
 
 on:
   schedule:
-    - cron: "*/30 * * * *" # every 30 minutes
+    - cron: "0 */2 * * *" # every 2 hours (was */30 — too expensive for Playwright)
   workflow_dispatch: {}
 
 jobs:
   crawl:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version: "20"
+          cache: "npm"
       - name: Install dependencies
         run: npm ci
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps
+      - name: Install Playwright (Chromium only)
+        run: npx playwright install chromium --with-deps
       - name: Run Threads crawler
         env:
           UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}

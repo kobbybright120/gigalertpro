@@ -37,7 +37,10 @@ async function redisTTL(key) {
   try {
     const resp = await fetch(url, {
       method: "POST",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify(["TTL", key]),
       signal: AbortSignal.timeout(4000),
     });
@@ -74,7 +77,13 @@ async function inspectKey(key) {
       })),
     };
   } catch {
-    return { key, exists: true, ttl_seconds: ttl, raw_length: raw.length, parse_error: true };
+    return {
+      key,
+      exists: true,
+      ttl_seconds: ttl,
+      raw_length: raw.length,
+      parse_error: true,
+    };
   }
 }
 
@@ -85,21 +94,25 @@ export default async function handler(req, res) {
   const adminToken = process.env.ADMIN_TOKEN || "gigalert-debug";
   const { token } = req.query;
   if (token !== adminToken) {
-    return res.status(401).json({ error: "Unauthorized — pass ?token=YOUR_ADMIN_TOKEN" });
+    return res
+      .status(401)
+      .json({ error: "Unauthorized — pass ?token=YOUR_ADMIN_TOKEN" });
   }
 
   const keys = [
-    "gigalertpro:latest",       // Reddit
-    "gigalertpro:x:latest",     // X + CL + Threads (fetch-x.js)
+    "gigalertpro:latest", // Reddit
+    "gigalertpro:x:latest", // X + CL + Threads (fetch-x.js)
     "gigalertpro:threads:latest", // Playwright crawler
-    "gigalertpro:seen:x",       // Dedup set
+    "gigalertpro:seen:x", // Dedup set
   ];
 
   const results = await Promise.all(keys.map(inspectKey));
 
   return res.status(200).json({
     checked_at: new Date().toISOString(),
-    redis_configured: !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN),
+    redis_configured: !!(
+      process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+    ),
     keys: results,
   });
 }
