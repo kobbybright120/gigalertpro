@@ -21,10 +21,7 @@ const REDIS_KEY = "gigalertpro:x:latest";
 // Keep this list SHORT — each query can take up to 5 s in the worst case.
 // The cron job handles the full 65+ search list; this is just a safety net.
 
-const NITTER_INSTANCES = [
-  "nitter.perennialte.ch",
-  "xcancel.com",
-];
+const NITTER_INSTANCES = ["nitter.perennialte.ch", "xcancel.com"];
 
 const NITTER_FALLBACK_SEARCHES = [
   "hiring graphic designer",
