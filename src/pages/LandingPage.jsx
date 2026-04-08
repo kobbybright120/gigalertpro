@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { PAYMENTS_ENABLED } from "../../payments.config.js";
 import {
-  Zap,
   ArrowRight,
   Sparkles,
   CheckCircle2,
@@ -214,9 +213,7 @@ export default function LandingPage() {
             to="/"
             className="flex items-center gap-2.5 text-xl font-bold tracking-tight"
           >
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#00F0B5] to-[#00D4FF] flex items-center justify-center">
-              <Zap className="w-4.5 h-4.5 text-[#020617]" />
-            </div>
+            <img src="/logo/icon.svg" alt="GigAlertPro" className="w-8 h-8 rounded-lg object-cover" />
             <span>
               GigAlert<span className="text-gradient">Pro</span>
             </span>

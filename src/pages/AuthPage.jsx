@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { Zap, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 export default function AuthPage() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -56,9 +56,7 @@ export default function AuthPage() {
         {/* Logo */}
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2.5 text-3xl font-bold text-white">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00F0B5] to-[#00D4FF] flex items-center justify-center shadow-[0_0_20px_rgba(0,240,181,0.15)]">
-              <Zap className="w-5.5 h-5.5 text-[#020617]" />
-            </div>
+            <img src="/logo/icon.svg" alt="GigAlertPro" className="w-10 h-10 rounded-xl object-cover shadow-[0_0_20px_rgba(0,240,181,0.15)]" />
             <span>
               GigAlert<span className="text-gradient">Pro</span>
             </span>
