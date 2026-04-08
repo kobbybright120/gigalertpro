@@ -102,12 +102,25 @@ export function useKeywords() {
 
     if (!userId) return;
     if (keywords.some((k) => k.keyword === clean)) return;
+
+    // Optimistic: show keyword instantly with a temp id
+    const tempId = `temp_${Date.now()}`;
+    const optimistic = { id: tempId, keyword: clean };
+    setKeywords((prev) => [...prev, optimistic]);
+    clearCache();
+
     const { data, error } = await supabase
       .from("keywords")
       .insert({ user_id: userId, keyword: clean })
       .select("id, keyword")
       .single();
-    if (!error && data) setKeywords((prev) => [...prev, data]);
+    if (!error && data) {
+      // Replace temp entry with real DB row
+      setKeywords((prev) => prev.map((k) => (k.id === tempId ? data : k)));
+    } else {
+      // Roll back on failure
+      setKeywords((prev) => prev.filter((k) => k.id !== tempId));
+    }
   }
 
   async function removeKeyword(id) {
@@ -120,6 +133,11 @@ export function useKeywords() {
       clearCache();
       return;
     }
+    // Optimistic: remove instantly, restore on failure
+    const removed = keywords.find((k) => k.id === id);
+    setKeywords((prev) => prev.filter((k) => k.id !== id));
+    clearCache();
+
     const { error } = await supabase
       .from("keywords")
       .delete()
@@ -127,9 +145,8 @@ export function useKeywords() {
       .eq("user_id", userId);
     if (error) {
       console.error("Failed to delete keyword:", error.message);
-      return;
+      if (removed) setKeywords((prev) => [...prev, removed]);
     }
-    setKeywords((prev) => prev.filter((k) => k.id !== id));
   }
 
   return {
@@ -289,25 +306,58 @@ export function useGigAlerts(keywordList) {
     fetchAlerts();
   }, [fetchAlerts, DISABLE_AUTH, userId]);
 
-  // Auto-poll every 2 minutes (cache TTL is also 2 min, so data is fresh)
+  // Auto-poll every 2 minutes — pauses when tab is hidden, resumes + fetches on tab return
   useEffect(() => {
     const kws = (keywordList || []).map((k) =>
       typeof k === "string" ? k : k.keyword,
     );
     if (kws.length === 0) return;
 
-    const id = setInterval(
-      () => {
+    let intervalId = null;
+
+    function startPolling() {
+      if (intervalId) return;
+      intervalId = setInterval(
+        () => {
+          pollingRef.current = true;
+          clearCache();
+          fetchAlerts().finally(() => {
+            pollingRef.current = false;
+          });
+        },
+        2 * 60 * 1000,
+      );
+    }
+
+    function stopPolling() {
+      if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+    }
+
+    // Visibility handler: pause when hidden, resume + immediate fetch when visible
+    function handleVisibility() {
+      if (document.hidden) {
+        stopPolling();
+      } else {
+        // Tab is back — immediately fetch fresh data then resume polling
         pollingRef.current = true;
         clearCache();
         fetchAlerts().finally(() => {
           pollingRef.current = false;
         });
-      },
-      2 * 60 * 1000,
-    );
+        startPolling();
+      }
+    }
 
-    return () => clearInterval(id);
+    startPolling();
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      stopPolling();
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
   }, [fetchAlerts, keywordList]);
 
   return { alerts, loading, refetch: fetchAlerts };

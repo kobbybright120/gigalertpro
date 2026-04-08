@@ -131,6 +131,182 @@ const CATEGORIES = [
   },
 ];
 
+// ── Keyword Expansion Map ────────────────────────────────────────────────────
+// Maps user keywords → related terms to broaden matching dynamically.
+// Users type their niche; we expand to catch all related gig posts.
+const KEYWORD_EXPANSIONS = {
+  // Development
+  react:        ["reactjs", "react.js", "next.js", "nextjs", "frontend", "front-end"],
+  vue:          ["vuejs", "vue.js", "nuxt", "nuxtjs", "frontend"],
+  angular:      ["angularjs", "angular.js", "frontend"],
+  javascript:   ["js", "typescript", "ts", "node", "nodejs", "frontend", "es6"],
+  typescript:   ["ts", "javascript", "js", "angular", "react"],
+  python:       ["python3", "django", "flask", "fastapi", "pytorch", "pandas"],
+  java:         ["spring", "springboot", "kotlin", "android"],
+  php:          ["laravel", "wordpress", "drupal", "symfony"],
+  ruby:         ["rails", "ruby on rails", "sinatra"],
+  golang:       ["go developer", "go lang", "go programming"],
+  go:           ["golang", "go developer"],
+  rust:         ["rust developer", "rust lang"],
+  swift:        ["ios", "swiftui", "xcode", "apple developer"],
+  kotlin:       ["android", "jetpack compose"],
+  flutter:      ["dart", "mobile app", "cross-platform"],
+  "react native": ["mobile app", "cross-platform", "expo"],
+  nodejs:       ["node.js", "node", "express", "backend", "api"],
+  node:         ["nodejs", "node.js", "express", "backend"],
+  "node.js":    ["nodejs", "node", "express", "backend"],
+  nextjs:       ["next.js", "react", "vercel"],
+  "next.js":    ["nextjs", "react", "vercel"],
+  wordpress:    ["wp", "woocommerce", "elementor", "php"],
+  shopify:      ["liquid", "shopify theme", "ecommerce", "e-commerce"],
+  webflow:      ["no-code", "website builder"],
+  wix:          ["website builder", "web design"],
+  squarespace:  ["website builder", "web design"],
+  "full stack":   ["fullstack", "full-stack", "frontend", "backend"],
+  fullstack:    ["full-stack", "full stack", "frontend", "backend"],
+  "full-stack":   ["fullstack", "full stack", "frontend", "backend"],
+  frontend:     ["front-end", "front end", "html", "css", "javascript", "react", "ui"],
+  "front-end":    ["frontend", "front end", "html", "css", "ui"],
+  backend:      ["back-end", "back end", "api", "server", "database"],
+  "back-end":     ["backend", "back end", "api", "server"],
+  api:          ["rest", "graphql", "backend", "integration"],
+  devops:       ["ci/cd", "docker", "kubernetes", "aws", "cloud", "infrastructure"],
+  aws:          ["amazon web services", "cloud", "s3", "lambda", "ec2"],
+  cloud:        ["aws", "azure", "gcp", "google cloud", "devops"],
+  blockchain:   ["solidity", "smart contract", "web3", "crypto", "ethereum", "defi"],
+  solidity:     ["smart contract", "ethereum", "web3", "blockchain"],
+  web3:         ["blockchain", "solidity", "ethereum", "crypto", "defi", "nft"],
+  "game dev":   ["game developer", "unity", "unreal", "godot", "game design"],
+  unity:        ["game dev", "game developer", "c#", "3d", "game design"],
+  unreal:       ["game dev", "unreal engine", "c++", "game design"],
+  android:      ["kotlin", "java", "mobile app", "google play"],
+  ios:          ["swift", "swiftui", "iphone", "apple", "mobile app", "app store"],
+  "mobile app":   ["ios", "android", "flutter", "react native", "mobile"],
+  sql:          ["database", "postgresql", "mysql", "sqlite", "data"],
+  database:     ["sql", "postgresql", "mysql", "mongodb", "nosql"],
+  mongodb:      ["nosql", "database", "mongoose"],
+
+  // Design
+  design:       ["designer", "graphic design", "ui", "ux", "figma"],
+  "graphic design": ["graphics", "designer", "photoshop", "illustrator", "canva"],
+  "logo design":  ["logo", "branding", "brand identity", "brand", "graphic design"],
+  logo:         ["logo design", "branding", "brand identity"],
+  "ui/ux":        ["ux", "ui", "user interface", "user experience", "figma", "prototype"],
+  "ui ux":        ["ux", "ui", "user interface", "user experience", "figma"],
+  ux:           ["ui", "user experience", "usability", "wireframe", "prototype"],
+  ui:           ["ux", "user interface", "figma", "design system"],
+  figma:        ["ui", "ux", "design", "prototype", "wireframe"],
+  photoshop:    ["photo editing", "graphic design", "adobe", "image editing"],
+  illustrator:  ["illustration", "vector", "graphic design", "adobe"],
+  illustration: ["illustrator", "drawing", "art", "artist", "digital art"],
+  branding:     ["brand", "brand identity", "logo", "visual identity"],
+  "web design":   ["website design", "ui", "frontend", "landing page"],
+
+  // Writing & Content
+  writing:      ["writer", "content", "copywriting", "blog", "article"],
+  copywriting:  ["copywriter", "copy", "sales copy", "landing page", "email"],
+  "content writing": ["content writer", "blog", "article", "seo writing"],
+  blogging:     ["blog", "blog post", "content", "article"],
+  "technical writing": ["technical writer", "documentation", "docs", "api docs"],
+  editing:      ["editor", "proofreading", "proofread", "copy editing"],
+  proofreading: ["proofread", "editor", "editing", "grammar"],
+  ghostwriting: ["ghostwriter", "ebook", "book writing"],
+  "seo writing":  ["seo", "content writing", "blog", "article"],
+
+  // Marketing
+  marketing:    ["digital marketing", "marketer", "growth", "advertising"],
+  "digital marketing": ["marketing", "seo", "social media", "ppc", "ads"],
+  seo:          ["search engine", "keyword research", "content marketing", "on-page", "off-page"],
+  "social media":  ["social media marketing", "smm", "instagram", "tiktok", "facebook", "twitter"],
+  "social media marketing": ["social media", "smm", "content creation"],
+  ppc:          ["google ads", "facebook ads", "advertising", "paid ads", "sem"],
+  "google ads":   ["ppc", "sem", "adwords", "paid search"],
+  "facebook ads":  ["meta ads", "instagram ads", "social media ads", "ppc"],
+  "email marketing": ["email", "newsletter", "mailchimp", "drip campaign"],
+  "lead generation": ["lead gen", "leads", "outreach", "b2b", "cold email"],
+
+  // Video & Audio
+  "video editing":  ["video editor", "premiere", "final cut", "davinci", "after effects"],
+  "video editor":   ["video editing", "premiere", "youtube", "content creation"],
+  animation:    ["animator", "motion graphics", "after effects", "2d animation", "3d animation"],
+  "motion graphics": ["motion design", "after effects", "animation"],
+  youtube:      ["video editing", "thumbnail", "content creation"],
+  podcast:      ["audio editing", "podcast editing", "audio"],
+  voiceover:    ["voice over", "voice acting", "narrator", "voice talent", "voice actor"],
+  "voice acting":  ["voiceover", "voice over", "narrator", "voice talent"],
+
+  // Data & AI
+  "data science":  ["data scientist", "data analysis", "machine learning", "python", "statistics"],
+  "data analysis":  ["data analyst", "analytics", "excel", "tableau", "power bi", "sql"],
+  "machine learning": ["ml", "deep learning", "ai", "neural network", "tensorflow", "pytorch"],
+  ai:           ["artificial intelligence", "machine learning", "ml", "gpt", "llm", "chatbot"],
+  "data entry":   ["data input", "spreadsheet", "excel", "typing", "admin"],
+  scraping:     ["web scraping", "data scraping", "crawling", "automation", "scrapy"],
+  automation:   ["automate", "bot", "scripting", "zapier", "n8n", "workflow"],
+
+  // Business & Admin
+  "virtual assistant": ["va", "admin assistant", "executive assistant", "admin"],
+  bookkeeping:  ["bookkeeper", "accounting", "quickbooks", "xero"],
+  "project management": ["project manager", "pm", "scrum", "agile", "jira"],
+  "customer service": ["customer support", "support agent", "helpdesk", "live chat"],
+
+  // Sales
+  sales:        ["cold calling", "outreach", "business development", "lead gen", "closing"],
+  "cold calling":  ["cold call", "telemarketing", "outreach", "sales"],
+  "lead gen":     ["lead generation", "leads", "prospecting", "outreach"],
+
+  // Photography
+  photography:  ["photographer", "photo shoot", "product photography", "headshot"],
+  retouching:   ["photo editing", "photo retouching", "lightroom", "photoshop"],
+
+  // Translation
+  translation:  ["translator", "translate", "localization", "interpretation"],
+  localization: ["localize", "l10n", "translation", "internationalization"],
+  transcription: ["transcriptionist", "transcribe", "audio to text", "captions", "subtitles"],
+
+  // 3D & CAD
+  "3d modeling":   ["3d", "blender", "maya", "3ds max", "cinema 4d", "cad"],
+  blender:      ["3d", "3d modeling", "3d artist", "rendering"],
+  cad:          ["autocad", "solidworks", "3d modeling", "drafting"],
+
+  // Music & Audio
+  "music production": ["music producer", "beat", "mixing", "mastering", "audio"],
+  mixing:       ["audio mixing", "music production", "mastering"],
+  mastering:    ["audio mastering", "music production", "mixing"],
+
+  // Tutoring & Education
+  tutoring:     ["tutor", "teaching", "online tutor", "teacher", "instructor"],
+  teaching:     ["tutor", "tutoring", "teacher", "instructor", "course"],
+
+  // Misc
+  "no-code":      ["nocode", "no code", "bubble", "webflow", "airtable"],
+  "low-code":     ["lowcode", "no-code", "automation"],
+  consulting:   ["consultant", "advisory", "strategy"],
+  coaching:     ["coach", "mentor", "career coaching", "business coaching"],
+};
+
+/**
+ * Expand user keywords with related terms for broader matching.
+ * Returns a de-duplicated array of the original keywords plus expansions.
+ */
+function expandKeywords(keywords) {
+  const expanded = new Set(keywords);
+  for (const kw of keywords) {
+    const synonyms = KEYWORD_EXPANSIONS[kw];
+    if (synonyms) {
+      for (const s of synonyms) expanded.add(s);
+    }
+    // Also check if any expansion key is a substring of the keyword
+    // e.g., user types "react developer" → we find "react" in the map
+    for (const [key, synonyms2] of Object.entries(KEYWORD_EXPANSIONS)) {
+      if (kw.includes(key) || key.includes(kw)) {
+        for (const s of synonyms2) expanded.add(s);
+      }
+    }
+  }
+  return [...expanded];
+}
+
 // ── Self-Promotion Detection (freelancer ads — we REJECT these) ──────────────
 const SELF_PROMO_PATTERNS = [
   /\[for\s?hire\]/i,
@@ -816,6 +992,11 @@ export function clearCache() {
 
 // ── Matching, Scoring & Ranking ──────────────────────────────────────────────
 function matchAndScore(posts, lowerKws) {
+  // Expand user keywords with related terms for broader niche coverage
+  const expandedKws = expandKeywords(lowerKws);
+  // Keep track of which are the user's original keywords (for scoring)
+  const originalSet = new Set(lowerKws);
+
   const seen = new Set();
   const results = [];
 
@@ -872,13 +1053,11 @@ function matchAndScore(posts, lowerKws) {
     const combined =
       titleLower + " " + bodyLower + (flairLower ? " " + flairLower : "");
 
-    // For single-word body-only matches, only check the first 300 chars
-    // of the body (where the actual job description is — not the links,
-    // portfolio, or "about me" sections that come later).
-    const bodyHead = bodyLower.slice(0, 300);
+    // Scan first 600 chars of body (increased from 300 for better niche coverage)
+    const bodyHead = bodyLower.slice(0, 600);
 
     let titleHits = 0;
-    const matched = lowerKws.filter((kw) => {
+    const matched = expandedKws.filter((kw) => {
       if (kw.includes(" ")) {
         // Multi-word: exact phrase match — specific enough to match anywhere
         const inTitle = titleLower.includes(kw);
@@ -888,18 +1067,15 @@ function matchAndScore(posts, lowerKws) {
         if (inTitle) titleHits++;
         return inTitle || inBody;
       } else {
-        // Single word: word boundary
+        // Single word: word boundary + stem matching
         const escaped = kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        const rx = new RegExp(`\\b${escaped}\\b`, "i");
+        // Allow stem matches: "develop" matches "developer", "development"
+        const rx = new RegExp(`\\b${escaped}`, "i");
         const inTitle = rx.test(titleLower);
         if (inTitle) {
           titleHits++;
           return true;
         }
-        // Body-only single-word match: only count if the keyword appears
-        // in the first 300 chars of the body (the actual job description).
-        // This filters out casual mentions like "Website: www.example.com"
-        // or "check my portfolio at..." that appear later in the post.
         const inFlair = flairLower ? rx.test(flairLower) : false;
         if (inFlair) return true;
         return rx.test(bodyHead);
@@ -909,11 +1085,22 @@ function matchAndScore(posts, lowerKws) {
     // All posts (Reddit + Craigslist) require at least one keyword match
     if (matched.length === 0) continue;
 
+    // Map matched expanded keywords back to user's original keywords for display
+    const matchedOriginal = [...new Set(matched.filter(kw => originalSet.has(kw)))];
+    // If only expansion terms matched (not user's original), still show but label with originals
+    const displayMatched = matchedOriginal.length > 0
+      ? matchedOriginal
+      : lowerKws.filter(kw => {
+          const syns = KEYWORD_EXPANSIONS[kw] || [];
+          return syns.some(s => matched.includes(s));
+        });
+
     // ── Score ──
+    // Use expanded match count for scoring (more matches = higher relevance)
     const score = computeScore(
       p,
       matched.length,
-      lowerKws.length,
+      expandedKws.length,
       p._weight || 1.0,
       titleHits,
     );
@@ -1007,7 +1194,7 @@ function matchAndScore(posts, lowerKws) {
       reddit_created: p.created_utc
         ? new Date(p.created_utc * 1000).toISOString()
         : new Date().toISOString(),
-      matched_keywords: matched,
+      matched_keywords: displayMatched.length > 0 ? displayMatched : matched,
       score,
       category: category.label,
       category_icon: category.icon,
