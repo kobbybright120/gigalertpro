@@ -121,6 +121,9 @@ export default function GigAlertsPage() {
     (a) => a.source_platform === "Craigslist",
   ).length;
   const xCount = alerts.filter((a) => a.source_platform === "X").length;
+  const threadsCount = alerts.filter(
+    (a) => a.source_platform === "Threads",
+  ).length;
 
   // Collect unique categories from current alerts
   const categorySet = new Set(alerts.map((a) => a.category).filter(Boolean));
@@ -147,7 +150,7 @@ export default function GigAlertsPage() {
             Gig Alerts
           </h1>
           <p className="text-gray-500 mt-1.5 text-sm">
-            Real-time gig matching across Reddit, Craigslist & X/Twitter
+            Real-time gig matching across Reddit, Craigslist, X & Threads
           </p>
         </div>
         <span className="inline-flex items-center gap-2 px-4 py-2 glass-card rounded-full border border-[#00F0B5]/15 shrink-0">
@@ -217,6 +220,7 @@ export default function GigAlertsPage() {
                 count: craigslistCount,
               },
               { key: "x", label: "𝕏 / Twitter", count: xCount },
+              { key: "threads", label: "Threads", count: threadsCount },
             ].map(({ key, label, count }) => (
               <button
                 key={key}
@@ -334,7 +338,7 @@ export default function GigAlertsPage() {
                 Scanning Sources...
               </h3>
               <p className="text-gray-500 text-sm mt-1">
-                Searching Reddit, Craigslist & X/Twitter for matching gigs
+                Searching Reddit, Craigslist, X & Threads for matching gigs
               </p>
             </div>
             {[1, 2, 3].map((i) => (
@@ -367,7 +371,7 @@ export default function GigAlertsPage() {
             </h3>
             <p className="text-gray-500 text-sm max-w-md mx-auto">
               Type a keyword or skill above to start finding matching gigs from
-              Reddit, Craigslist & X/Twitter. Be the first to apply!
+              Reddit, Craigslist, X & Threads. Be the first to apply!
             </p>
           </div>
         ) : filtered.length > 0 ? (

@@ -181,6 +181,128 @@ const NITTER_SEARCHES = (
 const NITTER_MAX_POSTS = parseInt(process.env.NITTER_MAX_POSTS || "200", 10);
 const NITTER_UA = "GigAlertPro/1.0 (+https://gigalertpro.com)";
 
+// ── Source 3: Threads.net Config (HTML Scraping — No API) ────────────────────
+
+const THREADS_BASE = "https://www.threads.net";
+const THREADS_UA = CL_UA; // browser-like UA for Threads
+const THREADS_MAX_POSTS = parseInt(process.env.THREADS_MAX_POSTS || "150", 10);
+const THREADS_DETAIL_LIMIT = parseInt(
+  process.env.THREADS_DETAIL_LIMIT || "8",
+  10,
+);
+const THREADS_CONCURRENCY = parseInt(
+  process.env.THREADS_CONCURRENCY || "3",
+  10,
+);
+
+// Hashtags to monitor (no # prefix)
+const THREADS_TAGS = (
+  process.env.THREADS_TAGS ||
+  [
+    // Core job / hiring
+    "hiring",
+    "hiringnow",
+    "nowhiring",
+    "jobposting",
+    "jobpost",
+    "freelance",
+    "freelancer",
+    "freelancework",
+    "freelancejobs",
+    "remotejobs",
+    "remotework",
+    "workfromhome",
+    // Niche hiring
+    "hiringdesigner",
+    "hiringdeveloper",
+    "hiringwriter",
+    "hiringeditor",
+    "hiringfreelancer",
+    "hiringvideographer",
+    // Gig / contract
+    "gigwork",
+    "contractwork",
+    "virtualassistant",
+    "forhire",
+    // Industry
+    "graphicdesignjobs",
+    "webdesignjobs",
+    "contentwritingjobs",
+    "videoeditorjobs",
+    "socialmediajobs",
+  ].join(",")
+)
+  .split(",")
+  .map((t) => t.trim())
+  .filter(Boolean);
+
+// Search queries (full-text search on Threads)
+const THREADS_SEARCHES = (
+  process.env.THREADS_SEARCHES ||
+  [
+    // Design
+    "hiring graphic designer",
+    "hiring logo designer",
+    "hiring UI UX designer",
+    "need a designer",
+    "hiring illustrator",
+    "hiring brand designer",
+    "hiring thumbnail designer",
+    // Dev
+    "hiring web developer",
+    "hiring react developer",
+    "hiring python developer",
+    "hiring mobile developer",
+    "hiring software engineer",
+    "need a developer",
+    "hiring wordpress developer",
+    "hiring shopify developer",
+    "hiring flutter developer",
+    "hiring iOS developer",
+    "hiring android developer",
+    // Writing
+    "hiring content writer",
+    "hiring copywriter",
+    "hiring ghostwriter",
+    "hiring SEO writer",
+    "need a writer",
+    // Video / Creative
+    "hiring video editor",
+    "hiring animator",
+    "hiring motion graphics",
+    "hiring photographer",
+    // Marketing
+    "hiring social media manager",
+    "hiring digital marketer",
+    "hiring SEO specialist",
+    "need a marketer",
+    "hiring PPC specialist",
+    "hiring community manager",
+    // Admin
+    "hiring virtual assistant",
+    "hiring data entry",
+    "hiring customer support",
+    "need a VA",
+    // Audio
+    "hiring voiceover",
+    "hiring podcast editor",
+    "hiring music producer",
+    // Data / AI
+    "hiring data analyst",
+    "hiring automation expert",
+    // General
+    "freelance opportunity",
+    "remote freelance job",
+    "looking for freelancer",
+    "need a freelancer",
+    "hiring freelancer",
+    "contract work hiring",
+  ].join(",")
+)
+  .split(",")
+  .map((q) => q.trim())
+  .filter(Boolean);
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function delay(ms) {
@@ -659,10 +781,360 @@ async function fetchAllNitter() {
   return { posts: allPosts, diagnostics };
 }
 
+// ── Source 3: Threads.net (HTML Scraping — No API) ───────────────────────────
+
+/**
+ * Fetch a Threads page with retries.
+ */
+async function threadsFetch(url, label) {
+  for (let attempt = 0; attempt <= 2; attempt++) {
+    try {
+      const resp = await fetch(url, {
+        headers: {
+          "User-Agent": THREADS_UA,
+          Accept:
+            "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "en-US,en;q=0.9",
+          "Sec-Fetch-Mode": "navigate",
+          "Sec-Fetch-Site": "none",
+          "Sec-Fetch-Dest": "document",
+        },
+        redirect: "follow",
+      });
+
+      if (resp.status === 429 || resp.status === 503) {
+        const wait = Math.pow(2, attempt + 1) * 1000 + Math.random() * 500;
+        console.warn(
+          `  [threads] ${resp.status} on ${label}, retry ${attempt + 1} in ${(wait / 1000).toFixed(1)}s`,
+        );
+        await delay(wait);
+        continue;
+      }
+
+      if (!resp.ok) {
+        return { html: null, error: `${resp.status} ${resp.statusText}` };
+      }
+
+      const html = await resp.text();
+      return { html, error: null };
+    } catch (err) {
+      if (attempt < 2) {
+        await delay(1000 * (attempt + 1));
+        continue;
+      }
+      return { html: null, error: err.message };
+    }
+  }
+  return { html: null, error: "Max retries exceeded" };
+}
+
+/**
+ * Extract og:content meta tag value from HTML.
+ */
+function threadsMeta(html, prop) {
+  const rx = new RegExp(
+    `<meta[^>]+(?:property|name)=["']${prop}["'][^>]+content=["']([^"']+)["']`,
+    "i",
+  );
+  const m = html.match(rx);
+  if (m) return m[1];
+  // Try reversed attr order: content before property
+  const rx2 = new RegExp(
+    `<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']${prop}["']`,
+    "i",
+  );
+  const m2 = html.match(rx2);
+  return m2 ? m2[1] : null;
+}
+
+/**
+ * Extract post links from a Threads listing page (tag or search results).
+ * Returns array of { user, code, url }.
+ */
+function extractThreadsPostLinks(html) {
+  const posts = [];
+  const seen = new Set();
+
+  // Pattern: /@username/post/POSTCODE in href attributes or JSON
+  const linkRx = /\/@([a-zA-Z0-9_.]+)\/post\/([a-zA-Z0-9_-]+)/g;
+  let m;
+  while ((m = linkRx.exec(html)) !== null) {
+    const key = `${m[1]}/${m[2]}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    posts.push({
+      user: m[1],
+      code: m[2],
+      url: `${THREADS_BASE}/@${m[1]}/post/${m[2]}`,
+    });
+  }
+
+  return posts;
+}
+
+/**
+ * Try to extract post text from embedded JSON in Threads HTML.
+ * Threads embeds React hydration data in script tags.
+ */
+function extractThreadsEmbeddedPosts(html) {
+  const posts = [];
+
+  // Look for "text":"..." patterns in script tags (Threads embeds post data)
+  // This captures the post text from React hydration JSON
+  const scriptBlocks = [
+    ...html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi),
+  ];
+  for (const block of scriptBlocks) {
+    const script = block[1];
+    if (!script.includes('"text"')) continue;
+
+    // Extract text + code pairs from the JSON
+    const textMatches = [
+      ...script.matchAll(
+        /"code"\s*:\s*"([^"]+)"[\s\S]*?"text"\s*:\s*"((?:[^"\\]|\\.)*)"/g,
+      ),
+    ];
+    for (const tm of textMatches) {
+      const code = tm[1];
+      const text = tm[2]
+        .replace(/\\n/g, "\n")
+        .replace(/\\"/g, '"')
+        .replace(/\\\\/g, "\\")
+        .trim();
+      if (text.length > 15) {
+        posts.push({ code, text });
+      }
+    }
+
+    // Also try reversed order (text before code)
+    const textMatches2 = [
+      ...script.matchAll(
+        /"text"\s*:\s*"((?:[^"\\]|\\.)*)[\s\S]*?"code"\s*:\s*"([^"]+)"/g,
+      ),
+    ];
+    for (const tm of textMatches2) {
+      const text = tm[1]
+        .replace(/\\n/g, "\n")
+        .replace(/\\"/g, '"')
+        .replace(/\\\\/g, "\\")
+        .trim();
+      const code = tm[2];
+      if (text.length > 15 && !posts.some((p) => p.code === code)) {
+        posts.push({ code, text });
+      }
+    }
+  }
+  return posts;
+}
+
+/**
+ * Parse an individual Threads post page via meta tags.
+ */
+function parseThreadsPostPage(html, postUrl, source) {
+  const ogDesc =
+    threadsMeta(html, "og:description") ||
+    threadsMeta(html, "twitter:description") ||
+    "";
+
+  // Extract username from URL
+  const userMatch = postUrl.match(/\/@([^/]+)/);
+  const author = userMatch ? userMatch[1] : "unknown";
+
+  // Extract post code
+  const codeMatch = postUrl.match(/\/post\/([a-zA-Z0-9_-]+)/);
+  const postCode = codeMatch ? codeMatch[1] : postUrl;
+
+  // Timestamp: look for <time datetime="...">
+  const timeMatch = html.match(/<time[^>]*datetime="([^"]+)"/i);
+  let createdUtc = Math.floor(Date.now() / 1000);
+  if (timeMatch) {
+    const d = new Date(timeMatch[1]);
+    if (!isNaN(d.getTime())) createdUtc = Math.floor(d.getTime() / 1000);
+  }
+
+  // Clean description — Threads og:description often starts with meta info
+  const text = ogDesc
+    .replace(/^\d+\s*(likes?|replies|reposts?),?\s*/gi, "")
+    .replace(/^@\w+\s*:\s*/i, "")
+    .trim();
+
+  if (!text || text.length < 10) return null;
+
+  return {
+    id: `threads_${postCode}`,
+    name: `threads_${postCode}`,
+    title: text.slice(0, 300),
+    selftext: text.slice(0, 2000),
+    author,
+    author_name: `@${author}`,
+    permalink: `https://www.threads.net/@${author}/post/${postCode}`,
+    subreddit: null,
+    created_utc: createdUtc,
+    num_comments: 0,
+    ups: 0,
+    link_flair_text: "Threads",
+    compensation: null,
+    employment_type: null,
+    location: null,
+    _sub: "threads",
+    source: `threads-${source}`,
+  };
+}
+
+/**
+ * Fetch a Threads tag or search page, discover post links, fetch detail pages.
+ * Two-phase approach (like Craigslist): listing page → detail pages.
+ */
+async function fetchThreadsListingPage(url, source, label) {
+  const { html, error } = await threadsFetch(url, label);
+  if (!html) return { posts: [], error };
+
+  const results = [];
+
+  // Phase 1: Try extracting post data from embedded JSON in the page
+  const embeddedPosts = extractThreadsEmbeddedPosts(html);
+  if (embeddedPosts.length > 0) {
+    for (const ep of embeddedPosts.slice(0, THREADS_DETAIL_LIMIT)) {
+      results.push({
+        id: `threads_${ep.code}`,
+        name: `threads_${ep.code}`,
+        title: ep.text.slice(0, 300),
+        selftext: ep.text.slice(0, 2000),
+        author: "unknown",
+        author_name: "Threads",
+        permalink: `${THREADS_BASE}/post/${ep.code}`,
+        subreddit: null,
+        created_utc: Math.floor(Date.now() / 1000),
+        num_comments: 0,
+        ups: 0,
+        link_flair_text: "Threads",
+        compensation: null,
+        employment_type: null,
+        location: null,
+        _sub: "threads",
+        source: `threads-${source}`,
+      });
+    }
+    console.log(
+      `    → ${embeddedPosts.length} posts from embedded data (${label})`,
+    );
+    return { posts: results, error: null };
+  }
+
+  // Phase 2: Extract post links from HTML and fetch detail pages
+  const postLinks = extractThreadsPostLinks(html);
+  if (postLinks.length === 0) {
+    // Fallback: try to extract something from the page's own meta tags
+    const pageMeta = parseThreadsPostPage(html, url, source);
+    if (pageMeta) return { posts: [pageMeta], error: null };
+    return { posts: [], error: "No post links found" };
+  }
+
+  const toFetch = postLinks.slice(0, THREADS_DETAIL_LIMIT);
+  console.log(
+    `    → ${postLinks.length} post links found, fetching ${toFetch.length} detail pages`,
+  );
+
+  // Fetch detail pages with controlled concurrency
+  for (let i = 0; i < toFetch.length; i += THREADS_CONCURRENCY) {
+    const batch = toFetch.slice(i, i + THREADS_CONCURRENCY);
+    const batchResults = await Promise.allSettled(
+      batch.map(async (link) => {
+        const { html: postHtml } = await threadsFetch(
+          link.url,
+          `@${link.user}/${link.code}`,
+        );
+        if (!postHtml) return null;
+        return parseThreadsPostPage(postHtml, link.url, source);
+      }),
+    );
+
+    for (const r of batchResults) {
+      if (r.status === "fulfilled" && r.value) {
+        results.push(r.value);
+      }
+    }
+
+    if (i + THREADS_CONCURRENCY < toFetch.length) await delay(500);
+  }
+
+  return { posts: results, error: null };
+}
+
+/**
+ * Fetch all Threads data: hashtag pages + search pages.
+ */
+async function fetchAllThreads() {
+  const allPosts = [];
+  const diagnostics = [];
+  let successCount = 0;
+
+  // ── Hashtag pages ──
+  for (const tag of THREADS_TAGS) {
+    const url = `${THREADS_BASE}/search?q=%23${encodeURIComponent(tag)}&serp_type=default`;
+    console.log(`  [threads] Tag: #${tag}`);
+
+    const result = await fetchThreadsListingPage(url, `tag-${tag}`, `#${tag}`);
+    allPosts.push(...result.posts);
+    if (result.posts.length > 0) successCount++;
+
+    diagnostics.push({
+      type: "tag",
+      query: tag,
+      count: result.posts.length,
+      error: result.error,
+    });
+
+    await delay(1200);
+  }
+
+  // ── Search queries ──
+  for (const query of THREADS_SEARCHES) {
+    const url = `${THREADS_BASE}/search?q=${encodeURIComponent(query)}&serp_type=default`;
+    console.log(`  [threads] Search: "${query}"`);
+
+    const result = await fetchThreadsListingPage(
+      url,
+      `search-${query.replace(/\s+/g, "-").toLowerCase()}`,
+      query,
+    );
+    allPosts.push(...result.posts);
+    if (result.posts.length > 0) successCount++;
+
+    diagnostics.push({
+      type: "search",
+      query,
+      count: result.posts.length,
+      error: result.error,
+    });
+
+    await delay(1200);
+  }
+
+  // Deduplicate
+  const deduped = [];
+  const seenIds = new Set();
+  for (const p of allPosts) {
+    if (!seenIds.has(p.id)) {
+      seenIds.add(p.id);
+      deduped.push(p);
+    }
+  }
+
+  console.log(
+    `  [threads] Summary: ${successCount}/${THREADS_TAGS.length + THREADS_SEARCHES.length} pages returned data, ${deduped.length} unique posts`,
+  );
+
+  return {
+    posts: deduped.slice(0, THREADS_MAX_POSTS),
+    diagnostics,
+  };
+}
+
 // ── Fetch All & Deduplicate ──────────────────────────────────────────────────
 
 async function fetchAllPosts() {
-  const diagnostics = { craigslist: [], nitter: [] };
+  const diagnostics = { craigslist: [], nitter: [], threads: [] };
 
   // ── Craigslist ──
   console.log("\n[fetcher] === Craigslist Gigs ===");
@@ -676,10 +1148,16 @@ async function fetchAllPosts() {
   diagnostics.nitter = nitter.diagnostics;
   console.log(`[fetcher] Nitter: ${nitter.posts.length} fetched`);
 
-  // Deduplicate across both sources
+  // ── Threads ──
+  console.log("\n[fetcher] === Threads.net ===");
+  const threads = await fetchAllThreads();
+  diagnostics.threads = threads.diagnostics;
+  console.log(`[fetcher] Threads: ${threads.posts.length} fetched`);
+
+  // Deduplicate across all sources
   const seen = new Set();
   const allPosts = [];
-  for (const p of [...cl.posts, ...nitter.posts]) {
+  for (const p of [...cl.posts, ...nitter.posts, ...threads.posts]) {
     if (!seen.has(p.id)) {
       seen.add(p.id);
       allPosts.push(p);
@@ -800,6 +1278,9 @@ async function main() {
   );
   console.log(
     `[fetcher] Nitter instances: ${NITTER_INSTANCES.length}, searches: ${NITTER_SEARCHES.length}`,
+  );
+  console.log(
+    `[fetcher] Threads tags: ${THREADS_TAGS.length}, searches: ${THREADS_SEARCHES.length}`,
   );
 
   const start = Date.now();

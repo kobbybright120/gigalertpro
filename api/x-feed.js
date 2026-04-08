@@ -1,12 +1,12 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Vercel Serverless Function — X (Twitter) + Craigslist job feed endpoint
+// Vercel Serverless Function — X (Twitter) + Craigslist + Threads job feed
 //
 // PRODUCTION (recommended):
 //   Reads pre-fetched data from Upstash Redis (written by GitHub Action cron).
 //   → Zero external calls per user request, instant KV read.
 //
 // FALLBACK (no Redis data):
-//   Falls back to live Nitter RSS fetch so the feed is never empty.
+//   Falls back to live Nitter RSS + Threads scrape so the feed is never empty.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const REDIS_KEY = "gigalertpro:x:latest";
@@ -261,6 +261,113 @@ async function fetchNitterLive() {
   };
 }
 
+// ── Threads fallback (lightweight scrape for serverless) ─────────────────────
+
+const THREADS_FALLBACK_TAGS = [
+  "hiring",
+  "freelance",
+  "remotejobs",
+  "hiringnow",
+  "freelancework",
+];
+
+const THREADS_FALLBACK_UA =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+
+function threadsMeta(html, prop) {
+  const rx = new RegExp(
+    `<meta[^>]+(?:property|name)=["']${prop}["'][^>]+content=["']([^"']+)["']`,
+    "i",
+  );
+  const m = html.match(rx);
+  if (m) return m[1];
+  const rx2 = new RegExp(
+    `<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']${prop}["']`,
+    "i",
+  );
+  const m2 = html.match(rx2);
+  return m2 ? m2[1] : null;
+}
+
+function extractThreadsPostLinks(html) {
+  const posts = [];
+  const seen = new Set();
+  const linkRx = /\/@([a-zA-Z0-9_.]+)\/post\/([a-zA-Z0-9_-]+)/g;
+  let m;
+  while ((m = linkRx.exec(html)) !== null) {
+    const key = `${m[1]}/${m[2]}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    posts.push({ user: m[1], code: m[2] });
+  }
+  return posts;
+}
+
+async function fetchThreadsLive() {
+  const allPosts = [];
+
+  for (const tag of THREADS_FALLBACK_TAGS) {
+    try {
+      const url = `https://www.threads.net/search?q=%23${encodeURIComponent(tag)}&serp_type=default`;
+      const resp = await fetch(url, {
+        headers: {
+          "User-Agent": THREADS_FALLBACK_UA,
+          Accept: "text/html",
+        },
+        redirect: "follow",
+      });
+      if (!resp.ok) continue;
+      const html = await resp.text();
+
+      // Try to find post links and fetch first 3
+      const links = extractThreadsPostLinks(html).slice(0, 3);
+      for (const link of links) {
+        try {
+          const postUrl = `https://www.threads.net/@${link.user}/post/${link.code}`;
+          const postResp = await fetch(postUrl, {
+            headers: { "User-Agent": THREADS_FALLBACK_UA, Accept: "text/html" },
+            redirect: "follow",
+          });
+          if (!postResp.ok) continue;
+          const postHtml = await postResp.text();
+          const desc =
+            threadsMeta(postHtml, "og:description") ||
+            threadsMeta(postHtml, "twitter:description") ||
+            "";
+          const text = desc
+            .replace(/^\d+\s*(likes?|replies|reposts?),?\s*/gi, "")
+            .replace(/^@\w+\s*:\s*/i, "")
+            .trim();
+          if (text.length < 10) continue;
+
+          allPosts.push({
+            id: `threads_${link.code}`,
+            name: `threads_${link.code}`,
+            title: text.slice(0, 300),
+            selftext: text.slice(0, 2000),
+            author: link.user,
+            author_name: `@${link.user}`,
+            permalink: `https://www.threads.net/@${link.user}/post/${link.code}`,
+            subreddit: null,
+            created_utc: Math.floor(Date.now() / 1000),
+            num_comments: 0,
+            ups: 0,
+            link_flair_text: "Threads",
+            _sub: "threads",
+            source: `threads-tag-${tag}`,
+          });
+        } catch {
+          continue;
+        }
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  return allPosts;
+}
+
 // ── Handler ──────────────────────────────────────────────────────────────────
 
 export default async function handler(req, res) {
@@ -284,9 +391,24 @@ export default async function handler(req, res) {
       return res.status(200).send(cached);
     }
 
-    // ── 2) Fallback: live Nitter RSS fetch ──
-    console.log("[x-feed] Redis miss — falling back to live Nitter RSS fetch");
-    const data = await fetchNitterLive();
+    // ── 2) Fallback: live Nitter RSS + Threads scrape ──
+    console.log(
+      "[x-feed] Redis miss — falling back to live Nitter + Threads fetch",
+    );
+    const [nitterData, threadsPosts] = await Promise.all([
+      fetchNitterLive(),
+      fetchThreadsLive(),
+    ]);
+
+    // Merge Nitter + Threads posts
+    const mergedPosts = [...nitterData.posts, ...threadsPosts];
+    const data = {
+      posts: mergedPosts,
+      cached_at: new Date().toISOString(),
+      post_count: mergedPosts.length,
+      feed: "live-fallback",
+      diagnostics: nitterData.diagnostics,
+    };
 
     // Auto-populate Redis so subsequent requests are instant
     if (data.posts.length > 0) {

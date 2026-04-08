@@ -48,6 +48,10 @@ function SourceBadge({ platform }) {
       bg: "bg-blue-500/8 border-blue-500/15 text-blue-400",
       icon: "📋",
     },
+    Threads: {
+      bg: "bg-fuchsia-500/8 border-fuchsia-500/15 text-fuchsia-400",
+      icon: "🧵",
+    },
   };
   const config = configs[platform] || configs.Craigslist;
 

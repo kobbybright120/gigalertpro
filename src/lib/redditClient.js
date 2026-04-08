@@ -1067,7 +1067,9 @@ async function fetchCommunityPostsFromProxy() {
           ? "Craigslist"
           : p._sub === "nitter"
             ? "X"
-            : "Community",
+            : p._sub === "threads"
+              ? "Threads"
+              : "Community",
     }));
   } catch (err) {
     console.error("[GigAlertPro] Community API fetch failed:", err.message);
@@ -1224,6 +1226,8 @@ function matchAndScore(posts, lowerKws) {
     const isXPost = p._sub === "nitter" || p._source_platform === "X";
     const isCLPost =
       p._sub === "craigslist" || p._source_platform === "Craigslist";
+    const isThreadsPost =
+      p._sub === "threads" || p._source_platform === "Threads";
 
     if (!aiApproved) {
       // ── Skip self-promotions (freelancer ads) — skip for X/Nitter & CL posts
@@ -1231,6 +1235,7 @@ function matchAndScore(posts, lowerKws) {
       if (
         !isXPost &&
         !isCLPost &&
+        !isThreadsPost &&
         isSelfPromotion(p.title || "", p.selftext || "", p.link_flair_text)
       )
         continue;
@@ -1265,7 +1270,8 @@ function matchAndScore(posts, lowerKws) {
 
     // For Reddit: scan first 600 chars of body (where the actual job description is).
     // For Craigslist/X: scan full body — CL bodies ARE the gig description, X tweets are short.
-    const bodyHead = isCLPost || isXPost ? bodyLower : bodyLower.slice(0, 600);
+    const bodyHead =
+      isCLPost || isXPost || isThreadsPost ? bodyLower : bodyLower.slice(0, 600);
 
     let titleHits = 0;
     const matched = expandedKws.filter((kw) => {
@@ -1374,9 +1380,9 @@ function matchAndScore(posts, lowerKws) {
         .replace(/\s+/g, " ")
         .trim();
 
-    // ── For X posts: derive a short headline + full body from the tweet ──
+    // ── For X/Threads posts: derive a short headline + full body ──
     let finalTitle, finalBody;
-    if (isXPost) {
+    if (isXPost || isThreadsPost) {
       // Use whichever is longer (title & selftext are often identical for tweets)
       const rawTitle = p.title || "";
       const rawBody = p.selftext || "";
