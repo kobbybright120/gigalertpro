@@ -18,7 +18,8 @@
   function extractEmbeddedPosts(html) {
     const out = [];
     const seen = new Set();
-    const re1 = /"code"\s*:\s*"([^"\\]+)"[\s\S]*?"text"\s*:\s*"((?:[^"\\]|\\.)*)"/g;
+    const re1 =
+      /"code"\s*:\s*"([^"\\]+)"[\s\S]*?"text"\s*:\s*"((?:[^"\\]|\\.)*)"/g;
     let m;
     while ((m = re1.exec(html)) !== null) {
       const code = m[1];
@@ -33,7 +34,8 @@
       }
     }
 
-    const re2 = /"text"\s*:\s*"((?:[^"\\]|\\.)*)"[\s\S]*?"code"\s*:\s*"([^"\\]+)"/g;
+    const re2 =
+      /"text"\s*:\s*"((?:[^"\\]|\\.)*)"[\s\S]*?"code"\s*:\s*"([^"\\]+)"/g;
     while ((m = re2.exec(html)) !== null) {
       let text = m[1]
         .replace(/\\n/g, "\n")
@@ -159,7 +161,7 @@
     console.log(`found ${posts.length} posts`);
     for (const p of posts.slice(0, 5)) {
       console.log(`- ${p.id} ${p.permalink}`);
-      console.log(`  ${p.text.slice(0, 200).replace(/\n/g, ' ')}...\n`);
+      console.log(`  ${p.text.slice(0, 200).replace(/\n/g, " ")}...\n`);
     }
   }
 
