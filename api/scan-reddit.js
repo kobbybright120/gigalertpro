@@ -98,6 +98,9 @@ const COMBINED_SUBS_2 = [
   "WritingJobBoard",
   "VirtualAssistant4Hire",
   "BPOinPH",
+  "jobnetworking",
+  "RemoteJobs",
+  "NashvilleJobs",
 ];
 const SEARCH_SUBS = [
   { name: "forhire", search: "flair:Hiring" },
@@ -146,6 +149,30 @@ function xmlAttr(xml, tag, attr) {
   const rx = new RegExp(`<${tag}[^>]*?${attr}="([^"]*)"`, "i");
   const m = xml.match(rx);
   return m ? m[1] : "";
+}
+
+// ── Lightweight extraction helpers (budget, category, posted_at) ──────────
+function extractBudget(text) {
+  if (!text) return null;
+  const range = text.match(/\$\s?[\d,]+(?:\.\d{1,2})?(?:k)?\s*[-–—to]+\s*\$?\s?[\d,]+(?:\.\d{1,2})?(?:k)?/i);
+  if (range) return range[0].replace(/\s+/g, " ").trim();
+  const hourly = text.match(/\$\s?[\d,]+(?:\.\d{1,2})?\s*(?:\/\s*h(?:ou)?r|per\s+h(?:ou)?r)/i);
+  if (hourly) return hourly[0].replace(/\s+/g, " ").trim();
+  const kMatch = text.match(/\$\s?[\d,.]+\s*k\b/i);
+  if (kMatch) return kMatch[0].replace(/\s+/g, "");
+  const plain = text.match(/\$\s?[\d,]+(?:\.\d{1,2})?/);
+  return plain ? plain[0].replace(/\s/g, "") : null;
+}
+
+function detectCategory(text) {
+  if (!text) return null;
+  const t = text.toLowerCase();
+  if (/\bvirtual\s?assistant|\bva\b/.test(t)) return "Virtual Assistant";
+  if (/\bdesign|logo|ui\/ux|figma|photoshop/.test(t)) return "Design";
+  if (/\bdevelop|program|software|react|node|python|javascript|typescript/.test(t)) return "Development";
+  if (/\bwriter|copywriting|content|ghostwrit|edit/.test(t)) return "Writing";
+  if (/\bmarketing|seo|social\s?media/.test(t)) return "Marketing";
+  return null;
 }
 
 function parseAtomFeed(xml, defaultSub) {
@@ -293,6 +320,25 @@ async function fetchAllPostsLive() {
   };
 }
 
+// Enrich posts with budget/category/posted_at before returning to clients
+function enrichPosts(posts) {
+  return (posts || []).map((p) => {
+    const text = `${p.title || ""} ${p.selftext || ""}`;
+    const budget = extractBudget(text);
+    const category = detectCategory(text) || p.subreddit || null;
+    const posted_at = p.created_utc
+      ? new Date(p.created_utc * 1000).toISOString()
+      : new Date().toISOString();
+    return {
+      ...p,
+      budget,
+      category,
+      posted_at,
+      _source_platform: "Reddit",
+    };
+  });
+}
+
 // ── Handler ──────────────────────────────────────────────────────────────────
 
 export default async function handler(req, res) {
@@ -320,7 +366,9 @@ export default async function handler(req, res) {
     console.log("[scan-reddit] Redis miss — falling back to live RSS fetch");
     const data = await fetchAllPostsLive();
 
-    // Auto-populate Redis so subsequent requests are instant
+    // Enrich posts then auto-populate Redis so subsequent requests are instant
+    data.posts = enrichPosts(data.posts);
+    data.post_count = data.posts.length;
     if (data.posts.length > 0) {
       const payload = JSON.stringify(data);
       redisSet(REDIS_KEY, payload, 3600).catch(() => {}); // fire & forget
