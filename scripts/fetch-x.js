@@ -200,104 +200,148 @@ const THREADS_CONCURRENCY = parseInt(
 const THREADS_TAGS = (
   process.env.THREADS_TAGS ||
   [
-    // Core job / hiring
+    // Core
     "hiring",
     "hiringnow",
     "nowhiring",
     "jobposting",
-    "jobpost",
     "freelance",
     "freelancer",
-    "freelancework",
     "freelancejobs",
     "remotejobs",
     "remotework",
-    "workfromhome",
+    "forhire",
     // Niche hiring
     "hiringdesigner",
     "hiringdeveloper",
     "hiringwriter",
     "hiringeditor",
+    "hiringvideoeditor",
     "hiringfreelancer",
     "hiringvideographer",
-    // Gig / contract
-    "gigwork",
-    "contractwork",
-    "virtualassistant",
-    "forhire",
-    // Industry
+    "hiringsocialmediamanager",
+    "hiringseospecialist",
+    "hiringva",
+    // Industry tags
     "graphicdesignjobs",
     "webdesignjobs",
     "contentwritingjobs",
     "videoeditorjobs",
     "socialmediajobs",
+    "uxdesignjobs",
+    "webdeveloperjobs",
+    "copywriterjobs",
+    "virtualassistantjobs",
+    "photographyjobs",
   ].join(",")
 )
   .split(",")
   .map((t) => t.trim())
   .filter(Boolean);
 
-// Search queries (full-text search on Threads)
+// Search queries — short niche keywords that Threads search actually responds to.
+// Threads does NOT support phrase search; single role/skill names return results.
+// Client-side matching in redditClient.js handles further filtering by keyword intent.
 const THREADS_SEARCHES = (
   process.env.THREADS_SEARCHES ||
   [
-    // Design
-    "hiring graphic designer",
-    "hiring logo designer",
-    "hiring UI UX designer",
-    "need a designer",
-    "hiring illustrator",
-    "hiring brand designer",
-    "hiring thumbnail designer",
-    // Dev
-    "hiring web developer",
-    "hiring react developer",
-    "hiring python developer",
-    "hiring mobile developer",
-    "hiring software engineer",
-    "need a developer",
-    "hiring wordpress developer",
-    "hiring shopify developer",
-    "hiring flutter developer",
-    "hiring iOS developer",
-    "hiring android developer",
-    // Writing
-    "hiring content writer",
-    "hiring copywriter",
-    "hiring ghostwriter",
-    "hiring SEO writer",
-    "need a writer",
-    // Video / Creative
-    "hiring video editor",
-    "hiring animator",
-    "hiring motion graphics",
-    "hiring photographer",
-    // Marketing
-    "hiring social media manager",
-    "hiring digital marketer",
-    "hiring SEO specialist",
-    "need a marketer",
-    "hiring PPC specialist",
-    "hiring community manager",
-    // Admin
-    "hiring virtual assistant",
-    "hiring data entry",
-    "hiring customer support",
-    "need a VA",
-    // Audio
-    "hiring voiceover",
-    "hiring podcast editor",
-    "hiring music producer",
-    // Data / AI
-    "hiring data analyst",
-    "hiring automation expert",
-    // General
-    "freelance opportunity",
-    "remote freelance job",
-    "looking for freelancer",
-    "need a freelancer",
-    "hiring freelancer",
-    "contract work hiring",
+    // ── Video Editing ──────────────────────────────────────────────────────
+    "video editor",
+    "reels editor",
+    "short form editor",
+    "YouTube editor",
+    "video editing",
+    // ── Graphic Design ─────────────────────────────────────────────────────
+    "graphic designer",
+    "logo designer",
+    "brand designer",
+    "thumbnail designer",
+    "illustrator",
+    "UI designer",
+    "UX designer",
+    "UI/UX",
+    // ── Web Development ────────────────────────────────────────────────────
+    "web developer",
+    "frontend developer",
+    "backend developer",
+    "full stack developer",
+    "React developer",
+    "WordPress developer",
+    "Shopify developer",
+    "Webflow developer",
+    "Flutter developer",
+    "iOS developer",
+    "Android developer",
+    "mobile developer",
+    // ── Writing & Copywriting ──────────────────────────────────────────────
+    "content writer",
+    "copywriter",
+    "ghostwriter",
+    "SEO writer",
+    "scriptwriter",
+    "technical writer",
+    "blog writer",
+    "newsletter writer",
+    // ── Social Media & Marketing ───────────────────────────────────────────
+    "social media manager",
+    "content creator",
+    "digital marketer",
+    "SEO specialist",
+    "email marketer",
+    "community manager",
+    "PPC specialist",
+    "Google Ads",
+    "Facebook Ads",
+    "influencer manager",
+    // ── Virtual Assistant & Admin ──────────────────────────────────────────
+    "virtual assistant",
+    "executive assistant",
+    "data entry",
+    "customer support",
+    "admin assistant",
+    // ── Photography & Videography ──────────────────────────────────────────
+    "photographer",
+    "product photographer",
+    "videographer",
+    // ── Motion Graphics & Animation ────────────────────────────────────────
+    "animator",
+    "motion graphics",
+    "2D animator",
+    "3D artist",
+    // ── Audio, Music & Podcast ─────────────────────────────────────────────
+    "podcast editor",
+    "voiceover artist",
+    "voice actor",
+    "music producer",
+    "audio engineer",
+    "sound designer",
+    // ── Data, AI & Automation ──────────────────────────────────────────────
+    "data analyst",
+    "data scientist",
+    "automation developer",
+    "chatbot developer",
+    "machine learning",
+    "web scraping",
+    // ── Finance & Accounting ───────────────────────────────────────────────
+    "bookkeeper",
+    "accountant",
+    "tax consultant",
+    // ── Translation & Language ─────────────────────────────────────────────
+    "translator",
+    "transcriptionist",
+    "subtitles",
+    // ── Education & Coaching ───────────────────────────────────────────────
+    "online tutor",
+    "business coach",
+    "fitness coach",
+    // ── E-commerce ────────────────────────────────────────────────────────
+    "Etsy seller",
+    "Amazon seller",
+    "dropshipping",
+    // ── General ────────────────────────────────────────────────────────────
+    "freelancer",
+    "remote work",
+    "freelance job",
   ].join(",")
 )
   .split(",")
