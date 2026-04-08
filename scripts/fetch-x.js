@@ -1086,50 +1086,22 @@ async function fetchThreadsListingPage(url, source, label) {
 
   const results = [];
 
-  // Phase 1: Try extracting post data from embedded JSON in the page
-  const embeddedPosts = extractThreadsEmbeddedPosts(html);
-  if (embeddedPosts.length > 0) {
-    const nowS = Math.floor(Date.now() / 1000);
-    let skippedOld = 0;
-    for (const ep of embeddedPosts.slice(0, THREADS_DETAIL_LIMIT)) {
-      const createdUtc = ep.taken_at || nowS;
-      // Skip posts older than THREADS_MAX_AGE_DAYS
-      if (nowS - createdUtc > THREADS_MAX_AGE_S) {
-        skippedOld++;
-        continue;
-      }
-      results.push({
-        id: `threads_${ep.code}`,
-        name: `threads_${ep.code}`,
-        title: ep.text.slice(0, 300),
-        selftext: ep.text.slice(0, 2000),
-        author: "unknown",
-        author_name: "Threads",
-        permalink: `${THREADS_BASE}/post/${ep.code}`,
-        subreddit: null,
-        created_utc: createdUtc,
-        num_comments: 0,
-        ups: 0,
-        link_flair_text: "Threads",
-        compensation: null,
-        employment_type: null,
-        location: null,
-        _sub: "threads",
-        source: `threads-${source}`,
-      });
-    }
-    console.log(
-      `    → ${embeddedPosts.length} posts from embedded data (${label})${skippedOld ? ` (${skippedOld} older than ${THREADS_MAX_AGE_DAYS}d skipped)` : ""}`,
-    );
-    return { posts: results, error: null };
-  }
+  // Phase 1 (embedded JSON) gives fast text but NO reliable timestamps —
+  // posts get faked as "today" making 2025 posts look fresh. Skip it.
+  // Phase 2 (detail pages) fetches each post page and extracts the real
+  // <time datetime> tag, letting the age filter work correctly.
 
   // Phase 2: Extract post links from HTML and fetch detail pages
   const postLinks = extractThreadsPostLinks(html);
   if (postLinks.length === 0) {
     // Fallback: try to extract something from the page's own meta tags
     const pageMeta = parseThreadsPostPage(html, url, source);
-    if (pageMeta) return { posts: [pageMeta], error: null };
+    if (pageMeta) {
+      const age = Math.floor(Date.now() / 1000) - (pageMeta.created_utc || 0);
+      if (age <= THREADS_MAX_AGE_S) return { posts: [pageMeta], error: null };
+      console.log(`    → 1 post found but older than ${THREADS_MAX_AGE_DAYS}d — skipped`);
+      return { posts: [], error: null };
+    }
     return { posts: [], error: "No post links found" };
   }
 
@@ -1608,13 +1580,19 @@ async function main() {
   for (const g of [...freshGigs, ...existingGigs]) {
     if (mergedMap.has(g.id)) continue;
     // Purge old Threads posts that slipped in before the age filter existed
-    if (g._sub === "threads" && nowS - (g.created_utc || 0) > THREADS_MAX_AGE_S) {
+    if (
+      g._sub === "threads" &&
+      nowS - (g.created_utc || 0) > THREADS_MAX_AGE_S
+    ) {
       purgedOld++;
       continue;
     }
     mergedMap.set(g.id, g);
   }
-  if (purgedOld > 0) console.log(`[fetcher] Purged ${purgedOld} stale Threads posts (older than ${THREADS_MAX_AGE_DAYS}d)`);
+  if (purgedOld > 0)
+    console.log(
+      `[fetcher] Purged ${purgedOld} stale Threads posts (older than ${THREADS_MAX_AGE_DAYS}d)`,
+    );
   const filteredPosts = [...mergedMap.values()]
     .sort((a, b) => (b.created_utc || 0) - (a.created_utc || 0))
     .slice(0, MAX_POSTS);
