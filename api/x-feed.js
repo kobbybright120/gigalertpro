@@ -16,6 +16,7 @@
 const HANDLER_DEADLINE_MS = 8000;
 
 const REDIS_KEY = "gigalertpro:x:latest";
+const THREADS_REDIS_KEY = "gigalertpro:threads:latest";
 
 // ── Nitter live-fallback config ──────────────────────────────────────────────
 // Keep this list SHORT — each query can take up to 5 s in the worst case.
@@ -231,16 +232,64 @@ export default async function handler(req, res) {
 
   try {
     // ── 1) Try Upstash Redis first (production path) ──
-    const cached = await redisGet(REDIS_KEY);
+    // Read both the main X+CL key and the separate Threads key in parallel
+    const [cached, threadsCached] = await Promise.all([
+      redisGet(REDIS_KEY),
+      redisGet(THREADS_REDIS_KEY),
+    ]);
 
-    if (cached) {
-      console.log("[x-feed] Serving from Upstash Redis cache");
+    if (cached || threadsCached) {
+      let mainData = cached ? JSON.parse(cached) : { posts: [] };
+      let threadsData = threadsCached ? JSON.parse(threadsCached) : { posts: [] };
+
+      // Normalize Playwright-crawler posts to match expected schema
+      const threadsPosts = (threadsData.posts || []).map((p) => ({
+        id: p.id || `threads_${Date.now()}`,
+        name: p.id || `threads_${Date.now()}`,
+        title: p.title || "",
+        selftext: p.body_preview || p.selftext || p.title || "",
+        author: (p.author || "unknown").replace(/^@/, ""),
+        author_name: p.author || "Threads",
+        permalink: p.url || p.permalink || "",
+        subreddit: null,
+        created_utc: p.posted_at
+          ? Math.floor(new Date(p.posted_at).getTime() / 1000)
+          : p.created_utc || Math.floor(Date.now() / 1000),
+        num_comments: 0,
+        ups: 0,
+        link_flair_text: "Threads",
+        compensation: null,
+        employment_type: null,
+        location: null,
+        _sub: p._sub || "threads",
+        source: p.source || "threads-playwright",
+      }));
+
+      // Merge + dedup
+      const seen = new Set();
+      const merged = [];
+      for (const p of [...(mainData.posts || []), ...threadsPosts]) {
+        if (!seen.has(p.id)) {
+          seen.add(p.id);
+          merged.push(p);
+        }
+      }
+      merged.sort((a, b) => (b.created_utc || 0) - (a.created_utc || 0));
+
+      const result = JSON.stringify({
+        posts: merged,
+        cached_at: mainData.cached_at || threadsData.cached_at || new Date().toISOString(),
+        post_count: merged.length,
+        feed: cached ? (mainData.feed || "x-cached") : "threads-only",
+      });
+
+      console.log(`[x-feed] Serving from Redis: ${(mainData.posts || []).length} main + ${threadsPosts.length} threads = ${merged.length} total`);
       res.setHeader(
         "Cache-Control",
         "public, s-maxage=30, stale-while-revalidate=30",
       );
       res.setHeader("Content-Type", "application/json");
-      return res.status(200).send(cached);
+      return res.status(200).send(result);
     }
 
     // ── 2) Fallback: lightweight Nitter RSS fetch (no Threads — too slow) ──
