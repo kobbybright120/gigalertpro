@@ -22,18 +22,21 @@ async function redisSet(key, value, ttlSeconds = 3600) {
     console.warn("Upstash credentials not configured; skipping write");
     return;
   }
-  try {
-    await fetch(url, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(["SET", key, value, "EX", ttlSeconds]),
-    });
-  } catch (err) {
-    console.error("Failed to write to Upstash:", err.message || err);
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(["SET", key, value, "EX", ttlSeconds]),
+  });
+  if (!resp.ok) {
+    const body = await resp.text();
+    throw new Error(`Redis SET failed: ${resp.status} — ${body}`);
   }
+  const result = await resp.json();
+  console.log("Redis SET result:", JSON.stringify(result));
+  return result;
 }
 
 function encodeId(str) {
@@ -210,6 +213,10 @@ async function main() {
       cached_at: new Date().toISOString(),
       feed: "threads-playwright",
     });
+
+    console.log(
+      `Payload: ${results.length} posts, ${(payload.length / 1024).toFixed(1)} KB`,
+    );
 
     // TTL 9000s (2.5 hours) — covers the 2h cron interval with buffer
     await redisSet("gigalertpro:threads:latest", payload, 9000);
