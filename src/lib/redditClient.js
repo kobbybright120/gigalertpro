@@ -1222,7 +1222,8 @@ function matchAndScore(posts, lowerKws) {
     // ── Regex filters (ONLY for posts the AI hasn't classified) ──
     // If the AI already approved a post, trust it — don't second-guess with regex.
     const isXPost = p._sub === "nitter" || p._source_platform === "X";
-    const isCLPost = p._sub === "craigslist" || p._source_platform === "Craigslist";
+    const isCLPost =
+      p._sub === "craigslist" || p._source_platform === "Craigslist";
 
     if (!aiApproved) {
       // ── Skip self-promotions (freelancer ads) — skip for X/Nitter & CL posts
@@ -1264,8 +1265,7 @@ function matchAndScore(posts, lowerKws) {
 
     // For Reddit: scan first 600 chars of body (where the actual job description is).
     // For Craigslist/X: scan full body — CL bodies ARE the gig description, X tweets are short.
-    const bodyHead =
-      isCLPost || isXPost ? bodyLower : bodyLower.slice(0, 600);
+    const bodyHead = isCLPost || isXPost ? bodyLower : bodyLower.slice(0, 600);
 
     let titleHits = 0;
     const matched = expandedKws.filter((kw) => {
@@ -1327,7 +1327,8 @@ function matchAndScore(posts, lowerKws) {
     // CL posts with explicit compensation are high-intent real gigs
     if (isCLPost && p.compensation) score = Math.min(100, score + 10);
     // CL posts always have a real body (detail page was fetched) → slight boost
-    if (isCLPost && (p.selftext || "").length > 100) score = Math.min(100, score + 5);
+    if (isCLPost && (p.selftext || "").length > 100)
+      score = Math.min(100, score + 5);
 
     // ── Skip low-relevance posts (spammy pitches that barely match) ──
     if (score < 10) continue;
