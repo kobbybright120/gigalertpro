@@ -205,6 +205,12 @@ const THREADS_CONCURRENCY = parseInt(
   process.env.THREADS_CONCURRENCY || "3",
   10,
 );
+// Maximum age for Threads posts in days — anything older is stale and skipped.
+const THREADS_MAX_AGE_DAYS = parseInt(
+  process.env.THREADS_MAX_AGE_DAYS || "30",
+  10,
+);
+const THREADS_MAX_AGE_S = THREADS_MAX_AGE_DAYS * 86400; // in seconds
 
 // Hashtags to monitor (no # prefix)
 const THREADS_TAGS = (
@@ -928,6 +934,37 @@ function extractThreadsPostLinks(html) {
 }
 
 /**
+ * Extract a `taken_at` Unix timestamp from Threads embedded JSON near a post code.
+ * Threads JSON often contains `"taken_at":1234567890` near the post's `"code":"..."`.
+ */
+function extractTakenAt(scriptText, code) {
+  // Find the chunk of JSON surrounding this code (up to 2000 chars around it)
+  const idx = scriptText.indexOf(`"code":"${code}"`);
+  if (idx < 0) return null;
+  const start = Math.max(0, idx - 1500);
+  const end = Math.min(scriptText.length, idx + 1500);
+  const chunk = scriptText.slice(start, end);
+
+  // Look for taken_at (Unix epoch seconds)
+  const m = chunk.match(/"taken_at"\s*:\s*(\d{10,})/);
+  if (m) {
+    const ts = parseInt(m[1], 10);
+    // Sanity: must be between 2020 and 2030
+    if (ts > 1577836800 && ts < 1893456000) return ts;
+  }
+
+  // Fallback: look for device_timestamp (sometimes milliseconds)
+  const m2 = chunk.match(/"device_timestamp"\s*:\s*(\d{10,})/);
+  if (m2) {
+    let ts = parseInt(m2[1], 10);
+    if (ts > 1e12) ts = Math.floor(ts / 1000); // ms → s
+    if (ts > 1577836800 && ts < 1893456000) return ts;
+  }
+
+  return null;
+}
+
+/**
  * Try to extract post text from embedded JSON in Threads HTML.
  * Threads embeds React hydration data in script tags.
  */
@@ -943,7 +980,7 @@ function extractThreadsEmbeddedPosts(html) {
     const script = block[1];
     if (!script.includes('"text"')) continue;
 
-    // Extract text + code pairs from the JSON
+    // Extract text + code + taken_at triples from the JSON
     const textMatches = [
       ...script.matchAll(
         /"code"\s*:\s*"([^"]+)"[\s\S]*?"text"\s*:\s*"((?:[^"\\]|\\.)*)"/g,
@@ -957,7 +994,9 @@ function extractThreadsEmbeddedPosts(html) {
         .replace(/\\\\/g, "\\")
         .trim();
       if (text.length > 15) {
-        posts.push({ code, text });
+        // Try to find a taken_at timestamp near this code in the JSON
+        const takenAt = extractTakenAt(script, code);
+        posts.push({ code, text, taken_at: takenAt });
       }
     }
 
@@ -975,7 +1014,8 @@ function extractThreadsEmbeddedPosts(html) {
         .trim();
       const code = tm[2];
       if (text.length > 15 && !posts.some((p) => p.code === code)) {
-        posts.push({ code, text });
+        const takenAt = extractTakenAt(script, code);
+        posts.push({ code, text, taken_at: takenAt });
       }
     }
   }
@@ -1049,7 +1089,15 @@ async function fetchThreadsListingPage(url, source, label) {
   // Phase 1: Try extracting post data from embedded JSON in the page
   const embeddedPosts = extractThreadsEmbeddedPosts(html);
   if (embeddedPosts.length > 0) {
+    const nowS = Math.floor(Date.now() / 1000);
+    let skippedOld = 0;
     for (const ep of embeddedPosts.slice(0, THREADS_DETAIL_LIMIT)) {
+      const createdUtc = ep.taken_at || nowS;
+      // Skip posts older than THREADS_MAX_AGE_DAYS
+      if (nowS - createdUtc > THREADS_MAX_AGE_S) {
+        skippedOld++;
+        continue;
+      }
       results.push({
         id: `threads_${ep.code}`,
         name: `threads_${ep.code}`,
@@ -1059,7 +1107,7 @@ async function fetchThreadsListingPage(url, source, label) {
         author_name: "Threads",
         permalink: `${THREADS_BASE}/post/${ep.code}`,
         subreddit: null,
-        created_utc: Math.floor(Date.now() / 1000),
+        created_utc: createdUtc,
         num_comments: 0,
         ups: 0,
         link_flair_text: "Threads",
@@ -1071,7 +1119,7 @@ async function fetchThreadsListingPage(url, source, label) {
       });
     }
     console.log(
-      `    → ${embeddedPosts.length} posts from embedded data (${label})`,
+      `    → ${embeddedPosts.length} posts from embedded data (${label})${skippedOld ? ` (${skippedOld} older than ${THREADS_MAX_AGE_DAYS}d skipped)` : ""}`,
     );
     return { posts: results, error: null };
   }
@@ -1106,6 +1154,9 @@ async function fetchThreadsListingPage(url, source, label) {
 
     for (const r of batchResults) {
       if (r.status === "fulfilled" && r.value) {
+        // Skip posts older than THREADS_MAX_AGE_DAYS
+        const age = Math.floor(Date.now() / 1000) - (r.value.created_utc || 0);
+        if (age > THREADS_MAX_AGE_S) continue;
         results.push(r.value);
       }
     }
@@ -1550,10 +1601,20 @@ async function main() {
   }
 
   // Merge: fresh gigs + existing, dedup by ID, sort newest first, cap
+  // Also purge stale Threads posts from previous runs
   const mergedMap = new Map();
+  const nowS = Math.floor(Date.now() / 1000);
+  let purgedOld = 0;
   for (const g of [...freshGigs, ...existingGigs]) {
-    if (!mergedMap.has(g.id)) mergedMap.set(g.id, g);
+    if (mergedMap.has(g.id)) continue;
+    // Purge old Threads posts that slipped in before the age filter existed
+    if (g._sub === "threads" && nowS - (g.created_utc || 0) > THREADS_MAX_AGE_S) {
+      purgedOld++;
+      continue;
+    }
+    mergedMap.set(g.id, g);
   }
+  if (purgedOld > 0) console.log(`[fetcher] Purged ${purgedOld} stale Threads posts (older than ${THREADS_MAX_AGE_DAYS}d)`);
   const filteredPosts = [...mergedMap.values()]
     .sort((a, b) => (b.created_utc || 0) - (a.created_utc || 0))
     .slice(0, MAX_POSTS);
