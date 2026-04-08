@@ -1271,7 +1271,9 @@ function matchAndScore(posts, lowerKws) {
     // For Reddit: scan first 600 chars of body (where the actual job description is).
     // For Craigslist/X: scan full body — CL bodies ARE the gig description, X tweets are short.
     const bodyHead =
-      isCLPost || isXPost || isThreadsPost ? bodyLower : bodyLower.slice(0, 600);
+      isCLPost || isXPost || isThreadsPost
+        ? bodyLower
+        : bodyLower.slice(0, 600);
 
     let titleHits = 0;
     const matched = expandedKws.filter((kw) => {
