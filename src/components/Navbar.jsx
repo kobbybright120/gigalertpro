@@ -52,7 +52,7 @@ export default function Navbar() {
           className="flex items-center gap-2.5 text-lg font-bold text-white"
         >
           <img
-            src="/logo/icon.svg"
+            src="/logo/icon.svg?v=20260408"
             alt="GigAlertPro"
             className="w-8 h-8 rounded-xl object-cover shadow-[0_0_20px_rgba(0,240,181,0.15)]"
           />
@@ -111,7 +111,7 @@ export default function Navbar() {
         {/* Logo */}
         <div className="h-16 flex items-center gap-2.5 px-5 border-b border-white/[0.04] shrink-0">
           <img
-            src="/logo/icon.svg"
+            src="/logo/icon.svg?v=20260408"
             alt="GigAlertPro"
             className="w-10 h-10 rounded-xl object-cover shadow-[0_0_20px_rgba(0,240,181,0.15)]"
           />

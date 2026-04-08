@@ -30,6 +30,24 @@
       ]
     },
     {
+      "source": "/logo/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/favicon.svg",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
       "source": "/(.*)\\.(png|jpg|jpeg|gif|webp|svg|ico)",
       "headers": [
         {
