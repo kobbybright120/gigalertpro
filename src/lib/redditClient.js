@@ -1069,7 +1069,9 @@ async function fetchCommunityPostsFromProxy() {
             ? "X"
             : p._sub === "threads"
               ? "Threads"
-              : "Community",
+              : p._sub === "remotive"
+                ? "Remotive"
+                : "Community",
     }));
   } catch (err) {
     console.error("[GigAlertPro] Community API fetch failed:", err.message);
@@ -1228,6 +1230,8 @@ function matchAndScore(posts, lowerKws) {
       p._sub === "craigslist" || p._source_platform === "Craigslist";
     const isThreadsPost =
       p._sub === "threads" || p._source_platform === "Threads";
+    const isRemotivePost =
+      p._sub === "remotive" || p._source_platform === "Remotive";
 
     if (!aiApproved) {
       // ── Skip self-promotions (freelancer ads) — skip for X/Nitter & CL posts
@@ -1236,6 +1240,7 @@ function matchAndScore(posts, lowerKws) {
         !isXPost &&
         !isCLPost &&
         !isThreadsPost &&
+        !isRemotivePost &&
         isSelfPromotion(p.title || "", p.selftext || "", p.link_flair_text)
       )
         continue;

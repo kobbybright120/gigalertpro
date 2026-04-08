@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────────
-// GigAlertPro — Community Gig Monitor (Craigslist + Nitter/X)
+// GigAlertPro — Community Gig Monitor (Craigslist + Nitter/X + Remotive)
 //
 // Fetches REAL community gig posts from:
 //   1. Craigslist gigs section (computer, creative, writing, all gigs)
 //   2. X (Twitter) via Nitter RSS search feeds
+//   3. Threads.net (HTML scraping)
+//   4. Remotive.com public API — reliable fallback, works from any IP
 //
 // AI FILTER: Uses GPT-4o-mini to classify posts as real gigs vs noise
 // before storing. Self-promos, rants, discussions, and spam never reach users.
@@ -1176,10 +1178,124 @@ async function fetchAllThreads() {
   };
 }
 
+// ── Source 4: Remotive.com (free public API — reliable from any IP) ──────────
+
+// Freelance/remote job categories to fetch from Remotive
+const REMOTIVE_CATEGORIES = (
+  process.env.REMOTIVE_CATEGORIES ||
+  "software-dev,design,marketing,writing,customer-support,data,devops-sysadmin,product,finance"
+)
+  .split(",")
+  .map((c) => c.trim())
+  .filter(Boolean);
+
+const REMOTIVE_MAX_PER_CAT = parseInt(
+  process.env.REMOTIVE_MAX_PER_CAT || "20",
+  10,
+);
+
+const REMOTIVE_CATEGORY_LABELS = {
+  "software-dev": "Development",
+  design: "Design",
+  marketing: "Marketing",
+  writing: "Writing",
+  "customer-support": "Support",
+  data: "Data",
+  "devops-sysadmin": "DevOps",
+  product: "Product",
+  finance: "Finance",
+  legal: "Legal",
+  "human-resources": "HR",
+  "all-others": "Other",
+};
+
+async function fetchRemotive() {
+  const allPosts = [];
+  const diagnostics = [];
+
+  for (const cat of REMOTIVE_CATEGORIES) {
+    const url = `https://remotive.com/api/remote-jobs?category=${encodeURIComponent(cat)}&limit=${REMOTIVE_MAX_PER_CAT}`;
+    console.log(`  [remotive] Category: ${cat}`);
+
+    try {
+      const resp = await fetch(url, {
+        headers: { Accept: "application/json" },
+        signal: AbortSignal.timeout(10000),
+      });
+
+      if (!resp.ok) {
+        console.warn(`  [remotive] ${resp.status} for ${cat}`);
+        diagnostics.push({ category: cat, count: 0, error: `${resp.status}` });
+        continue;
+      }
+
+      const data = await resp.json();
+      const jobs = data.jobs || [];
+
+      for (const job of jobs) {
+        // Strip HTML from description
+        const body = (job.description || "")
+          .replace(/<[^>]*>/g, " ")
+          .replace(/&amp;/g, "&")
+          .replace(/&lt;/g, "<")
+          .replace(/&gt;/g, ">")
+          .replace(/&nbsp;/g, " ")
+          .replace(/\s+/g, " ")
+          .trim()
+          .slice(0, 2000);
+
+        const title = `${job.company_name}: ${job.title}`;
+        const createdUtc = job.publication_date
+          ? Math.floor(new Date(job.publication_date).getTime() / 1000)
+          : Math.floor(Date.now() / 1000);
+
+        allPosts.push({
+          id: `remotive_${job.id}`,
+          name: `remotive_${job.id}`,
+          title,
+          selftext: body,
+          author: job.company_name || "unknown",
+          author_name: job.company_name || "unknown",
+          permalink: job.url || `https://remotive.com/remote-jobs/${cat}/${job.id}`,
+          subreddit: null,
+          created_utc: createdUtc,
+          num_comments: 0,
+          ups: 0,
+          link_flair_text: REMOTIVE_CATEGORY_LABELS[cat] || cat,
+          compensation: job.salary || null,
+          employment_type: job.job_type || null,
+          location: job.candidate_required_location || "Remote",
+          _sub: "remotive",
+          source: `remotive-${cat}`,
+        });
+      }
+
+      diagnostics.push({ category: cat, count: jobs.length, error: null });
+      console.log(`    → ${jobs.length} jobs from remotive/${cat}`);
+    } catch (err) {
+      console.warn(`  [remotive] Failed for ${cat}: ${err.message}`);
+      diagnostics.push({ category: cat, count: 0, error: err.message });
+    }
+
+    await delay(300);
+  }
+
+  console.log(
+    `  [remotive] Summary: ${allPosts.length} jobs across ${REMOTIVE_CATEGORIES.length} categories`,
+  );
+  return { posts: allPosts, diagnostics };
+}
+
 // ── Fetch All & Deduplicate ──────────────────────────────────────────────────
 
 async function fetchAllPosts() {
-  const diagnostics = { craigslist: [], nitter: [], threads: [] };
+  const diagnostics = { craigslist: [], nitter: [], threads: [], remotive: [] };
+
+  // ── Remotive (always runs first — guaranteed to work from any IP) ──
+  console.log("\n[fetcher] === Remotive.com Remote Jobs ===");
+  const remotive = await fetchRemotive();
+  diagnostics.remotive = remotive.diagnostics;
+  console.log(`[fetcher] Remotive: ${remotive.posts.length} fetched`);
 
   // ── Craigslist ──
   console.log("\n[fetcher] === Craigslist Gigs ===");
@@ -1202,7 +1318,12 @@ async function fetchAllPosts() {
   // Deduplicate across all sources
   const seen = new Set();
   const allPosts = [];
-  for (const p of [...cl.posts, ...nitter.posts, ...threads.posts]) {
+  for (const p of [
+    ...remotive.posts,
+    ...cl.posts,
+    ...nitter.posts,
+    ...threads.posts,
+  ]) {
     if (!seen.has(p.id)) {
       seen.add(p.id);
       allPosts.push(p);
