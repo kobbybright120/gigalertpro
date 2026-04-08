@@ -1,75 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#6366F1"/>
-      <stop offset="50%" stop-color="#7C3AED"/>
-      <stop offset="100%" stop-color="#06B6D4"/>
+    <linearGradient id="accent" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00F0B5"/>
+      <stop offset="100%" stop-color="#00D4FF"/>
     </linearGradient>
-    <linearGradient id="bolt" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#FDE68A"/>
-      <stop offset="100%" stop-color="#F59E0B"/>
-    </linearGradient>
-    <filter id="innerShadow">
-      <feGaussianBlur in="SourceAlpha" stdDeviation="6" result="blur"/>
-      <feOffset dx="0" dy="4" result="offsetBlur"/>
-      <feComposite in="SourceGraphic" in2="offsetBlur" operator="over"/>
-    </filter>
   </defs>
 
-  <!-- Rounded square background -->
-  <rect width="512" height="512" rx="108" fill="url(#bg)"/>
+  <!-- Rounded square bg -->
+  <rect width="512" height="512" rx="108" fill="#020617"/>
+  <rect width="512" height="512" rx="108" fill="none" stroke="url(#accent)" stroke-width="10" opacity="0.3"/>
 
-  <!-- Subtle top-left highlight -->
-  <rect width="512" height="512" rx="108" fill="white" opacity="0.06"/>
-  <path d="M108 0 H404 Q512 0 512 108 V256 Q256 200 0 256 V108 Q0 0 108 0Z" fill="white" opacity="0.07"/>
+  <!-- Bell -->
+  <path d="M256 100 C244 100 234 110 234 122 L234 138 C192 148 160 188 160 238 L160 300 C160 312 148 324 140 332 L372 332 C364 324 352 312 352 300 L352 238 C352 188 320 148 278 138 L278 122 C278 110 268 100 256 100Z" fill="url(#accent)"/>
+  <ellipse cx="256" cy="358" rx="36" ry="18" fill="url(#accent)"/>
 
-  <!-- Bell body -->
-  <g transform="translate(256, 240)" filter="url(#innerShadow)">
-    <path d="
-      M0 -140
-      C-6 -140, -12 -136, -12 -128
-      L-12 -112
-      C-72 -96, -114 -48, -114 12
-      L-114 80
-      C-114 94, -126 108, -136 116
-      L136 116
-      C126 108, 114 94, 114 80
-      L114 12
-      C114 -48, 72 -96, 12 -112
-      L12 -128
-      C12 -136, 6 -140, 0 -140
-      Z"
-      fill="white"
-    />
-    <!-- Bell highlight -->
-    <path d="
-      M0 -128
-      C-56 -108, -94 -56, -94 12
-      L-94 60
-      L-84 12
-      C-84 -42, -52 -88, 0 -110
-      Z"
-      fill="white" opacity="0.3"
-    />
-    <!-- Bell clapper -->
-    <ellipse cx="0" cy="136" rx="28" ry="14" fill="white"/>
-  </g>
-
-  <!-- Lightning bolt centered in bell -->
-  <g transform="translate(222, 200)">
-    <polygon points="46,0 14,64 36,64 18,108 80,40 52,40 72,0" fill="url(#bolt)"/>
-    <polygon points="46,0 14,64 36,64 18,108 80,40 52,40 72,0" fill="white" opacity="0.2"/>
-  </g>
+  <!-- Bolt cutout -->
+  <polygon points="272,180 240,248 258,248 246,300 298,232 276,232 290,180" fill="#020617"/>
 
   <!-- Notification dot -->
-  <circle cx="370" cy="130" r="42" fill="#EF4444"/>
-  <circle cx="370" cy="130" r="20" fill="#FCA5A5" opacity="0.5"/>
-
-  <!-- Signal arcs left -->
-  <path d="M100 260 Q70 200 100 140" stroke="white" stroke-width="10" stroke-linecap="round" fill="none" opacity="0.35"/>
-  <path d="M72 280 Q32 200 72 120" stroke="white" stroke-width="8" stroke-linecap="round" fill="none" opacity="0.18"/>
-
-  <!-- Signal arcs right -->
-  <path d="M412 260 Q442 200 412 140" stroke="white" stroke-width="10" stroke-linecap="round" fill="none" opacity="0.35"/>
-  <path d="M440 280 Q480 200 440 120" stroke="white" stroke-width="8" stroke-linecap="round" fill="none" opacity="0.18"/>
+  <circle cx="350" cy="140" r="36" fill="#00F0B5"/>
+  <circle cx="350" cy="140" r="18" fill="#020617" opacity="0.25"/>
 </svg>

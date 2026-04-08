@@ -733,9 +733,11 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
             <div>
               <div className="flex items-center gap-2.5 text-lg font-bold tracking-tight mb-3">
-                <div className="w-7 h-7 rounded-md bg-gradient-to-br from-[#00F0B5] to-[#00D4FF] flex items-center justify-center">
-                  <Zap className="w-3.5 h-3.5 text-[#020617]" />
-                </div>
+                <img
+                  src="/logo/icon.svg"
+                  alt="GigAlertPro"
+                  className="w-7 h-7 rounded-md object-cover"
+                />
                 <span>
                   GigAlert<span className="text-gradient">Pro</span>
                 </span>
