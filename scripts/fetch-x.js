@@ -25,7 +25,7 @@ if (!UPSTASH_REDIS_REST_URL || !UPSTASH_REDIS_REST_TOKEN) {
 // ── Config ───────────────────────────────────────────────────────────────────
 
 const REDIS_KEY = process.env.X_REDIS_KEY || "gigalertpro:x:latest";
-const REDIS_TTL = parseInt(process.env.X_REDIS_TTL || "3600", 10); // 1 hour safety net
+const REDIS_TTL = parseInt(process.env.X_REDIS_TTL || "25200", 10); // 7 hours — survives GitHub cron throttling
 const MAX_POSTS = parseInt(process.env.X_MAX_POSTS || "300", 10);
 const SEEN_KEY = "gigalertpro:seen:x"; // dedup set — tracks classified post IDs
 const SEEN_TTL = 86400; // 24 hours
@@ -1337,7 +1337,17 @@ async function main() {
   );
 
   if (allPosts.length === 0) {
-    console.warn("[fetcher] 0 posts — skipping Redis write");
+    console.warn("[fetcher] 0 posts fetched from all sources");
+    // Refresh TTL on existing Redis data so it doesn't expire between runs
+    try {
+      const existingRaw = await redisGet(REDIS_KEY);
+      if (existingRaw) {
+        await redisSet(REDIS_KEY, existingRaw, REDIS_TTL);
+        console.warn("[fetcher] Refreshed TTL on existing Redis data — sources may be blocked/unavailable");
+      } else {
+        console.warn("[fetcher] No existing Redis data to refresh — users will see empty feed");
+      }
+    } catch { /* best effort */ }
     process.exit(0);
   }
 
