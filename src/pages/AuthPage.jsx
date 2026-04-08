@@ -56,7 +56,11 @@ export default function AuthPage() {
         {/* Logo */}
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2.5 text-3xl font-bold text-white">
-            <img src="/logo/icon.svg" alt="GigAlertPro" className="w-10 h-10 rounded-xl object-cover shadow-[0_0_20px_rgba(0,240,181,0.15)]" />
+            <img
+              src="/logo/icon.svg"
+              alt="GigAlertPro"
+              className="w-10 h-10 rounded-xl object-cover shadow-[0_0_20px_rgba(0,240,181,0.15)]"
+            />
             <span>
               GigAlert<span className="text-gradient">Pro</span>
             </span>

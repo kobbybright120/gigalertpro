@@ -213,7 +213,11 @@ export default function LandingPage() {
             to="/"
             className="flex items-center gap-2.5 text-xl font-bold tracking-tight"
           >
-            <img src="/logo/icon.svg" alt="GigAlertPro" className="w-8 h-8 rounded-lg object-cover" />
+            <img
+              src="/logo/icon.svg"
+              alt="GigAlertPro"
+              className="w-8 h-8 rounded-lg object-cover"
+            />
             <span>
               GigAlert<span className="text-gradient">Pro</span>
             </span>
