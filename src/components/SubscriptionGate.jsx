@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useProfile } from "../lib/useSupabase";
 import PricingModal from "./PricingModal";
 import { Zap, ArrowRight, Shield, Star, CheckCircle2 } from "lucide-react";
@@ -11,16 +11,76 @@ const DISABLE_AUTH =
   !import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 const ACTIVE_STATUSES = ["active"];
+// How long to poll after checkout=success (ms) and interval between polls
+const POLL_TIMEOUT = 60_000;
+const POLL_INTERVAL = 3_000;
 
 export default function SubscriptionGate({ children }) {
   console.debug("SubscriptionGate: PAYMENTS_ENABLED=", PAYMENTS_ENABLED);
   // Hooks must be called unconditionally at the top of the component
-  const { profile, loading } = useProfile();
+  const { profile, loading, refetch } = useProfile();
   const [showPricing, setShowPricing] = useState(false);
+
+  // Detect ?checkout=success in URL — start polling profile until active
+  const isCheckoutReturn =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("checkout") === "success";
+  const [polling, setPolling] = useState(isCheckoutReturn);
+  const pollRef = useRef(null);
+  const pollStart = useRef(Date.now());
+
+  useEffect(() => {
+    if (!isCheckoutReturn || !PAYMENTS_ENABLED || DISABLE_AUTH) return;
+
+    const tick = async () => {
+      await refetch();
+      // Stop polling if active or timed out
+      if (
+        Date.now() - pollStart.current > POLL_TIMEOUT
+      ) {
+        clearInterval(pollRef.current);
+        setPolling(false);
+      }
+    };
+
+    pollRef.current = setInterval(tick, POLL_INTERVAL);
+    // Run once immediately
+    tick();
+
+    return () => clearInterval(pollRef.current);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Once the profile becomes active, stop polling and clear the URL param
+  useEffect(() => {
+    if (polling && profile?.subscription_status && ACTIVE_STATUSES.includes(profile.subscription_status)) {
+      clearInterval(pollRef.current);
+      setPolling(false);
+      // Clean up the ?checkout=success from the URL without a page reload
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.delete("checkout");
+        window.history.replaceState({}, "", url.toString());
+      } catch (_) {}
+    }
+  }, [profile, polling]);
+
   if (!PAYMENTS_ENABLED) return children;
 
   // Demo mode — skip gate
   if (DISABLE_AUTH) return children;
+
+  // Returned from checkout — show "Activating" spinner while polling
+  if (polling) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#020617] gap-5">
+        <div className="animate-spin rounded-full h-10 w-10 border-2 border-[#00F0B5] border-t-transparent" />
+        <div className="text-center">
+          <p className="text-white font-bold text-lg">Activating your subscription…</p>
+          <p className="text-gray-500 text-sm mt-1">This usually takes a few seconds. Please wait.</p>
+        </div>
+      </div>
+    );
+  }
 
   // Still loading profile
   if (loading) {
