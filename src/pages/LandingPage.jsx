@@ -164,7 +164,7 @@ const DEMO_GIGS = [
 export default function LandingPage() {
   const { user } = useAuth();
 
-  async function handleCheckout(period) {
+  async function handleCheckout(tier) {
     if (!PAYMENTS_ENABLED) {
       // Payments disabled: fall back to auth/signup
       window.location.href = "/auth";
@@ -172,11 +172,11 @@ export default function LandingPage() {
     }
 
     try {
-      const res = await fetch("/api/create-paystack-checkout", {
+      const res = await fetch("/api/create-dodo-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          period,
+          tier,
           email: user?.email ?? undefined,
         }),
       });
@@ -185,7 +185,7 @@ export default function LandingPage() {
         window.location.href = data.url;
       } else {
         console.error("Checkout error:", data.error);
-        // Fallback to auth page if Paystack not yet configured
+        // Fallback to auth page if Dodo Payments not yet configured
         window.location.href = "/auth";
       }
     } catch {
@@ -1194,10 +1194,65 @@ function LiveDemo() {
    PRICING SECTION
    ═══════════════════════════════════════════════════════════════════════ */
 function PricingSection({ priceRef, priceVis, handleCheckout }) {
-  const [annual, setAnnual] = useState(false);
-
-  const proPrice = annual ? 12 : 15;
-  const teamPrice = 29;
+  const plans = [
+    {
+      name: "Basic",
+      tagline: "Perfect for getting started",
+      price: 9,
+      tier: "basic",
+      popular: false,
+      features: [
+        { text: "All platforms — Reddit, X/Twitter, Craigslist & Threads" },
+        { text: "Up to 5 active keywords" },
+        { text: "Gig quality scoring (0–100)" },
+        { text: "Filter by source & category · Sort by score" },
+        { text: "Browser push notifications" },
+        { text: "10 AI proposals per day" },
+        { text: "Save proposals + outcome tracking" },
+        { text: "Profile builder (bio, skills, portfolio)" },
+      ],
+      ctaLabel: "Get Started",
+      ctaClass:
+        "w-full py-3.5 border border-white/10 text-gray-300 font-semibold rounded-xl hover:bg-white/[0.04] hover:border-white/20 transition-all duration-300 flex items-center justify-center gap-2 text-sm",
+    },
+    {
+      name: "Pro",
+      tagline: "For serious freelancers",
+      price: 29,
+      tier: "pro",
+      popular: true,
+      features: [
+        { text: "Everything in Basic" },
+        { text: "Up to 20 active keywords" },
+        { text: "50 AI proposals per day" },
+        { text: "AI learns from your winning proposals" },
+        { text: "Won / Reply / No Response outcome analytics" },
+        { text: "In-app notification bell with unread count" },
+        { text: "Priority access to new features" },
+      ],
+      ctaLabel: "Start Free Trial",
+      ctaClass:
+        "w-full py-3.5 bg-[#00F0B5] text-[#020617] font-bold rounded-xl hover:bg-[#00dba5] transition-all duration-200 flex items-center justify-center gap-2 text-sm",
+    },
+    {
+      name: "Agency",
+      tagline: "For power users & agencies",
+      price: 99,
+      tier: "agency",
+      popular: false,
+      features: [
+        { text: "Everything in Pro" },
+        { text: "Unlimited active keywords" },
+        { text: "Unlimited AI proposals per day" },
+        { text: "Highest priority gig scanning" },
+        { text: "Early access to all new features" },
+        { text: "Priority support" },
+      ],
+      ctaLabel: "Get Agency",
+      ctaClass:
+        "w-full py-3.5 border border-white/10 text-gray-300 font-semibold rounded-xl hover:bg-white/[0.04] hover:border-white/20 transition-all duration-300 flex items-center justify-center gap-2 text-sm",
+    },
+  ];
 
   return (
     <section
@@ -1214,182 +1269,73 @@ function PricingSection({ priceRef, priceVis, handleCheckout }) {
             Pricing
           </p>
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-            Start free. Upgrade when you're ready.
+            Simple, transparent pricing.
           </h2>
           <p className="mt-4 text-gray-400 text-lg max-w-xl mx-auto">
-            No credit card needed to get started. Upgrade to Pro the moment
-            GigAlertPro finds your first client.
+            Every plan includes a 7-day free trial. No credit card required to
+            start.
           </p>
-
-          {/* Billing toggle */}
-          <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mt-6 sm:mt-8">
-            <span
-              className={`text-sm font-medium ${!annual ? "text-white" : "text-gray-500"}`}
-            >
-              Monthly
-            </span>
-            <button
-              onClick={() => setAnnual(!annual)}
-              className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${annual ? "bg-[#00F0B5]" : "bg-white/10"}`}
-            >
-              <span
-                className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform duration-200 ${annual ? "translate-x-6" : ""}`}
-              />
-            </button>
-            <span
-              className={`text-sm font-medium ${annual ? "text-white" : "text-gray-500"}`}
-            >
-              Annual
-            </span>
-            {annual && (
-              <span className="px-2.5 py-1 bg-[#00F0B5]/10 text-[#00F0B5] text-xs font-bold rounded-full border border-[#00F0B5]/20">
-                Save 20%
-              </span>
-            )}
-          </div>
         </div>
 
         {/* Pricing cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-          {/* Free Plan */}
-          <div
-            className={`glass-card rounded-2xl p-5 sm:p-8 hover:border-white/10 flex flex-col transition-all duration-700 ease-out ${priceVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
-            style={stagger(0)}
-          >
-            <div className="mb-6">
-              <h3 className="text-lg font-bold text-white">Free</h3>
-              <p className="text-gray-500 text-sm mt-1">
-                Get started, no strings attached
-              </p>
-            </div>
-            <div className="mb-8">
-              <div className="flex items-end gap-1">
-                <span className="text-5xl font-extrabold text-white">$0</span>
-                <span className="text-gray-500 text-sm pb-2">/month</span>
-              </div>
-              <p className="text-sm text-gray-500 mt-1.5">Free forever</p>
-            </div>
-            <ul className="space-y-3 mb-8 flex-1">
-              <PricingFeature text="3 alerts per day" />
-              <PricingFeature text="1 platform (Reddit)" />
-              <PricingFeature text="1 keyword" />
-              <PricingFeature text="Basic dashboard access" />
-              <PricingFeature text="Gig quality scoring" />
-            </ul>
-            <Link
-              to="/auth"
-              className="w-full py-3.5 border border-white/10 text-gray-300 font-semibold rounded-xl hover:bg-white/[0.04] hover:border-white/20 transition-all duration-300 flex items-center justify-center gap-2 text-sm"
+          {plans.map((plan, i) => (
+            <div
+              key={plan.name}
+              className={`relative flex flex-col rounded-2xl p-5 sm:p-8 transition-all duration-700 ease-out glass-card ${
+                plan.popular
+                  ? "border-[#00F0B5]/20 hover:border-[#00F0B5]/30 glow-green"
+                  : "hover:border-white/10"
+              } ${priceVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+              style={stagger(i)}
             >
-              Get Started Free
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-            <p className="text-xs text-gray-600 text-center mt-3">
-              Free forever. No credit card. Ever.
-            </p>
-          </div>
-
-          {/* Pro Plan */}
-          <div
-            className={`relative glass-card rounded-2xl p-5 sm:p-8 border-[#00F0B5]/20 hover:border-[#00F0B5]/30 glow-green flex flex-col transition-all duration-700 ease-out ${priceVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
-            style={stagger(1)}
-          >
-            <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-              <span className="inline-flex items-center gap-1 px-3 py-1 bg-[#00F0B5] text-[#020617] text-xs font-bold rounded-full">
-                <Star className="w-3 h-3" /> Most Popular
-              </span>
-            </div>
-            <div className="mb-6">
-              <h3 className="text-lg font-bold text-white">Pro</h3>
-              <p className="text-gray-500 text-sm mt-1">
-                For serious freelancers
-              </p>
-            </div>
-            <div className="mb-8">
-              <div className="flex items-end gap-1">
-                <span className="text-5xl font-extrabold text-white">
-                  ${proPrice}
-                </span>
-                <span className="text-gray-500 text-sm pb-2">/month</span>
-              </div>
-              {annual ? (
-                <p className="text-sm text-gray-500 mt-1.5">
-                  Billed as{" "}
-                  <span className="text-[#00F0B5] font-semibold">
-                    $144/year
+              {plan.popular && (
+                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-[#00F0B5] text-[#020617] text-xs font-bold rounded-full">
+                    <Star className="w-3 h-3" /> Most Popular
                   </span>
-                  <span className="ml-2 line-through text-gray-600">$180</span>
-                </p>
-              ) : (
-                <p className="text-sm text-gray-500 mt-1.5">Billed monthly</p>
+                </div>
               )}
-            </div>
-            <ul className="space-y-3 mb-8 flex-1">
-              <PricingFeature text="Unlimited alerts" highlighted />
-              <PricingFeature
-                text="All platforms (Reddit, X, Discord and more)"
-                highlighted
-              />
-              <PricingFeature text="Unlimited keywords" highlighted />
-              <PricingFeature text="AI proposal generator" highlighted />
-              <PricingFeature
-                text="Priority scanning every 2 minutes"
-                highlighted
-              />
-              <PricingFeature
-                text="Browser and email notifications"
-                highlighted
-              />
-              <PricingFeature text="All niches" highlighted />
-            </ul>
-            <button
-              onClick={() => handleCheckout(annual ? "yearly" : "monthly")}
-              className="w-full py-3.5 bg-[#00F0B5] text-[#020617] font-bold rounded-xl hover:bg-[#00dba5] transition-all duration-200 flex items-center justify-center gap-2 text-sm"
-            >
-              Start Free Trial
-              <ArrowRight className="w-4 h-4" />
-            </button>
-            <p className="text-xs text-gray-600 text-center mt-3">
-              No credit card required. Cancel anytime.
-            </p>
-          </div>
 
-          {/* Team Plan */}
-          <div
-            className={`glass-card rounded-2xl p-5 sm:p-8 hover:border-white/10 flex flex-col transition-all duration-700 ease-out ${priceVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
-            style={stagger(2)}
-          >
-            <div className="mb-6">
-              <h3 className="text-lg font-bold text-white">Team</h3>
-              <p className="text-gray-500 text-sm mt-1">
-                For small teams and agencies
+              <div className="mb-6">
+                <h3 className="text-lg font-bold text-white">{plan.name}</h3>
+                <p className="text-gray-500 text-sm mt-1">{plan.tagline}</p>
+              </div>
+
+              <div className="mb-8">
+                <div className="flex items-end gap-1">
+                  <span className="text-5xl font-extrabold text-white">
+                    ${plan.price}
+                  </span>
+                  <span className="text-gray-500 text-sm pb-2">/month</span>
+                </div>
+                <p className="text-sm text-[#00F0B5] mt-1.5 font-medium">
+                  7-day free trial included
+                </p>
+              </div>
+
+              <ul className="space-y-3 mb-8 flex-1">
+                {plan.features.map((f) => (
+                  <PricingFeature
+                    key={f.text}
+                    text={f.text}
+                    highlighted={plan.popular}
+                  />
+                ))}
+              </ul>
+
+              <button
+                onClick={() => handleCheckout(plan.tier)}
+                className={plan.ctaClass}
+              >
+                {plan.ctaLabel}
+                <ArrowRight className="w-4 h-4" />
+              </button>
+              <p className="text-xs text-gray-600 text-center mt-3">
+                Cancel anytime. No questions asked.
               </p>
             </div>
-            <div className="mb-8">
-              <div className="flex items-end gap-1">
-                <span className="text-5xl font-extrabold text-white">
-                  ${teamPrice}
-                </span>
-                <span className="text-gray-500 text-sm pb-2">/month</span>
-              </div>
-              <p className="text-sm text-gray-500 mt-1.5">Billed monthly</p>
-            </div>
-            <ul className="space-y-3 mb-8 flex-1">
-              <PricingFeature text="Everything in Pro" highlighted />
-              <PricingFeature text="Up to 3 team members" highlighted />
-              <PricingFeature text="Shared dashboard" highlighted />
-              <PricingFeature text="Priority support" highlighted />
-            </ul>
-            <button
-              onClick={() => handleCheckout("team")}
-              className="w-full py-3.5 border border-white/10 text-gray-300 font-semibold rounded-xl hover:bg-white/[0.04] hover:border-white/20 transition-all duration-300 flex items-center justify-center gap-2 text-sm"
-            >
-              Start Free Trial
-              <ArrowRight className="w-4 h-4" />
-            </button>
-            <p className="text-xs text-gray-600 text-center mt-3">
-              No credit card required. Cancel anytime.
-            </p>
-          </div>
+          ))}
         </div>
 
         {/* Trust strip */}
@@ -1399,10 +1345,10 @@ function PricingSection({ priceRef, priceVis, handleCheckout }) {
         >
           <div className="grid grid-cols-2 md:grid-cols-4 gap-5 sm:gap-8 text-center">
             {[
-              { value: "2,400+", label: "Active Freelancers" },
+              { value: "37+", label: "Sources Scanned" },
               { value: "$2.4M+", label: "In Gigs Discovered" },
               { value: "4.9/5", label: "Average Rating" },
-              { value: "7 Days", label: "Free on Pro" },
+              { value: "7 Days", label: "Free Trial" },
             ].map(({ value, label }, i) => (
               <div key={label} style={stagger(i)}>
                 <p className="text-2xl sm:text-3xl font-extrabold text-white">
