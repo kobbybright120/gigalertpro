@@ -35,9 +35,7 @@ export default function SubscriptionGate({ children }) {
     const tick = async () => {
       await refetch();
       // Stop polling if active or timed out
-      if (
-        Date.now() - pollStart.current > POLL_TIMEOUT
-      ) {
+      if (Date.now() - pollStart.current > POLL_TIMEOUT) {
         clearInterval(pollRef.current);
         setPolling(false);
       }
@@ -52,7 +50,11 @@ export default function SubscriptionGate({ children }) {
 
   // Once the profile becomes active, stop polling and clear the URL param
   useEffect(() => {
-    if (polling && profile?.subscription_status && ACTIVE_STATUSES.includes(profile.subscription_status)) {
+    if (
+      polling &&
+      profile?.subscription_status &&
+      ACTIVE_STATUSES.includes(profile.subscription_status)
+    ) {
       clearInterval(pollRef.current);
       setPolling(false);
       // Clean up the ?checkout=success from the URL without a page reload
@@ -75,8 +77,12 @@ export default function SubscriptionGate({ children }) {
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#020617] gap-5">
         <div className="animate-spin rounded-full h-10 w-10 border-2 border-[#00F0B5] border-t-transparent" />
         <div className="text-center">
-          <p className="text-white font-bold text-lg">Activating your subscription…</p>
-          <p className="text-gray-500 text-sm mt-1">This usually takes a few seconds. Please wait.</p>
+          <p className="text-white font-bold text-lg">
+            Activating your subscription…
+          </p>
+          <p className="text-gray-500 text-sm mt-1">
+            This usually takes a few seconds. Please wait.
+          </p>
         </div>
       </div>
     );
