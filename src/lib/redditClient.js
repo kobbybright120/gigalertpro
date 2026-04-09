@@ -1069,9 +1069,7 @@ async function fetchCommunityPostsFromProxy() {
             ? "X"
             : p._sub === "threads"
               ? "Threads"
-              : p._sub === "remotive"
-                ? "Remotive"
-                : "Community",
+              : "Community",
     }));
   } catch (err) {
     console.error("[GigAlertPro] Community API fetch failed:", err.message);
@@ -1230,8 +1228,6 @@ function matchAndScore(posts, lowerKws) {
       p._sub === "craigslist" || p._source_platform === "Craigslist";
     const isThreadsPost =
       p._sub === "threads" || p._source_platform === "Threads";
-    const isRemotivePost =
-      p._sub === "remotive" || p._source_platform === "Remotive";
 
     if (!aiApproved) {
       // ── Skip self-promotions (freelancer ads) — skip for X/Nitter & CL posts
@@ -1240,7 +1236,6 @@ function matchAndScore(posts, lowerKws) {
         !isXPost &&
         !isCLPost &&
         !isThreadsPost &&
-        !isRemotivePost &&
         isSelfPromotion(p.title || "", p.selftext || "", p.link_flair_text)
       )
         continue;
@@ -1394,7 +1389,14 @@ function matchAndScore(posts, lowerKws) {
       const rawTitle = p.title || "";
       const rawBody = p.selftext || "";
       const source = rawBody.length >= rawTitle.length ? rawBody : rawTitle;
-      const fullTweet = cleanTweet(source) || "Untitled";
+      let fullTweet = cleanTweet(source) || "Untitled";
+
+      // Threads DOM scrape bakes username + relative time into the text
+      // e.g. "dr.lynette.neil 1h Need a web developer…" — strip that prefix
+      if (isThreadsPost) {
+        fullTweet =
+          fullTweet.replace(/^\S+\s+\d+[smhdw]\s+/, "").trim() || fullTweet;
+      }
 
       // First sentence or first ~120 chars at a word boundary for the headline
       const sentenceEnd = fullTweet.search(/[.!?\n]/);
