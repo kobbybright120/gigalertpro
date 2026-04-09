@@ -72,13 +72,13 @@ export default async function handler(req, res) {
 
   // 2. Look up the user's subscription ID from their profile
   const profileRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/profiles?id=eq.${supabaseUser.id}&select=stripe_subscription_id,subscription_status`,
+    `${SUPABASE_URL}/rest/v1/profiles?id=eq.${supabaseUser.id}&select=dodo_subscription_id,subscription_status`,
     { headers: supabaseHeaders() },
   );
   const profiles = await profileRes.json().catch(() => []);
   const profile = profiles?.[0];
 
-  if (!profile?.stripe_subscription_id) {
+  if (!profile?.dodo_subscription_id) {
     return res.status(400).json({ error: "No active subscription found" });
   }
 
@@ -86,7 +86,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Subscription is already cancelled" });
   }
 
-  const subscriptionId = profile.stripe_subscription_id;
+  const subscriptionId = profile.dodo_subscription_id;
 
   // 3. Cancel on Dodo at end of billing period
   try {

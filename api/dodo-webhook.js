@@ -181,7 +181,7 @@ export default async function handler(req, res) {
           plan,
           subscription_status: "active",
           billing_period: period,
-          stripe_subscription_id: subscriptionId || null, // reuse column for Dodo sub ID
+          dodo_subscription_id: subscriptionId || null,
           cancel_at_period_end: false,
         });
         console.info(
@@ -239,7 +239,7 @@ export default async function handler(req, res) {
         await upsertProfileByEmail(email, {
           plan: "free",
           subscription_status: "cancelled",
-          stripe_subscription_id: null,
+          dodo_subscription_id: null,
           billing_period: null,
         });
         console.info(`[dodo-webhook] Subscription expired for ${email}`);
