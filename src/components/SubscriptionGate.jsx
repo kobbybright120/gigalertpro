@@ -109,7 +109,7 @@ export default function SubscriptionGate({ children }) {
       {/* ── Blurred preview of the real app ── */}
       <div
         className="pointer-events-none select-none"
-        style={{ filter: "blur(6px)", WebkitFilter: "blur(6px)" }}
+        style={{ filter: "blur(3px)", WebkitFilter: "blur(3px)" }}
         aria-hidden="true"
       >
         {children}
