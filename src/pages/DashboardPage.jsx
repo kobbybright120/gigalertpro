@@ -42,6 +42,7 @@ export default function DashboardPage() {
     onUpgrade,
     onSeePlans,
     gigCount: lockedGigCount,
+    updateGigCount,
   } = useLockedDashboard();
 
   const [keywordError, setKeywordError] = useState("");
@@ -49,6 +50,14 @@ export default function DashboardPage() {
   // For locked state, track a dynamic gig count
   const [fetchedGigCount, setFetchedGigCount] = useState(0);
   const realGigCount = lockedGigCount > 0 ? lockedGigCount : fetchedGigCount;
+
+  // Feed real alert count to the upgrade banner so numbers stay consistent
+  useEffect(() => {
+    if (isLocked && !alertsLoading && alerts.length > 0) {
+      updateGigCount(alerts.length);
+    }
+  }, [isLocked, alertsLoading, alerts.length, updateGigCount]);
+
   useEffect(() => {
     if (!isLocked || lockedGigCount > 0) return;
     // Try to get real count from DB
@@ -122,6 +131,9 @@ export default function DashboardPage() {
   // Top 3 gigs for the preview
   const topAlerts = alerts.slice(0, 3);
   const hotCount = alerts.filter((a) => a.score >= 70).length;
+  const sourcesCount = alertsLoading
+    ? "..."
+    : new Set(alerts.map((a) => a.source_platform || "Reddit")).size || 0;
 
   return (
     <div className="p-5 lg:p-8 space-y-6 max-w-6xl">
@@ -184,8 +196,8 @@ export default function DashboardPage() {
             glow: hotCount > 0,
           },
           {
-            label: "Sources Scanned",
-            value: "37+",
+            label: "Sources Active",
+            value: sourcesCount,
             icon: Globe,
             color: "text-purple-400",
             bg: "bg-gradient-to-br from-purple-400/10 to-purple-400/5",

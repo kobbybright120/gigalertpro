@@ -16,7 +16,7 @@ const DISABLE_AUTH =
   VITE_SUPABASE_URL.includes("placeholder") ||
   !VITE_SUPABASE_ANON_KEY;
 import Navbar from "./components/Navbar";
-import SubscriptionGate from "./components/SubscriptionGate";
+import vSubscriptionGate from "./components/SubscriptionGate";
 import LandingPage from "./pages/LandingPage";
 import AuthPage from "./pages/AuthPage";
 import DashboardPage from "./pages/DashboardPage";

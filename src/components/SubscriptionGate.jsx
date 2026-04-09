@@ -182,6 +182,7 @@ export default function SubscriptionGate({ children }) {
           onUpgrade: () => setShowUpgradeModal(true),
           onSeePlans: () => setShowUpgradeModal(true),
           gigCount: onboardingGigCount,
+          updateGigCount: setOnboardingGigCount,
         }}
       >
         {children}

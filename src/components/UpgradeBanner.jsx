@@ -15,7 +15,7 @@ export default function UpgradeBanner({ gigCount = 0, onUpgrade }) {
           onClick={onUpgrade}
           className="shrink-0 px-5 py-2 bg-[#00F0B5] text-[#020617] text-sm font-bold rounded-xl hover:bg-[#00dba5] hover:shadow-[0_0_16px_rgba(0,240,181,0.2)] transition-all duration-200"
         >
-          Unlock All Gigs — from $9/month
+          Unlock All Gigs - from $9/month
         </button>
       </div>
     </div>
