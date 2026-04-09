@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { PAYMENTS_ENABLED } from "../../payments.config.js";
 import {
@@ -203,6 +203,22 @@ export default function LandingPage() {
   const [proofRef, proofVis] = useReveal(0.08);
   const [faqRef, faqVis] = useReveal(0.08);
   const [ctaRef, ctaVis] = useReveal();
+
+  const location = useLocation();
+
+  useEffect(() => {
+    try {
+      if (location?.hash === "#pricing" || location?.state?.openPricing) {
+        const el = document.getElementById("pricing");
+        if (el) {
+          // small timeout to allow any layout/rendering to complete
+          setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, [location]);
 
   return (
     <div className="min-h-screen bg-[#020617] text-white font-sans overflow-x-hidden">
