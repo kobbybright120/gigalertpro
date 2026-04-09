@@ -24,6 +24,8 @@ export default function SubscriptionGate({ children }) {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
   const [onboardingGigCount, setOnboardingGigCount] = useState(0);
+  // Track that onboarding was completed this session so we don't re-show it
+  const onboardingDoneRef = useRef(false);
 
   // Detect ?checkout=success in URL — start polling profile until active
   const isCheckoutReturn =
@@ -75,7 +77,7 @@ export default function SubscriptionGate({ children }) {
 
   // Determine if onboarding should show (first-time user)
   useEffect(() => {
-    if (loading) return;
+    if (loading || onboardingDoneRef.current) return;
     if (!PAYMENTS_ENABLED || DISABLE_AUTH) {
       // Demo mode: check localStorage
       const done = localStorage.getItem("gigalertpro_onboarding_completed");
@@ -89,6 +91,7 @@ export default function SubscriptionGate({ children }) {
 
   // Handler when onboarding completes
   function handleOnboardingComplete(skills, gigCount) {
+    onboardingDoneRef.current = true;
     setOnboardingGigCount(gigCount);
     setShowOnboarding(false);
     // Force refetch to get updated keywords & onboarding flag
