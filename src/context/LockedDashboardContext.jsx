@@ -5,7 +5,6 @@ export const LockedDashboardContext = createContext({
   onUpgrade: () => {},
   onSeePlans: () => {},
   gigCount: 0,
-  updateGigCount: () => {},
 });
 
 export function useLockedDashboard() {
