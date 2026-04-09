@@ -78,58 +78,70 @@ export default function PricingModal({ open, onClose }) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-20 bg-black/60">
-      <div className="bg-[#020617] max-w-5xl w-full rounded-2xl p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold">Choose a plan</h3>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 overflow-y-auto">
+      <div className="bg-[#020617] border border-white/10 max-w-5xl w-full rounded-2xl p-8 my-auto">
+        <div className="flex items-center justify-between mb-8">
+          <h3 className="text-2xl font-bold text-white">Choose a plan</h3>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-200 text-sm"
+            className="text-gray-400 hover:text-white text-sm px-3 py-1.5 rounded-lg border border-white/10 hover:border-white/20 transition-colors"
           >
             Close
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {plans.map((plan) => (
             <div
               key={plan.tier}
-              className={`p-4 rounded-xl border ${
-                plan.popular ? "border-[#00F0B5]" : "border-white/10"
+              className={`relative flex flex-col p-6 rounded-2xl border ${
+                plan.popular
+                  ? "border-[#00F0B5] shadow-[0_0_30px_rgba(0,240,181,0.1)]"
+                  : "border-white/10"
               }`}
             >
-              <div className="flex items-baseline justify-between">
-                <h4 className="font-semibold text-lg">{plan.name}</h4>
-                <div className="text-2xl font-extrabold">
-                  ${plan.price}
-                  <span className="text-sm font-medium ml-1">/mo</span>
+              {plan.popular && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <span className="bg-[#00F0B5] text-[#020617] text-xs font-bold px-3 py-1 rounded-full">
+                    Most Popular
+                  </span>
+                </div>
+              )}
+
+              <div className="mb-5">
+                <h4 className="font-bold text-xl text-white mb-1">{plan.name}</h4>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-4xl font-extrabold text-white">${plan.price}</span>
+                  <span className="text-gray-400 text-sm">/mo</span>
                 </div>
               </div>
 
-              <ul className="mt-3 space-y-2 text-sm text-gray-300">
+              <ul className="space-y-3 text-sm text-gray-300 flex-1 mb-6">
                 {plan.features.map((f) => (
-                  <li key={f} className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-[#00F0B5]" />
+                  <li key={f} className="flex items-start gap-2.5">
+                    <Check className="w-4 h-4 text-[#00F0B5] shrink-0 mt-0.5" />
                     <span>{f}</span>
                   </li>
                 ))}
               </ul>
 
-              <div className="mt-4">
-                <button
-                  disabled={!!loadingTier}
-                  onClick={() => handleCheckout(plan.tier)}
-                  className="w-full py-2 bg-[#00F0B5] text-[#020617] font-bold rounded-xl flex items-center justify-center gap-2"
-                >
-                  {loadingTier === plan.tier ? "Redirecting..." : plan.ctaLabel}
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </div>
+              <button
+                disabled={!!loadingTier}
+                onClick={() => handleCheckout(plan.tier)}
+                className={`w-full py-3 font-bold rounded-xl flex items-center justify-center gap-2 transition-all duration-200 ${
+                  plan.popular
+                    ? "bg-[#00F0B5] text-[#020617] hover:bg-[#00dba5] hover:shadow-[0_0_20px_rgba(0,240,181,0.25)]"
+                    : "bg-white/5 text-white border border-white/10 hover:bg-white/10"
+                }`}
+              >
+                {loadingTier === plan.tier ? "Redirecting..." : plan.ctaLabel}
+                <ArrowRight className="w-4 h-4" />
+              </button>
             </div>
           ))}
         </div>
 
-        {error && <p className="text-red-400 mt-4">{error}</p>}
+        {error && <p className="text-red-400 mt-6 text-sm text-center">{error}</p>}
       </div>
     </div>
   );
