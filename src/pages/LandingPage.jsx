@@ -233,7 +233,7 @@ export default function LandingPage() {
             className="flex items-center gap-2.5 text-xl font-bold tracking-tight"
           >
             <img
-              src="/logo/icon.svg?v=20260408"
+              src="/logo/icon.svg?v=20260409"
               alt="GigAlertPro"
               className="w-8 h-8 rounded-lg object-cover"
             />
@@ -752,7 +752,7 @@ export default function LandingPage() {
             <div>
               <div className="flex items-center gap-2.5 text-lg font-bold tracking-tight mb-3">
                 <img
-                  src="/logo/icon.svg?v=20260408"
+                  src="/logo/icon.svg?v=20260409"
                   alt="GigAlertPro"
                   className="w-7 h-7 rounded-md object-cover"
                 />

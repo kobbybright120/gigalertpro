@@ -4,20 +4,43 @@
       <stop offset="0%" stop-color="#00F0B5"/>
       <stop offset="100%" stop-color="#00D4FF"/>
     </linearGradient>
+    <linearGradient id="bgDark" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0B1120"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="12" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
   </defs>
 
-  <!-- Rounded square bg -->
-  <rect width="512" height="512" rx="108" fill="#020617"/>
-  <rect width="512" height="512" rx="108" fill="none" stroke="url(#accent)" stroke-width="10" opacity="0.3"/>
+  <!-- Background -->
+  <rect width="512" height="512" rx="120" fill="url(#bgDark)"/>
+  <rect width="512" height="256" rx="120" fill="white" opacity="0.03"/>
+  <rect width="504" height="504" rx="116" x="4" y="4" fill="none" stroke="url(#accent)" stroke-width="6" opacity="0.2"/>
 
-  <!-- Bell -->
-  <path d="M256 100 C244 100 234 110 234 122 L234 138 C192 148 160 188 160 238 L160 300 C160 312 148 324 140 332 L372 332 C364 324 352 312 352 300 L352 238 C352 188 320 148 278 138 L278 122 C278 110 268 100 256 100Z" fill="url(#accent)"/>
-  <ellipse cx="256" cy="358" rx="36" ry="18" fill="url(#accent)"/>
+  <!-- Outer glow ring -->
+  <circle cx="256" cy="256" r="160" fill="none" stroke="url(#accent)" stroke-width="3" opacity="0.1"/>
 
-  <!-- Bolt cutout -->
-  <polygon points="272,180 240,248 258,248 246,300 298,232 276,232 290,180" fill="#020617"/>
+  <!-- Bell body -->
+  <g filter="url(#glow)">
+    <path d="M256 108 C244 108 234 118 234 130 L234 146 C194 156 164 192 164 238 L164 296 C164 308 152 320 144 328 L136 336 L376 336 L368 328 C360 320 348 308 348 296 L348 238 C348 192 318 156 278 146 L278 130 C278 118 268 108 256 108Z"
+      fill="url(#accent)" opacity="0.92"/>
+    <ellipse cx="256" cy="356" rx="38" ry="15" fill="url(#accent)" opacity="0.85"/>
+  </g>
+
+  <!-- Bell highlight -->
+  <path d="M256 120 C248 120 242 126 242 132 L242 150 C208 162 184 194 184 234 L184 272 C184 272 196 262 196 252 L196 234 C196 200 216 172 248 162 L248 132 C248 128 251 120 256 120Z"
+    fill="white" opacity="0.12"/>
+
+  <!-- Lightning bolt -->
+  <polygon points="276,190 242,256 262,256 248,310 304,242 280,242 294,190" fill="#020617"/>
+  <polygon points="274,196 246,254 262,254 250,302 298,244 280,244 292,196" fill="#020617" opacity="0.6"/>
 
   <!-- Notification dot -->
-  <circle cx="350" cy="140" r="36" fill="#00F0B5"/>
-  <circle cx="350" cy="140" r="18" fill="#020617" opacity="0.25"/>
+  <g filter="url(#glow)">
+    <circle cx="350" cy="138" r="38" fill="#00F0B5"/>
+  </g>
+  <circle cx="350" cy="138" r="20" fill="#020617" opacity="0.18"/>
+  <circle cx="342" cy="128" r="10" fill="white" opacity="0.3"/>
 </svg>

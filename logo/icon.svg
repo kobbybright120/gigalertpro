@@ -4,20 +4,55 @@
       <stop offset="0%" stop-color="#00F0B5"/>
       <stop offset="100%" stop-color="#00D4FF"/>
     </linearGradient>
+    <linearGradient id="bgDark" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0B1120"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="innerShadow">
+      <feOffset dx="0" dy="2"/>
+      <feGaussianBlur stdDeviation="1.5"/>
+      <feComposite operator="out" in="SourceGraphic"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.25"/></feComponentTransfer>
+      <feBlend in="SourceGraphic" mode="normal"/>
+    </filter>
   </defs>
 
-  <!-- Rounded square bg -->
-  <rect width="100" height="100" rx="22" fill="#020617"/>
-  <rect width="100" height="100" rx="22" fill="none" stroke="url(#bg)" stroke-width="2.5" opacity="0.35"/>
+  <!-- Rounded square bg with inner depth -->
+  <rect width="100" height="100" rx="24" fill="url(#bgDark)"/>
+  <!-- Subtle inner highlight at top -->
+  <rect width="100" height="50" rx="24" fill="white" opacity="0.03"/>
+  <!-- Border glow -->
+  <rect width="96" height="96" rx="22" x="2" y="2" fill="none" stroke="url(#bg)" stroke-width="1.5" opacity="0.25"/>
 
-  <!-- Bell -->
-  <path d="M50 22 C47 22 45 24 45 27 L45 30 C36 33 30 41 30 51 L30 62 C30 64 28 66 27 67 L73 67 C72 66 70 64 70 62 L70 51 C70 41 64 33 55 30 L55 27 C55 24 53 22 50 22Z" fill="url(#bg)"/>
-  <ellipse cx="50" cy="72" rx="7" ry="3.5" fill="url(#bg)"/>
+  <!-- Outer glow ring -->
+  <circle cx="50" cy="50" r="32" fill="none" stroke="url(#bg)" stroke-width="0.8" opacity="0.12"/>
 
-  <!-- Bolt cutout in bell -->
-  <polygon points="53,38 45,52 50,52 47,62 58,48 53,48 56,38" fill="#020617"/>
+  <!-- Bell body — refined with curves -->
+  <g filter="url(#glow)">
+    <path d="M50 24 C47.5 24 45.5 26 45.5 28.5 L45.5 31 C37 33.5 31 41 31 50.5 L31 59 C31 61 29.5 63 28 64.5 L26 66.5 L74 66.5 L72 64.5 C70.5 63 69 61 69 59 L69 50.5 C69 41 63 33.5 54.5 31 L54.5 28.5 C54.5 26 52.5 24 50 24Z"
+      fill="url(#bg)" opacity="0.92"/>
+    <!-- Bell clapper -->
+    <ellipse cx="50" cy="71.5" rx="7.5" ry="3" fill="url(#bg)" opacity="0.85"/>
+  </g>
 
-  <!-- Notification dot -->
-  <circle cx="68" cy="28" r="7" fill="#00F0B5"/>
-  <circle cx="68" cy="28" r="3.5" fill="#020617" opacity="0.3"/>
+  <!-- Subtle bell highlight -->
+  <path d="M50 26 C48.5 26 47 27.5 47 29 L47 31.5 C40 34 35 40.5 35 49 L35 55 C35 55 38 52 38 50 L38 49 C38 42 42.5 36 49 34 L49 29 C49 28 49 26 50 26Z"
+    fill="white" opacity="0.15"/>
+
+  <!-- Lightning bolt — sharper, more dynamic -->
+  <polygon points="54,38 46,50.5 50.5,50.5 47,62 58,47.5 53,47.5 56.5,38" fill="#020617"/>
+  <!-- Bolt inner highlight -->
+  <polygon points="53.5,39.5 47.5,50 50.5,50 48,59 56,48.5 53,48.5 55.5,39.5" fill="#020617" opacity="0.6"/>
+
+  <!-- Notification dot with glow -->
+  <g filter="url(#glow)">
+    <circle cx="68" cy="27" r="7.5" fill="#00F0B5"/>
+  </g>
+  <circle cx="68" cy="27" r="4" fill="#020617" opacity="0.2"/>
+  <!-- Dot shine -->
+  <circle cx="66" cy="25" r="2" fill="white" opacity="0.35"/>
 </svg>

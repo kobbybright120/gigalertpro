@@ -119,8 +119,8 @@ export function notifyNewGigs(alerts) {
 function showNotification(title, options = {}) {
   try {
     const notif = new Notification(title, {
-      icon: "/favicon.svg?v=20260408",
-      badge: "/favicon.svg?v=20260408",
+      icon: "/favicon.svg?v=20260409",
+      badge: "/favicon.svg?v=20260409",
       silent: false,
       ...options,
     });
