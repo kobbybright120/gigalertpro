@@ -237,7 +237,6 @@ export default async function handler(req, res) {
     else if (eventType === "subscription.expired") {
       if (email) {
         await upsertProfileByEmail(email, {
-          plan: "free",
           subscription_status: "cancelled",
           dodo_subscription_id: null,
           billing_period: null,

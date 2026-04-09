@@ -48,7 +48,7 @@ function writeLS(key, value) {
 }
 
 // ── Keywords ──
-const KEYWORD_LIMITS = { free: 0, basic: 5, pro: 20, agency: Infinity };
+const KEYWORD_LIMITS = { basic: 5, pro: 20, agency: Infinity };
 
 export function useKeywords(plan) {
   const { user } = useAuth();
@@ -106,7 +106,7 @@ export function useKeywords(plan) {
     if (keywords.some((k) => k.keyword === clean)) return;
 
     // Enforce keyword limit based on plan
-    const limit = KEYWORD_LIMITS[plan] ?? KEYWORD_LIMITS.free;
+    const limit = KEYWORD_LIMITS[plan] ?? 0;
     if (keywords.length >= limit) {
       throw new Error(
         `Keyword limit reached (${limit}). Upgrade your plan to add more.`,

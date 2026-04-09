@@ -45,13 +45,7 @@ export default function GigAlertsPage() {
   const [proposalGig, setProposalGig] = useState(null); // gig selected for AI proposal
 
   const { profile } = useProfile();
-  // Safety net: if subscription is active but plan column is stale ('free'),
-  // treat the user as 'basic' so they aren't locked out of all features.
-  const effectivePlan =
-    profile?.subscription_status === "active" && profile?.plan === "free"
-      ? "basic"
-      : profile?.plan;
-  const { keywords, addKeyword, removeKeyword } = useKeywords(effectivePlan);
+  const { keywords, addKeyword, removeKeyword } = useKeywords(profile?.plan);
   const {
     alerts,
     loading: alertsLoading,

@@ -55,7 +55,7 @@ function supabaseHeaders() {
 }
 
 // ── Daily quota check per plan ─────────────────────────────────────────────────
-const DAILY_LIMITS = { free: 0, basic: 10, pro: 50, agency: Infinity };
+const DAILY_LIMITS = { basic: 10, pro: 50, agency: Infinity };
 
 async function checkDailyQuota(userId) {
   const baseUrl = process.env.VITE_SUPABASE_URL;
@@ -68,13 +68,8 @@ async function checkDailyQuota(userId) {
     { headers: supabaseHeaders() },
   );
   const profiles = await profileRes.json().catch(() => []);
-  const rawPlan = profiles?.[0]?.plan || "free";
-  const subscriptionStatus = profiles?.[0]?.subscription_status;
-  // Safety net: if subscription is active but plan column is stale ('free'),
-  // treat the user as 'basic' so they aren't locked out of all features.
-  const plan =
-    subscriptionStatus === "active" && rawPlan === "free" ? "basic" : rawPlan;
-  const limit = DAILY_LIMITS[plan] ?? DAILY_LIMITS.free;
+  const plan = profiles?.[0]?.plan || null;
+  const limit = DAILY_LIMITS[plan] ?? 0;
 
   // Count today's usage
   const todayStart = new Date();
@@ -146,7 +141,7 @@ export default async function handler(req, res) {
   const quota = await checkDailyQuota(supabaseUser.id);
   if (!quota.allowed) {
     return res.status(429).json({
-      error: `Daily limit reached (${quota.used}/${quota.limit}). ${["free", "basic"].includes(quota.plan) ? "Upgrade your plan for more proposals." : "Try again tomorrow."}`,
+      error: `Daily limit reached (${quota.used}/${quota.limit}). ${quota.plan === "basic" ? "Upgrade your plan for more proposals." : "Try again tomorrow."}`,
     });
   }
 

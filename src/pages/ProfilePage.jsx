@@ -420,7 +420,7 @@ export default function ProfilePage() {
                 <div className="flex items-center justify-between p-4 bg-[#020617]/50 border border-white/[0.04] rounded-xl">
                   <span className="text-gray-400 text-sm">Plan</span>
                   <span className="text-white font-semibold text-sm capitalize">
-                    {dbProfile.plan || "free"}
+                    {dbProfile.plan || "—"}
                   </span>
                 </div>
                 <div className="flex items-center justify-between p-4 bg-[#020617]/50 border border-white/[0.04] rounded-xl">
