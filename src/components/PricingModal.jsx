@@ -109,9 +109,13 @@ export default function PricingModal({ open, onClose }) {
               )}
 
               <div className="mb-5">
-                <h4 className="font-bold text-xl text-white mb-1">{plan.name}</h4>
+                <h4 className="font-bold text-xl text-white mb-1">
+                  {plan.name}
+                </h4>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-extrabold text-white">${plan.price}</span>
+                  <span className="text-4xl font-extrabold text-white">
+                    ${plan.price}
+                  </span>
                   <span className="text-gray-400 text-sm">/mo</span>
                 </div>
               </div>
@@ -141,7 +145,9 @@ export default function PricingModal({ open, onClose }) {
           ))}
         </div>
 
-        {error && <p className="text-red-400 mt-6 text-sm text-center">{error}</p>}
+        {error && (
+          <p className="text-red-400 mt-6 text-sm text-center">{error}</p>
+        )}
       </div>
     </div>
   );
