@@ -165,9 +165,9 @@ export default function LandingPage() {
   const { user } = useAuth();
 
   async function handleCheckout(tier) {
-    if (!PAYMENTS_ENABLED) {
-      // Payments disabled: fall back to auth/signup
-      window.location.href = "/auth";
+    if (!PAYMENTS_ENABLED || !user) {
+      // Payments disabled or not logged in: send to auth first
+      window.location.href = `/auth?next=checkout&tier=${encodeURIComponent(tier)}`;
       return;
     }
 
