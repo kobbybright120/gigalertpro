@@ -54,8 +54,8 @@ function supabaseHeaders() {
   };
 }
 
-// ── Daily quota check (free = 5/day, pro = 50/day) ───────────────────────────
-const DAILY_LIMITS = { free: 5, pro: 50 };
+// ── Daily quota check per plan ─────────────────────────────────────────────────
+const DAILY_LIMITS = { free: 0, basic: 10, pro: 50, agency: Infinity };
 
 async function checkDailyQuota(userId) {
   const baseUrl = process.env.VITE_SUPABASE_URL;
@@ -69,7 +69,7 @@ async function checkDailyQuota(userId) {
   );
   const profiles = await profileRes.json().catch(() => []);
   const plan = profiles?.[0]?.plan || "free";
-  const limit = DAILY_LIMITS[plan] || DAILY_LIMITS.free;
+  const limit = DAILY_LIMITS[plan] ?? DAILY_LIMITS.free;
 
   // Count today's usage
   const todayStart = new Date();
