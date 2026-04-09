@@ -29,16 +29,23 @@ export default function DashboardPage() {
   const [input, setInput] = useState("");
   const [proposalGig, setProposalGig] = useState(null);
 
-  const { keywords, addKeyword, removeKeyword } = useKeywords();
+  const { profile } = useProfile();
+  const { keywords, addKeyword, removeKeyword } = useKeywords(profile?.plan);
   const { alerts, loading: alertsLoading } = useGigAlerts(keywords);
   const { saveProposal } = useProposals();
-  const { profile } = useProfile();
+
+  const [keywordError, setKeywordError] = useState("");
 
   function handleAddKeyword(e) {
     e.preventDefault();
     if (!input.trim()) return;
-    addKeyword(input);
-    setInput("");
+    setKeywordError("");
+    try {
+      addKeyword(input);
+      setInput("");
+    } catch (err) {
+      setKeywordError(err.message);
+    }
   }
 
   function handleGenerateProposal(gig) {
@@ -180,6 +187,9 @@ export default function DashboardPage() {
               <Plus className="w-5 h-5" />
             </button>
           </form>
+          {keywordError && (
+            <p className="text-red-400 text-xs mt-2">{keywordError}</p>
+          )}
           {keywords.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-3">
               {keywords.map((kwObj) => (

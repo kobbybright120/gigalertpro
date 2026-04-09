@@ -23,6 +23,31 @@ const DODO_WEBHOOK_KEY = process.env.DODO_PAYMENTS_WEBHOOK_KEY;
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+// Map Dodo product IDs to plan tiers
+const PRODUCT_TO_PLAN = {
+  [process.env.DODO_PRODUCT_BASIC]: "basic",
+  [process.env.DODO_PRODUCT_PRO]: "pro",
+  [process.env.DODO_PRODUCT_AGENCY]: "agency",
+};
+
+function resolvePlan(data) {
+  // Try product_id from the webhook event data
+  const productId = data?.product_id || data?.items?.[0]?.product_id;
+  if (productId && PRODUCT_TO_PLAN[productId]) {
+    return PRODUCT_TO_PLAN[productId];
+  }
+  // Fallback: check metadata.tier set during checkout
+  const tier = data?.metadata?.tier;
+  if (tier && ["basic", "pro", "agency"].includes(tier)) {
+    return tier;
+  }
+  // Default to basic if we can't determine
+  console.warn(
+    "[dodo-webhook] Could not determine plan from event data, defaulting to basic",
+  );
+  return "basic";
+}
+
 // ── Dodo Payments signature verification (Standard Webhooks spec) ────────────
 // Dodo uses the Standard Webhooks spec:
 //   signed_content = `${webhook-id}.${webhook-timestamp}.${body}`
@@ -149,14 +174,17 @@ export default async function handler(req, res) {
     // ── subscription.active ─────────────────────────────────────────────────
     if (eventType === "subscription.active") {
       if (email) {
+        const plan = resolvePlan(data);
         await upsertProfileByEmail(email, {
-          plan: "pro",
+          plan,
           subscription_status: "active",
           billing_period: period,
           stripe_subscription_id: subscriptionId || null, // reuse column for Dodo sub ID
           cancel_at_period_end: false,
         });
-        console.info(`[dodo-webhook] Activated subscription for ${email}`);
+        console.info(
+          `[dodo-webhook] Activated ${plan} subscription for ${email}`,
+        );
       }
     }
 

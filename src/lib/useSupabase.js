@@ -48,7 +48,9 @@ function writeLS(key, value) {
 }
 
 // ── Keywords ──
-export function useKeywords() {
+const KEYWORD_LIMITS = { free: 0, basic: 5, pro: 20, agency: Infinity };
+
+export function useKeywords(plan) {
   const { user } = useAuth();
   const userId = user?.id;
   const [keywords, setKeywords] = useState([]);
@@ -102,6 +104,14 @@ export function useKeywords() {
 
     if (!userId) return;
     if (keywords.some((k) => k.keyword === clean)) return;
+
+    // Enforce keyword limit based on plan
+    const limit = KEYWORD_LIMITS[plan] ?? KEYWORD_LIMITS.free;
+    if (keywords.length >= limit) {
+      throw new Error(
+        `Keyword limit reached (${limit}). Upgrade your plan to add more.`,
+      );
+    }
 
     // Optimistic: show keyword instantly with a temp id
     const tempId = `temp_${Date.now()}`;

@@ -141,7 +141,7 @@ export default async function handler(req, res) {
   const quota = await checkDailyQuota(supabaseUser.id);
   if (!quota.allowed) {
     return res.status(429).json({
-      error: `Daily limit reached (${quota.used}/${quota.limit}). ${quota.plan === "free" ? "Upgrade to Pro for 50 proposals/day." : "Try again tomorrow."}`,
+      error: `Daily limit reached (${quota.used}/${quota.limit}). ${["free", "basic"].includes(quota.plan) ? "Upgrade your plan for more proposals." : "Try again tomorrow."}`,
     });
   }
 

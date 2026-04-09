@@ -44,7 +44,8 @@ export default function GigAlertsPage() {
   const [sortBy, setSortBy] = useState("time"); // "time" | "score"
   const [proposalGig, setProposalGig] = useState(null); // gig selected for AI proposal
 
-  const { keywords, addKeyword, removeKeyword } = useKeywords();
+  const { profile } = useProfile();
+  const { keywords, addKeyword, removeKeyword } = useKeywords(profile?.plan);
   const {
     alerts,
     loading: alertsLoading,
@@ -54,7 +55,7 @@ export default function GigAlertsPage() {
   const { saveProposal } = useProposals();
   const { savedIds, toggleSave } = useSavedGigs();
   const { reset: resetGigCount } = useNewGigCount();
-  const { profile } = useProfile();
+  const [keywordError, setKeywordError] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [now, setNow] = useState(() => Date.now());
 
@@ -79,8 +80,13 @@ export default function GigAlertsPage() {
   function handleAddKeyword(e) {
     e.preventDefault();
     if (!input.trim()) return;
-    addKeyword(input);
-    setInput("");
+    setKeywordError("");
+    try {
+      addKeyword(input);
+      setInput("");
+    } catch (err) {
+      setKeywordError(err.message);
+    }
   }
 
   function handleGenerateProposal(gig) {
@@ -189,6 +195,9 @@ export default function GigAlertsPage() {
             Track
           </button>
         </form>
+        {keywordError && (
+          <p className="text-red-400 text-xs mt-2">{keywordError}</p>
+        )}
 
         {/* Active keyword pills */}
         {keywords.length > 0 && (
