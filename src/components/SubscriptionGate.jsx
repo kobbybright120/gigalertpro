@@ -116,7 +116,7 @@ export default function SubscriptionGate({ children }) {
       </div>
 
       {/* ── Paywall overlay ── */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#020617]/70 backdrop-blur-sm px-4">
+      <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#020617]/70 backdrop-blur-sm px-4">
         <div className="max-w-lg w-full relative">
           {/* Icon */}
           <div className="text-center mb-8">
