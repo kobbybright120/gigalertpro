@@ -70,13 +70,35 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: "Invalid auth token" });
   }
 
-  // 2. Look up the user's subscription ID from their profile
-  const profileRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/profiles?id=eq.${supabaseUser.id}&select=dodo_subscription_id,subscription_status`,
-    { headers: supabaseHeaders() },
-  );
-  const profiles = await profileRes.json().catch(() => []);
-  const profile = profiles?.[0];
+  // 2. Look up the user's subscription ID from their profile.
+  // Use the user's own JWT first (always works regardless of service key).
+  // Fall back to service key if the user-JWT request fails.
+  let profile;
+  try {
+    const userJwtHeaders = {
+      apikey: process.env.VITE_SUPABASE_ANON_KEY || "",
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    };
+    const profileRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/profiles?id=eq.${supabaseUser.id}&select=dodo_subscription_id,subscription_status`,
+      { headers: userJwtHeaders },
+    );
+    const rows = await profileRes.json().catch(() => []);
+    profile = Array.isArray(rows) ? rows[0] : null;
+
+    // Fallback to service key if user JWT returned nothing
+    if (!profile && SUPABASE_SERVICE_KEY) {
+      const svcRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/profiles?id=eq.${supabaseUser.id}&select=dodo_subscription_id,subscription_status`,
+        { headers: supabaseHeaders() },
+      );
+      const svcRows = await svcRes.json().catch(() => []);
+      profile = Array.isArray(svcRows) ? svcRows[0] : null;
+    }
+  } catch (e) {
+    console.error("[cancel-subscription] Profile lookup error:", e.message);
+  }
 
   if (!profile?.dodo_subscription_id) {
     return res.status(400).json({ error: "No active subscription found" });
