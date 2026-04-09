@@ -26,7 +26,6 @@ export default function ProfilePage() {
     email: dbProfile?.email || user?.email || "",
     bio: dbProfile?.bio || "",
     skills: dbProfile?.skills || [],
-    testimonials: dbProfile?.testimonials || [],
     portfolioLinks: dbProfile?.portfolio_links || [],
   };
 
@@ -35,7 +34,6 @@ export default function ProfilePage() {
     !!profile.bio,
     profile.skills.length > 0,
     profile.portfolioLinks.length > 0,
-    profile.testimonials.length > 0,
   ];
   const completeness = Math.round(
     (completenessChecks.filter(Boolean).length / completenessChecks.length) *
@@ -84,7 +82,6 @@ export default function ProfilePage() {
       bio: profile.bio,
       skills: profile.skills.join(", "),
       portfolioLinks: profile.portfolioLinks.join("\n"),
-      testimonials: profile.testimonials.join("\n"),
     });
     setEditing(true);
   }
@@ -100,10 +97,6 @@ export default function ProfilePage() {
         .map((s) => s.trim())
         .filter(Boolean),
       portfolio_links: draft.portfolioLinks
-        .split("\n")
-        .map((s) => s.trim())
-        .filter(Boolean),
-      testimonials: draft.testimonials
         .split("\n")
         .map((s) => s.trim())
         .filter(Boolean),
@@ -221,8 +214,8 @@ export default function ProfilePage() {
                 />
               </div>
 
-              {/* Portfolio Links + Testimonials side by side */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {/* Portfolio Links */}
+              <div className="grid grid-cols-1 gap-5">
                 <div>
                   <label className="block text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wider">
                     Portfolio Links{" "}
@@ -242,32 +235,6 @@ export default function ProfilePage() {
                     placeholder={"facebook.com\nx.com"}
                     className="w-full px-4 py-3 bg-[#020617]/60 border border-white/[0.06] rounded-xl text-white placeholder-gray-600 font-mono text-sm focus:ring-2 focus:ring-[#00F0B5]/30 focus:border-[#00F0B5]/20 outline-none transition-all duration-200 resize-y"
                   />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wider">
-                    Past Wins & Testimonials{" "}
-                    <span className="text-[#00F0B5] font-normal normal-case tracking-normal">
-                      (One per line — include real numbers!)
-                    </span>
-                  </label>
-                  <textarea
-                    value={draft.testimonials}
-                    onChange={(e) =>
-                      setDraft((d) => ({
-                        ...d,
-                        testimonials: e.target.value,
-                      }))
-                    }
-                    rows={5}
-                    placeholder={
-                      'Built React checkout → 40% conversion lift\nCut page load from 8s to 1.2s\n"Best dev I\'ve hired" — startup founder\nDelivered logo rebrand in 48h, client rehired 3x'
-                    }
-                    className="w-full px-4 py-3 bg-[#020617]/60 border border-white/[0.06] rounded-xl text-white placeholder-gray-600 font-mono text-sm focus:ring-2 focus:ring-[#00F0B5]/30 focus:border-[#00F0B5]/20 outline-none transition-all duration-200 resize-y"
-                  />
-                  <p className="text-[11px] text-gray-600 mt-1.5">
-                    The AI uses these as social proof in proposals. Real numbers
-                    win gigs.
-                  </p>
                 </div>
               </div>
 
