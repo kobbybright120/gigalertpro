@@ -432,15 +432,20 @@ const KEYWORD_EXPANSIONS = {
 function expandKeywords(keywords) {
   const expanded = new Set(keywords);
   for (const kw of keywords) {
+    // Direct lookup: exact keyword match in expansion map
     const synonyms = KEYWORD_EXPANSIONS[kw];
     if (synonyms) {
       for (const s of synonyms) expanded.add(s);
     }
-    // Also check if any expansion key is a substring of the keyword
-    // e.g., user types "react developer" → we find "react" in the map
-    for (const [key, synonyms2] of Object.entries(KEYWORD_EXPANSIONS)) {
-      if (kw.includes(key) || key.includes(kw)) {
-        for (const s of synonyms2) expanded.add(s);
+    // Check if user keyword is a multi-word phrase containing an expansion key
+    // e.g., "react developer" contains "react" → expand "react" synonyms
+    // Only match whole words to avoid "logo" matching "go"
+    if (kw.includes(" ")) {
+      for (const [key, synonyms2] of Object.entries(KEYWORD_EXPANSIONS)) {
+        const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        if (new RegExp(`\\b${escaped}\\b`, "i").test(kw)) {
+          for (const s of synonyms2) expanded.add(s);
+        }
       }
     }
   }

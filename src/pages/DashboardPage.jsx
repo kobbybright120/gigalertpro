@@ -42,6 +42,7 @@ export default function DashboardPage() {
     onUpgrade,
     onSeePlans,
     gigCount: lockedGigCount,
+    setGigCount,
   } = useLockedDashboard();
 
   const [keywordError, setKeywordError] = useState("");
@@ -49,6 +50,14 @@ export default function DashboardPage() {
   // For locked state, track a dynamic gig count
   const [fetchedGigCount, setFetchedGigCount] = useState(0);
   const realGigCount = lockedGigCount > 0 ? lockedGigCount : fetchedGigCount;
+
+  // Sync real alert count to the banner so numbers match what's actually shown
+  useEffect(() => {
+    if (isLocked && !alertsLoading && alerts.length > 0) {
+      setGigCount(alerts.length);
+    }
+  }, [isLocked, alertsLoading, alerts.length, setGigCount]);
+
   useEffect(() => {
     if (!isLocked || lockedGigCount > 0) return;
     // Try to get real count from DB
