@@ -74,13 +74,13 @@ export default function SubscriptionGate({ children }) {
 
         {/* CTA */}
         <Link
-            to={{ pathname: "/landing", hash: "#pricing" }}
-            className="w-full py-3.5 bg-[#00F0B5] text-[#020617] font-bold rounded-xl hover:bg-[#00dba5] hover:shadow-[0_0_20px_rgba(0,240,181,0.25)] transition-all duration-300 flex items-center justify-center gap-2"
-          >
-            <Zap className="w-4 h-4" />
-            View Plans
-            <ArrowRight className="w-4 h-4" />
-          </Link>
+          to={{ pathname: "/landing", hash: "#pricing" }}
+          className="w-full py-3.5 bg-[#00F0B5] text-[#020617] font-bold rounded-xl hover:bg-[#00dba5] hover:shadow-[0_0_20px_rgba(0,240,181,0.25)] transition-all duration-300 flex items-center justify-center gap-2"
+        >
+          <Zap className="w-4 h-4" />
+          View Plans
+          <ArrowRight className="w-4 h-4" />
+        </Link>
 
         <p className="text-center text-xs text-gray-600 mt-3">
           Cancel anytime.

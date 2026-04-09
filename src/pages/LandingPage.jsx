@@ -212,7 +212,10 @@ export default function LandingPage() {
         const el = document.getElementById("pricing");
         if (el) {
           // small timeout to allow any layout/rendering to complete
-          setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+          setTimeout(
+            () => el.scrollIntoView({ behavior: "smooth", block: "start" }),
+            50,
+          );
         }
       }
     } catch (e) {
