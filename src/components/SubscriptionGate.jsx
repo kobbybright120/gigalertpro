@@ -174,7 +174,10 @@ export default function SubscriptionGate({ children }) {
             </div>
           )}
         </div>
-        <PricingModal open={showPricing} onClose={() => setShowPricing(false)} />
+        <PricingModal
+          open={showPricing}
+          onClose={() => setShowPricing(false)}
+        />
       </div>
     </div>
   );
