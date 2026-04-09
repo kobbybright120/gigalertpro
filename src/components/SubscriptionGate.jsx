@@ -9,7 +9,7 @@ const DISABLE_AUTH =
   (import.meta.env.VITE_SUPABASE_URL || "").includes("placeholder") ||
   !import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-const ACTIVE_STATUSES = ["active", "trialing"];
+const ACTIVE_STATUSES = ["active"];
 
 export default function SubscriptionGate({ children }) {
   console.debug("SubscriptionGate: PAYMENTS_ENABLED=", PAYMENTS_ENABLED);
@@ -49,8 +49,8 @@ export default function SubscriptionGate({ children }) {
             Unlock GigAlert<span className="text-gradient">Pro</span>
           </h1>
           <p className="text-gray-400 mt-3 text-base max-w-md mx-auto">
-            Start your 7-day free trial to access the dashboard, AI proposals,
-            and real-time gig alerts.
+            Subscribe to access the dashboard, AI proposals, and real-time gig
+            alerts.
           </p>
         </div>
 
@@ -58,11 +58,11 @@ export default function SubscriptionGate({ children }) {
         <div className="glass-card rounded-2xl p-6 mb-6 border-[#00F0B5]/10">
           <ul className="space-y-3">
             {[
-              "Unlimited keyword alerts",
+              "Keyword alerts across 37+ sources",
               "Reddit, Craigslist & X/Twitter scanning",
               "Gig quality scoring (0–100)",
-              "50 AI proposals per day",
-              "Browser + email notifications",
+              "AI proposal generator",
+              "Browser push notifications",
             ].map((f) => (
               <li key={f} className="flex items-center gap-2.5 text-sm">
                 <CheckCircle2 className="w-4 h-4 text-[#00F0B5] shrink-0" />
@@ -78,12 +78,12 @@ export default function SubscriptionGate({ children }) {
           className="w-full py-3.5 bg-[#00F0B5] text-[#020617] font-bold rounded-xl hover:bg-[#00dba5] hover:shadow-[0_0_20px_rgba(0,240,181,0.25)] transition-all duration-300 flex items-center justify-center gap-2"
         >
           <Zap className="w-4 h-4" />
-          Start 7-Day Free Trial
+          View Plans
           <ArrowRight className="w-4 h-4" />
         </Link>
 
         <p className="text-center text-xs text-gray-600 mt-3">
-          No credit card required to start. Cancel anytime.
+          Cancel anytime.
         </p>
 
         {/* Status pill */}

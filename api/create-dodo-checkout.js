@@ -79,9 +79,6 @@ export default async function handler(req, res) {
       product_cart: [{ product_id: productId, quantity: 1 }],
       return_url: `${APP_URL}/dashboard?checkout=success`,
       payment_link: true,
-      subscription_data: {
-        trial_period_days: 7,
-      },
       metadata: { tier },
     };
 

@@ -298,7 +298,7 @@ export default function LandingPage() {
           </div>
 
           <p className="mt-5 text-sm text-gray-500">
-            🔒 No credit card needed. Free forever on the starter plan.
+            🔒 Secure checkout. Cancel anytime.
           </p>
 
           {/* Social proof: avatar stack */}
@@ -338,8 +338,7 @@ export default function LandingPage() {
 
           <div className="flex flex-wrap items-center justify-center gap-6 mt-8 text-sm text-gray-500">
             <span className="flex items-center gap-1.5">
-              <Shield className="w-4 h-4 text-[#00F0B5]/60" /> No credit card
-              required
+              <Shield className="w-4 h-4 text-[#00F0B5]/60" /> Secure checkout
             </span>
             <span className="flex items-center gap-1.5">
               <Clock className="w-4 h-4 text-[#00F0B5]/60" /> Setup in 45
@@ -681,7 +680,7 @@ export default function LandingPage() {
               },
               {
                 q: "Can I cancel anytime?",
-                a: "Yes. One click from your account settings. No questions, no hidden fees, no guilt trips. Your free trial is completely commitment-free. If it\u2019s not for you, cancel and you won\u2019t be charged a cent.",
+                a: "Yes. One click from your account settings. No questions, no hidden fees, no guilt trips. Cancel anytime and you won\u2019t be charged again.",
               },
             ].map(({ q, a, defaultOpen }, i) => (
               <FaqItem
@@ -1230,7 +1229,7 @@ function PricingSection({ priceRef, priceVis, handleCheckout }) {
         { text: "In-app notification bell with unread count" },
         { text: "Priority access to new features" },
       ],
-      ctaLabel: "Start Free Trial",
+      ctaLabel: "Get Started",
       ctaClass:
         "w-full py-3.5 bg-[#00F0B5] text-[#020617] font-bold rounded-xl hover:bg-[#00dba5] transition-all duration-200 flex items-center justify-center gap-2 text-sm",
     },
@@ -1272,8 +1271,7 @@ function PricingSection({ priceRef, priceVis, handleCheckout }) {
             Simple, transparent pricing.
           </h2>
           <p className="mt-4 text-gray-400 text-lg max-w-xl mx-auto">
-            Every plan includes a 7-day free trial. No credit card required to
-            start.
+            Pick the plan that fits your workload. Cancel anytime.
           </p>
         </div>
 
@@ -1310,7 +1308,7 @@ function PricingSection({ priceRef, priceVis, handleCheckout }) {
                   <span className="text-gray-500 text-sm pb-2">/month</span>
                 </div>
                 <p className="text-sm text-[#00F0B5] mt-1.5 font-medium">
-                  7-day free trial included
+                  Billed monthly
                 </p>
               </div>
 
@@ -1332,7 +1330,7 @@ function PricingSection({ priceRef, priceVis, handleCheckout }) {
                 <ArrowRight className="w-4 h-4" />
               </button>
               <p className="text-xs text-gray-600 text-center mt-3">
-                Cancel anytime. No questions asked.
+                Cancel anytime.
               </p>
             </div>
           ))}
@@ -1348,7 +1346,7 @@ function PricingSection({ priceRef, priceVis, handleCheckout }) {
               { value: "37+", label: "Sources Scanned" },
               { value: "$2.4M+", label: "In Gigs Discovered" },
               { value: "4.9/5", label: "Average Rating" },
-              { value: "7 Days", label: "Free Trial" },
+              { value: "4.9/5", label: "User Rating" },
             ].map(({ value, label }, i) => (
               <div key={label} style={stagger(i)}>
                 <p className="text-2xl sm:text-3xl font-extrabold text-white">
