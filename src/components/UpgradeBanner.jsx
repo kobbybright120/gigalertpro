@@ -1,6 +1,8 @@
 import { Bell } from "lucide-react";
 
 export default function UpgradeBanner({ gigCount = 0, onUpgrade }) {
+  if (gigCount <= 0) return null;
+
   return (
     <div className="sticky top-0 z-30 bg-gradient-to-r from-[#00F0B5]/[0.08] to-[#00D4FF]/[0.06] border-b border-[#00F0B5]/15 backdrop-blur-md">
       <div className="max-w-6xl mx-auto px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">

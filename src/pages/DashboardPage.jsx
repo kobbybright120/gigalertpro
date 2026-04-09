@@ -267,17 +267,6 @@ export default function DashboardPage() {
       </div>
 
       {/* Gig counter for locked state */}
-      {isLocked && realGigCount > 0 && (
-        <div className="glass-card rounded-2xl p-5 glow-green">
-          <p className="text-sm text-gray-400">
-            <span className="text-2xl font-extrabold text-gradient mr-2">
-              {realGigCount}
-            </span>
-            more gigs match your skills right now
-          </p>
-        </div>
-      )}
-
       {/* Top Gigs Preview */}
       <div>
         <div className="flex items-center justify-between mb-4">
