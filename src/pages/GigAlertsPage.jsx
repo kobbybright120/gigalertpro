@@ -13,9 +13,12 @@ import {
   Clock,
   TrendingUp,
   RefreshCw,
+  Lock,
 } from "lucide-react";
 import GigCard from "../components/GigCard";
 import ProposalModal from "../components/ProposalModal";
+import LockOverlay from "../components/LockOverlay";
+import { useLockedDashboard } from "../context/LockedDashboardContext";
 import {
   useKeywords,
   useGigAlerts,
@@ -55,6 +58,7 @@ export default function GigAlertsPage() {
   const { saveProposal } = useProposals();
   const { savedIds, toggleSave } = useSavedGigs();
   const { reset: resetGigCount } = useNewGigCount();
+  const { isLocked, onUpgrade, onSeePlans } = useLockedDashboard();
   const [keywordError, setKeywordError] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [now, setNow] = useState(() => Date.now());
@@ -221,25 +225,52 @@ export default function GigAlertsPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             {[
-              { key: "all", label: "All", count: alerts.length },
-              { key: "reddit", label: "Reddit", count: redditCount },
+              { key: "all", label: "All", count: alerts.length, locked: false },
+              {
+                key: "reddit",
+                label: "Reddit",
+                count: redditCount,
+                locked: false,
+              },
               {
                 key: "craigslist",
                 label: "Craigslist",
                 count: craigslistCount,
+                locked: false,
               },
-              { key: "x", label: "𝕏 / Twitter", count: xCount },
-              { key: "threads", label: "Threads", count: threadsCount },
-            ].map(({ key, label, count }) => (
+              {
+                key: "x",
+                label: "𝕏 / Twitter",
+                count: xCount,
+                locked: isLocked,
+              },
+              {
+                key: "threads",
+                label: "Threads",
+                count: threadsCount,
+                locked: isLocked,
+              },
+            ].map(({ key, label, count, locked }) => (
               <button
                 key={key}
-                onClick={() => setActiveFilter(key)}
-                className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 ${
-                  activeFilter === key
-                    ? "bg-[#00F0B5]/[0.08] text-[#00F0B5] border border-[#00F0B5]/15 shadow-[inset_0_0_0_1px_rgba(0,240,181,0.05)]"
-                    : "text-gray-500 hover:text-gray-300 hover:bg-white/[0.03] border border-transparent"
+                onClick={() => {
+                  if (locked) {
+                    onUpgrade?.();
+                    return;
+                  }
+                  setActiveFilter(key);
+                }}
+                className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 relative ${
+                  locked
+                    ? "text-gray-600 border border-white/[0.04] cursor-pointer hover:border-[#00F0B5]/15"
+                    : activeFilter === key
+                      ? "bg-[#00F0B5]/[0.08] text-[#00F0B5] border border-[#00F0B5]/15 shadow-[inset_0_0_0_1px_rgba(0,240,181,0.05)]"
+                      : "text-gray-500 hover:text-gray-300 hover:bg-white/[0.03] border border-transparent"
                 }`}
               >
+                {locked && (
+                  <Lock className="w-3 h-3 inline-block mr-1 -mt-0.5" />
+                )}
                 {label} ({count})
               </button>
             ))}
@@ -384,38 +415,77 @@ export default function GigAlertsPage() {
             </p>
           </div>
         ) : filtered.length > 0 ? (
-          filtered.map((alert) => (
-            <GigCard
-              key={alert.id}
-              gig={{
-                id: alert.id,
-                title: alert.title,
-                body_preview: alert.body_preview || "",
-                budget: alert.budget || null,
-                source:
-                  alert.source_platform === "Reddit"
-                    ? "Reddit"
-                    : alert.source_platform === "Craigslist"
-                      ? "Craigslist"
-                      : alert.source_platform || "Reddit",
-                url: alert.url,
-                postedAt:
-                  alert.time_ago ||
-                  new Date(alert.reddit_created).toLocaleDateString(),
-                keywords: alert.matched_keywords,
-                score: alert.score,
-                category: alert.category,
-                flair: alert.flair,
-                comment_count: alert.comment_count,
-                upvotes: alert.upvotes,
-                source_platform: alert.source_platform || "Reddit",
-                location: alert.location || null,
-              }}
-              onGenerateProposal={handleGenerateProposal}
-              onSaveGig={(gig) => toggleSave(gig.id)}
-              isSaved={savedIds.has(alert.id)}
-            />
-          ))
+          filtered.map((alert, index) => {
+            // In locked state: first gig is visible, rest are locked
+            if (isLocked && index > 0) {
+              return (
+                <LockOverlay
+                  key={alert.id}
+                  onUpgrade={onUpgrade}
+                  onSeePlans={onSeePlans}
+                >
+                  <GigCard
+                    gig={{
+                      id: alert.id,
+                      title: alert.title,
+                      body_preview: alert.body_preview || "",
+                      budget: alert.budget || null,
+                      source: alert.source_platform || "Reddit",
+                      url: alert.url,
+                      postedAt:
+                        alert.time_ago ||
+                        new Date(alert.reddit_created).toLocaleDateString(),
+                      keywords: alert.matched_keywords,
+                      score: alert.score,
+                      category: alert.category,
+                      flair: alert.flair,
+                      comment_count: alert.comment_count,
+                      upvotes: alert.upvotes,
+                      source_platform: alert.source_platform || "Reddit",
+                      location: alert.location || null,
+                    }}
+                    onGenerateProposal={() => {}}
+                  />
+                </LockOverlay>
+              );
+            }
+            return (
+              <GigCard
+                key={alert.id}
+                gig={{
+                  id: alert.id,
+                  title: alert.title,
+                  body_preview: alert.body_preview || "",
+                  budget: alert.budget || null,
+                  source:
+                    alert.source_platform === "Reddit"
+                      ? "Reddit"
+                      : alert.source_platform === "Craigslist"
+                        ? "Craigslist"
+                        : alert.source_platform || "Reddit",
+                  url: alert.url,
+                  postedAt:
+                    alert.time_ago ||
+                    new Date(alert.reddit_created).toLocaleDateString(),
+                  keywords: alert.matched_keywords,
+                  score: alert.score,
+                  category: alert.category,
+                  flair: alert.flair,
+                  comment_count: alert.comment_count,
+                  upvotes: alert.upvotes,
+                  source_platform: alert.source_platform || "Reddit",
+                  location: alert.location || null,
+                }}
+                onGenerateProposal={
+                  isLocked && index > 0
+                    ? () => onUpgrade?.()
+                    : handleGenerateProposal
+                }
+                onSaveGig={(gig) => toggleSave(gig.id)}
+                isSaved={savedIds.has(alert.id)}
+              />
+            );
+          })
         ) : (
           <div className="glass-card rounded-2xl p-12 text-center">
             <div className="w-16 h-16 rounded-2xl bg-white/[0.04] flex items-center justify-center mx-auto mb-5">

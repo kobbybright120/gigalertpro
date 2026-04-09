@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Search,
@@ -13,16 +13,20 @@ import {
   Zap,
   Globe,
   Activity,
+  Sparkles,
 } from "lucide-react";
 import GigCard from "../components/GigCard";
 import NotificationToggle from "../components/NotificationToggle";
 import ProposalModal from "../components/ProposalModal";
+import LockOverlay from "../components/LockOverlay";
+import { useLockedDashboard } from "../context/LockedDashboardContext";
 import {
   useKeywords,
   useGigAlerts,
   useProposals,
   useProfile,
 } from "../lib/useSupabase";
+import { supabase } from "../lib/supabase";
 
 export default function DashboardPage() {
   const navigate = useNavigate();
@@ -33,8 +37,58 @@ export default function DashboardPage() {
   const { keywords, addKeyword, removeKeyword } = useKeywords(profile?.plan);
   const { alerts, loading: alertsLoading } = useGigAlerts(keywords);
   const { saveProposal } = useProposals();
+  const {
+    isLocked,
+    onUpgrade,
+    onSeePlans,
+    gigCount: lockedGigCount,
+  } = useLockedDashboard();
 
   const [keywordError, setKeywordError] = useState("");
+
+  // For locked state, track a dynamic gig count
+  const [fetchedGigCount, setFetchedGigCount] = useState(0);
+  const realGigCount = lockedGigCount > 0 ? lockedGigCount : fetchedGigCount;
+  useEffect(() => {
+    if (!isLocked || lockedGigCount > 0) return;
+    // Try to get real count from DB
+    async function fetchCount() {
+      try {
+        const kws = keywords.map((k) => k.keyword);
+        if (kws.length === 0) return;
+        const twentyFourHoursAgo = new Date(
+          Date.now() - 24 * 60 * 60 * 1000,
+        ).toISOString();
+        const orFilter = kws
+          .flatMap((kw) => {
+            const safe = kw.replace(/[%_]/g, "\\$&");
+            return [`title.ilike.%${safe}%`, `body_preview.ilike.%${safe}%`];
+          })
+          .join(",");
+        const { count } = await supabase
+          .from("gig_alerts")
+          .select("id", { count: "exact", head: true })
+          .or(orFilter)
+          .gte("reddit_created", twentyFourHoursAgo);
+        if (count > 0) setFetchedGigCount(count);
+      } catch {
+        // ignore fetch errors
+      }
+    }
+    fetchCount();
+  }, [isLocked, keywords, lockedGigCount]);
+
+  // Generate a sample proposal for the first gig when locked
+  const bestGig =
+    alerts.length > 0
+      ? [...alerts].sort((a, b) => (b.score || 0) - (a.score || 0))[0]
+      : null;
+
+  const sampleProposalText = useMemo(() => {
+    if (!isLocked || !bestGig) return "";
+    const skills = profile?.skills?.join(", ") || "your area of expertise";
+    return `Hi there,\n\nI came across your post "${bestGig.title}" and I'm excited about this opportunity. With my experience in ${skills}, I'm confident I can deliver exactly what you're looking for.\n\nI've completed similar projects before and can start right away. I'd love to discuss the details and share some relevant work samples.\n\nLooking forward to hearing from you!\n\nBest regards`;
+  }, [isLocked, bestGig, profile]);
 
   async function handleAddKeyword(e) {
     e.preventDefault();
@@ -212,6 +266,18 @@ export default function DashboardPage() {
         <NotificationToggle />
       </div>
 
+      {/* Gig counter for locked state */}
+      {isLocked && realGigCount > 0 && (
+        <div className="glass-card rounded-2xl p-5 glow-green">
+          <p className="text-sm text-gray-400">
+            <span className="text-2xl font-extrabold text-gradient mr-2">
+              {realGigCount}
+            </span>
+            more gigs match your skills right now
+          </p>
+        </div>
+      )}
+
       {/* Top Gigs Preview */}
       <div>
         <div className="flex items-center justify-between mb-4">
@@ -219,13 +285,15 @@ export default function DashboardPage() {
             <Activity className="w-5 h-5 text-[#00F0B5]" />
             Latest Gigs
           </h2>
-          <Link
-            to="/gig-alerts"
-            className="group text-sm text-[#00F0B5] hover:text-[#00dba5] transition-colors flex items-center gap-1 font-medium"
-          >
-            View all {alerts.length} alerts
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-          </Link>
+          {!isLocked && (
+            <Link
+              to="/gig-alerts"
+              className="group text-sm text-[#00F0B5] hover:text-[#00dba5] transition-colors flex items-center gap-1 font-medium"
+            >
+              View all {alerts.length} alerts
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+            </Link>
+          )}
         </div>
 
         <div className="grid gap-4">
@@ -248,6 +316,92 @@ export default function DashboardPage() {
                 keywords
               </p>
             </div>
+          ) : isLocked && bestGig ? (
+            <>
+              {/* First gig: fully visible */}
+              <GigCard
+                key={bestGig.id}
+                gig={{
+                  id: bestGig.id,
+                  title: bestGig.title,
+                  body_preview: bestGig.body_preview || "",
+                  budget: bestGig.budget || null,
+                  source:
+                    bestGig.source_platform === "Reddit"
+                      ? "Reddit"
+                      : bestGig.source_platform === "Craigslist"
+                        ? "Craigslist"
+                        : bestGig.source_platform || "Reddit",
+                  url: bestGig.url,
+                  postedAt:
+                    bestGig.time_ago ||
+                    new Date(bestGig.reddit_created).toLocaleDateString(),
+                  keywords: bestGig.matched_keywords,
+                  score: bestGig.score,
+                  category: bestGig.category,
+                  flair: bestGig.flair,
+                  comment_count: bestGig.comment_count,
+                  upvotes: bestGig.upvotes,
+                  source_platform: bestGig.source_platform || "Reddit",
+                }}
+                onGenerateProposal={handleGenerateProposal}
+              />
+
+              {/* Sample AI Proposal for first gig */}
+              {sampleProposalText && (
+                <div className="glass-card rounded-2xl p-5 glow-green">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#00F0B5]/15 to-[#00D4FF]/10 flex items-center justify-center">
+                      <Sparkles className="w-4 h-4 text-[#00F0B5]" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-white">
+                        AI-Generated Proposal Preview
+                      </h3>
+                      <p className="text-xs text-gray-500">
+                        For: {bestGig.title}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="bg-[#020617]/60 border border-white/[0.06] rounded-xl p-4">
+                    <p className="text-sm text-gray-300 whitespace-pre-line leading-relaxed">
+                      {sampleProposalText}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Locked gigs (blurred) */}
+              {alerts.slice(1, 4).map((alert) => (
+                <LockOverlay
+                  key={alert.id}
+                  onUpgrade={onUpgrade}
+                  onSeePlans={onSeePlans}
+                >
+                  <GigCard
+                    gig={{
+                      id: alert.id,
+                      title: alert.title,
+                      body_preview: alert.body_preview || "",
+                      budget: alert.budget || null,
+                      source: alert.source_platform || "Reddit",
+                      url: alert.url,
+                      postedAt:
+                        alert.time_ago ||
+                        new Date(alert.reddit_created).toLocaleDateString(),
+                      keywords: alert.matched_keywords,
+                      score: alert.score,
+                      category: alert.category,
+                      flair: alert.flair,
+                      comment_count: alert.comment_count,
+                      upvotes: alert.upvotes,
+                      source_platform: alert.source_platform || "Reddit",
+                    }}
+                    onGenerateProposal={() => {}}
+                  />
+                </LockOverlay>
+              ))}
+            </>
           ) : topAlerts.length > 0 ? (
             <>
               {topAlerts.map((alert) => (
