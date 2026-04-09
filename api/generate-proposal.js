@@ -62,13 +62,18 @@ async function checkDailyQuota(userId) {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!baseUrl || !serviceKey) return { allowed: true }; // skip if not configured
 
-  // Fetch user plan
+  // Fetch user plan + subscription_status
   const profileRes = await fetch(
-    `${baseUrl}/rest/v1/profiles?id=eq.${userId}&select=plan`,
+    `${baseUrl}/rest/v1/profiles?id=eq.${userId}&select=plan,subscription_status`,
     { headers: supabaseHeaders() },
   );
   const profiles = await profileRes.json().catch(() => []);
-  const plan = profiles?.[0]?.plan || "free";
+  const rawPlan = profiles?.[0]?.plan || "free";
+  const subscriptionStatus = profiles?.[0]?.subscription_status;
+  // Safety net: if subscription is active but plan column is stale ('free'),
+  // treat the user as 'basic' so they aren't locked out of all features.
+  const plan =
+    subscriptionStatus === "active" && rawPlan === "free" ? "basic" : rawPlan;
   const limit = DAILY_LIMITS[plan] ?? DAILY_LIMITS.free;
 
   // Count today's usage
