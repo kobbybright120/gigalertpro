@@ -110,19 +110,23 @@ export default function OnboardingFlow({ onComplete }) {
   async function handleFinishOnboarding() {
     // Save skills as keywords
     if (!DISABLE_AUTH && user) {
+      // Insert keywords one by one, ignoring duplicates
       for (const skill of skills) {
-        await supabase
+        const { error } = await supabase
           .from("keywords")
-          .upsert(
-            { user_id: user.id, keyword: skill.toLowerCase() },
-            { onConflict: "user_id,keyword" },
-          )
-          .then(() => {});
+          .insert({ user_id: user.id, keyword: skill.toLowerCase() });
+        // Ignore unique constraint violations (keyword already exists)
+        if (error && error.code !== "23505") {
+          console.warn("[Onboarding] keyword insert error:", error.message);
+        }
       }
       // Mark onboarding complete
       await supabase
         .from("profiles")
-        .update({ onboarding_completed: true })
+        .update({
+          onboarding_completed: true,
+          updated_at: new Date().toISOString(),
+        })
         .eq("id", user.id);
     } else {
       // Demo mode
