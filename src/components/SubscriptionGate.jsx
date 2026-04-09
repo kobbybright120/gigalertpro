@@ -84,6 +84,13 @@ export default function SubscriptionGate({ children }) {
       if (!done) setShowOnboarding(true);
       return;
     }
+    // Skip onboarding for users who already have an active paid subscription
+    const hasActivePlan =
+      profile?.plan &&
+      PAID_PLANS.includes(profile.plan) &&
+      ACTIVE_STATUSES.includes(profile?.subscription_status);
+    if (hasActivePlan) return;
+
     if (profile && profile.onboarding_completed === false) {
       setShowOnboarding(true);
     }
@@ -113,11 +120,6 @@ export default function SubscriptionGate({ children }) {
     return children;
   }
 
-  // Show onboarding flow for first-time users
-  if (showOnboarding && !polling) {
-    return <OnboardingFlow onComplete={handleOnboardingComplete} />;
-  }
-
   // Returned from checkout — show "Activating" spinner while polling
   if (polling) {
     return (
@@ -144,7 +146,7 @@ export default function SubscriptionGate({ children }) {
     );
   }
 
-  // Active subscription — allow full access
+  // Active subscription — allow full access (check BEFORE onboarding)
   const status = profile?.subscription_status;
   const plan = profile?.plan;
   const hasPaidPlan = plan && PAID_PLANS.includes(plan);
@@ -159,6 +161,11 @@ export default function SubscriptionGate({ children }) {
         {children}
       </>
     );
+  }
+
+  // Show onboarding flow for first-time FREE users only
+  if (showOnboarding) {
+    return <OnboardingFlow onComplete={handleOnboardingComplete} />;
   }
 
   // Free / no plan — show locked dashboard (NOT a full blur wall)
