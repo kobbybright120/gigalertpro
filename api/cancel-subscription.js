@@ -23,9 +23,7 @@ const DODO_BASE_URL =
     : "https://live.dodopayments.com";
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
-const SUPABASE_AUTH_URL = SUPABASE_URL
-  ? `${SUPABASE_URL}/auth/v1/user`
-  : null;
+const SUPABASE_AUTH_URL = SUPABASE_URL ? `${SUPABASE_URL}/auth/v1/user` : null;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 function supabaseHeaders() {
@@ -113,18 +111,15 @@ export default async function handler(req, res) {
     }
 
     // 4. Update Supabase profile
-    await fetch(
-      `${SUPABASE_URL}/rest/v1/profiles?id=eq.${supabaseUser.id}`,
-      {
-        method: "PATCH",
-        headers: supabaseHeaders(),
-        body: JSON.stringify({
-          subscription_status: "cancelled",
-          cancel_at_period_end: true,
-          updated_at: new Date().toISOString(),
-        }),
-      },
-    );
+    await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${supabaseUser.id}`, {
+      method: "PATCH",
+      headers: supabaseHeaders(),
+      body: JSON.stringify({
+        subscription_status: "cancelled",
+        cancel_at_period_end: true,
+        updated_at: new Date().toISOString(),
+      }),
+    });
 
     console.info(
       `[cancel-subscription] Cancelled subscription ${subscriptionId} for user ${supabaseUser.id}`,
