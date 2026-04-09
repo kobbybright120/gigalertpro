@@ -46,7 +46,7 @@ export default function LockOverlay({ children, onUpgrade, onSeePlans }) {
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-64">
           <div className="glass-card rounded-xl p-4 border border-[#00F0B5]/20 shadow-[0_0_30px_rgba(0,240,181,0.1)]">
             <p className="text-sm text-white font-semibold mb-3">
-              Unlock this feature — upgrade to Basic for $9/month
+              Upgrade to Basic for $9/month to unlock this
             </p>
             <div className="flex gap-2">
               <button

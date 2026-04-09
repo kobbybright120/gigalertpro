@@ -341,7 +341,7 @@ export default function OnboardingFlow({ onComplete }) {
               matching your skills
             </h1>
             <p className="text-gray-400 text-base mb-2">
-              {skills.join(", ")} — in the last 24 hours
+              {skills.join(", ")} in the last 24 hours
             </p>
             <p className="text-gray-500 text-sm mb-8">
               Here's a preview of what's waiting for you 👇

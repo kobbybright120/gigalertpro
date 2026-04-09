@@ -496,7 +496,7 @@ export default function GigAlertsPage() {
             </h3>
             <p className="text-gray-500 text-sm max-w-md mx-auto mb-5">
               No gigs found for your keywords right now. Gigs refresh every few
-              minutes — or try a broader term:
+              minutes. Try a broader term:
             </p>
             {/* Keyword suggestions based on what's tracked */}
             <div className="flex flex-wrap gap-2 justify-center">

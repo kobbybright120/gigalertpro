@@ -1222,7 +1222,7 @@ function PricingSection({ priceRef, priceVis, handleCheckout }) {
       features: [
         { text: "All platforms Reddit, X/Twitter, Craigslist & Threads" },
         { text: "Up to 5 active keywords" },
-        { text: "Gig quality scoring (0–100)" },
+        { text: "Gig quality scoring (0-100)" },
         { text: "Filter by source & category · Sort by score" },
         { text: "Browser push notifications" },
         { text: "10 AI proposals per day" },

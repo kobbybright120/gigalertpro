@@ -14,7 +14,7 @@ export default function PricingModal({ open, onClose }) {
       tier: "basic",
       price: 9,
       features: [
-        "All platforms — Reddit, X/Twitter, Craigslist & Threads",
+        "All platforms: Reddit, X/Twitter, Craigslist & Threads",
         "Up to 5 active keywords",
         "10 AI proposals per day",
         "Browser notifications",
