@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { useProfile } from "../lib/useSupabase";
-import { Link } from "react-router-dom";
+import PricingModal from "./PricingModal";
 import { Zap, ArrowRight, Shield, Star, CheckCircle2 } from "lucide-react";
 import { PAYMENTS_ENABLED } from "../../payments.config.js";
 
@@ -13,8 +14,10 @@ const ACTIVE_STATUSES = ["active"];
 
 export default function SubscriptionGate({ children }) {
   console.debug("SubscriptionGate: PAYMENTS_ENABLED=", PAYMENTS_ENABLED);
-  if (!PAYMENTS_ENABLED) return children;
+  // Hooks must be called unconditionally at the top of the component
   const { profile, loading } = useProfile();
+  const [showPricing, setShowPricing] = useState(false);
+  if (!PAYMENTS_ENABLED) return children;
 
   // Demo mode — skip gate
   if (DISABLE_AUTH) return children;
@@ -73,14 +76,14 @@ export default function SubscriptionGate({ children }) {
         </div>
 
         {/* CTA */}
-        <Link
-          to={{ pathname: "/landing", hash: "#pricing" }}
+        <button
+          onClick={() => setShowPricing(true)}
           className="w-full py-3.5 bg-[#00F0B5] text-[#020617] font-bold rounded-xl hover:bg-[#00dba5] hover:shadow-[0_0_20px_rgba(0,240,181,0.25)] transition-all duration-300 flex items-center justify-center gap-2"
         >
           <Zap className="w-4 h-4" />
           View Plans
           <ArrowRight className="w-4 h-4" />
-        </Link>
+        </button>
 
         <p className="text-center text-xs text-gray-600 mt-3">
           Cancel anytime.
@@ -96,6 +99,7 @@ export default function SubscriptionGate({ children }) {
           </div>
         )}
       </div>
+      <PricingModal open={showPricing} onClose={() => setShowPricing(false)} />
     </div>
   );
 }
