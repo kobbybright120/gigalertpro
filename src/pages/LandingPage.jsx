@@ -1220,7 +1220,7 @@ function PricingSection({ priceRef, priceVis, handleCheckout }) {
       tier: "basic",
       popular: false,
       features: [
-        { text: "All platforms — Reddit, X/Twitter, Craigslist & Threads" },
+        { text: "All platforms Reddit, X/Twitter, Craigslist & Threads" },
         { text: "Up to 5 active keywords" },
         { text: "Gig quality scoring (0–100)" },
         { text: "Filter by source & category · Sort by score" },
