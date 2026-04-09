@@ -120,30 +120,12 @@ export default function OnboardingFlow({ onComplete }) {
           // ignore — keyword likely already exists
         }
       }
-      // Mark onboarding complete via RPC so it bypasses RLS
+      // Mark onboarding complete via dedicated RPC (SECURITY DEFINER, bypasses RLS)
       try {
-        await supabase.rpc("upsert_profile", {
-          p_name: "",
-          p_bio: "",
-          p_skills: [],
-          p_testimonials: [],
-          p_portfolio_links: [],
-          p_email: user.email ?? null,
-        });
-      } catch {
-        // fallback: direct update
-      }
-      // Direct update for onboarding_completed (RPC doesn't handle this field)
-      try {
-        await supabase
-          .from("profiles")
-          .update({
-            onboarding_completed: true,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", user.id);
-      } catch {
-        // if RLS blocks this, the flag stays false but we still proceed
+        const { error } = await supabase.rpc("complete_onboarding");
+        if (error) console.error("complete_onboarding RPC failed:", error);
+      } catch (e) {
+        console.error("complete_onboarding call failed:", e);
       }
     } else {
       // Demo mode
