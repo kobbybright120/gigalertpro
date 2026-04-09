@@ -7,7 +7,6 @@ import {
   Briefcase,
   Link2,
   ExternalLink,
-  MessageSquareQuote,
   Loader2,
   Mail,
   CreditCard,
@@ -438,35 +437,7 @@ export default function ProfilePage() {
             </p>
           </div>
 
-          {/* Client Testimonials Card */}
-          <div className="glass-card rounded-2xl overflow-hidden">
-            <div className="h-1 bg-gradient-to-r from-[#00F0B5] to-[#00D4FF]" />
-            <div className="p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <MessageSquareQuote className="w-5 h-5 text-[#00F0B5]" />
-                <h3 className="text-xl font-extrabold text-white tracking-tight">
-                  Client Testimonials
-                </h3>
-              </div>
-              <div className="space-y-3">
-                {profile.testimonials.length > 0 ? (
-                  profile.testimonials.map((t, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center justify-between p-4 bg-[#020617]/50 border border-white/[0.04] rounded-xl"
-                    >
-                      <p className="text-gray-300 text-sm italic">"{t}"</p>
-                      <MessageSquareQuote className="w-8 h-8 text-white/[0.04] shrink-0 ml-4" />
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-gray-600 text-sm">
-                    No testimonials yet. Click Edit Profile to add some.
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
+          {/* Client Testimonials removed per request */}
 
           {/* Subscription Management Card */}
           {PAYMENTS_ENABLED && dbProfile?.subscription_status && (
