@@ -79,7 +79,7 @@ export default async function handler(req, res) {
       product_cart: [{ product_id: productId, quantity: 1 }],
       return_url: `${APP_URL}/dashboard?checkout=success`,
       payment_link: true,
-      metadata: { tier },
+      metadata: { tier, auth_email: email || "" },
     };
 
     // Attach customer email if available

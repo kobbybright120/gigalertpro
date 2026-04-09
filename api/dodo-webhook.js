@@ -165,7 +165,9 @@ export default async function handler(req, res) {
   console.info(`[dodo-webhook] Received event: ${eventType}`);
 
   try {
-    const email = data?.customer?.email;
+    // Prefer the auth_email from checkout metadata (matches Supabase profile)
+    // Fall back to customer email from the payment form
+    const email = data?.metadata?.auth_email || data?.customer?.email;
     const subscriptionId = data?.subscription_id;
     const interval = data?.payment_frequency_interval; // "Month" | "Year"
     const period =
