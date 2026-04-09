@@ -10,9 +10,13 @@ import {
   MessageSquareQuote,
   Loader2,
   Mail,
+  CreditCard,
+  AlertTriangle,
 } from "lucide-react";
 import { useProfile } from "../lib/useSupabase";
 import { useAuth } from "../context/AuthContext";
+import { supabase } from "../lib/supabase";
+import { PAYMENTS_ENABLED } from "../../payments.config.js";
 
 export default function ProfilePage() {
   const { profile: dbProfile, loading, updateProfile } = useProfile();
@@ -43,6 +47,36 @@ export default function ProfilePage() {
   const [draft, setDraft] = useState({});
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState("");
+  const [cancelSuccess, setCancelSuccess] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+
+  async function handleCancelSubscription() {
+    setCancelling(true);
+    setCancelError("");
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      const res = await fetch("/api/cancel-subscription", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to cancel");
+      setCancelSuccess(true);
+      setShowCancelConfirm(false);
+    } catch (err) {
+      setCancelError(err.message);
+    } finally {
+      setCancelling(false);
+    }
+  }
 
   function openEditor() {
     setSaveError("");
@@ -433,6 +467,106 @@ export default function ProfilePage() {
               </div>
             </div>
           </div>
+
+          {/* Subscription Management Card */}
+          {PAYMENTS_ENABLED && dbProfile?.subscription_status && (
+            <div className="glass-card rounded-2xl p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <CreditCard className="w-5 h-5 text-[#00F0B5]" />
+                <h3 className="text-xl font-extrabold text-white tracking-tight">
+                  Subscription
+                </h3>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-4 bg-[#020617]/50 border border-white/[0.04] rounded-xl">
+                  <span className="text-gray-400 text-sm">Plan</span>
+                  <span className="text-white font-semibold text-sm capitalize">
+                    {dbProfile.plan || "free"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between p-4 bg-[#020617]/50 border border-white/[0.04] rounded-xl">
+                  <span className="text-gray-400 text-sm">Status</span>
+                  <span
+                    className={`text-sm font-semibold ${
+                      dbProfile.subscription_status === "active"
+                        ? "text-[#00F0B5]"
+                        : dbProfile.subscription_status === "cancelled"
+                          ? "text-red-400"
+                          : "text-yellow-400"
+                    }`}
+                  >
+                    {dbProfile.subscription_status}
+                  </span>
+                </div>
+                {dbProfile.billing_period && (
+                  <div className="flex items-center justify-between p-4 bg-[#020617]/50 border border-white/[0.04] rounded-xl">
+                    <span className="text-gray-400 text-sm">
+                      Billing Period
+                    </span>
+                    <span className="text-white font-semibold text-sm capitalize">
+                      {dbProfile.billing_period}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Cancel section */}
+              {dbProfile.subscription_status === "active" && (
+                <div className="mt-5">
+                  {cancelSuccess ? (
+                    <p className="text-sm text-[#00F0B5]">
+                      Subscription cancelled. You'll retain access until the end
+                      of your billing period.
+                    </p>
+                  ) : showCancelConfirm ? (
+                    <div className="p-4 border border-red-500/20 bg-red-500/5 rounded-xl space-y-3">
+                      <div className="flex items-start gap-2">
+                        <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                        <p className="text-sm text-gray-300">
+                          Are you sure? Your subscription will be cancelled and
+                          you'll lose access at the end of this billing period.
+                        </p>
+                      </div>
+                      {cancelError && (
+                        <p className="text-red-400 text-xs">{cancelError}</p>
+                      )}
+                      <div className="flex gap-3">
+                        <button
+                          onClick={handleCancelSubscription}
+                          disabled={cancelling}
+                          className="px-4 py-2 bg-red-500 text-white font-semibold text-sm rounded-xl hover:bg-red-600 transition-colors disabled:opacity-50"
+                        >
+                          {cancelling
+                            ? "Cancelling..."
+                            : "Yes, Cancel Subscription"}
+                        </button>
+                        <button
+                          onClick={() => setShowCancelConfirm(false)}
+                          className="px-4 py-2 text-gray-400 text-sm hover:text-white transition-colors"
+                        >
+                          Keep My Plan
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setShowCancelConfirm(true)}
+                      className="text-sm text-gray-500 hover:text-red-400 transition-colors"
+                    >
+                      Cancel subscription
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {dbProfile.subscription_status === "cancelled" && (
+                <p className="mt-4 text-sm text-gray-500">
+                  Your subscription has been cancelled.
+                </p>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
