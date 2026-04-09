@@ -36,12 +36,12 @@ export default function DashboardPage() {
 
   const [keywordError, setKeywordError] = useState("");
 
-  function handleAddKeyword(e) {
+  async function handleAddKeyword(e) {
     e.preventDefault();
     if (!input.trim()) return;
     setKeywordError("");
     try {
-      addKeyword(input);
+      await addKeyword(input);
       setInput("");
     } catch (err) {
       setKeywordError(err.message);

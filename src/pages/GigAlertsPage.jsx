@@ -77,12 +77,12 @@ export default function GigAlertsPage() {
     resetGigCount();
   }, [resetGigCount]);
 
-  function handleAddKeyword(e) {
+  async function handleAddKeyword(e) {
     e.preventDefault();
     if (!input.trim()) return;
     setKeywordError("");
     try {
-      addKeyword(input);
+      await addKeyword(input);
       setInput("");
     } catch (err) {
       setKeywordError(err.message);
@@ -460,7 +460,13 @@ export default function GigAlertsPage() {
                 .map((sug) => (
                   <button
                     key={sug}
-                    onClick={() => addKeyword(sug)}
+                    onClick={async () => {
+                      try {
+                        await addKeyword(sug);
+                      } catch (err) {
+                        setKeywordError(err.message);
+                      }
+                    }}
                     className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#00F0B5]/[0.06] border border-[#00F0B5]/15 text-[#00F0B5] hover:bg-[#00F0B5]/[0.12] transition-colors"
                   >
                     + {sug}
