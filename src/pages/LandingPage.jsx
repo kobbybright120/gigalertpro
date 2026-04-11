@@ -96,9 +96,9 @@ const DEMO_GIGS = [
     title: "Need a Modern Logo for Fitness App",
     headline: "We're hiring a logo designer for a fitness app",
     statusLabel: "Hiring",
-    source: "Craigslist",
+    source: "Threads",
     sourceColor: "text-violet-400",
-    sub: "New York",
+    sub: "@freelancegigs",
     budget: "$800 to $1,200",
     score: 78,
     time: "5 min ago",
@@ -263,8 +263,8 @@ export default function LandingPage() {
               to="/auth"
               className="inline-flex items-center gap-1 px-3 py-2 sm:px-5 sm:py-2.5 bg-[#00F0B5] text-[#020617] text-xs sm:text-sm font-semibold rounded-lg hover:bg-[#00dba5] transition-all duration-200"
             >
-              <span className="hidden sm:inline">Get Started Free</span>
-              <span className="sm:hidden">Get Started</span>
+              <span className="hidden sm:inline">Find My Clients Free</span>
+              <span className="sm:hidden">Find Clients</span>
               <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </Link>
           </div>
@@ -285,19 +285,23 @@ export default function LandingPage() {
               <span className="relative inline-flex rounded-full h-2 w-2 bg-[#00F0B5]" />
             </span>
             <span className="text-sm text-[#00F0B5] font-medium tracking-wide">
-              Scanning Reddit, Craigslist & X right now
+              Finding clients for freelancers on Reddit, X & Threads right now
             </span>
           </div>
 
           <h1 className="text-[2.25rem] sm:text-5xl lg:text-7xl font-extrabold leading-[1.1] tracking-tight">
-            You're losing gigs <br className="hidden sm:block" />
-            <span className="text-gradient">while you sleep. We fix that.</span>
+            Your next client is already out there{" "}
+            <br className="hidden sm:block" />
+            <span className="text-gradient">
+              looking for you. GigAlertPro finds them.
+            </span>
           </h1>
 
           <p className="mt-7 text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
-            Reddit gig posts get 20+ applicants in the first 10 minutes.
-            GigAlertPro sends you instant alerts within seconds of posting, so
-            you apply first, not last. Try it free.
+            Clients post what they need every day on Reddit, X and Threads. Most
+            freelancers never see those posts. GigAlertPro finds them for you
+            automatically and writes a personalized proposal so you know exactly
+            what to say to that specific client.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mt-10 sm:mt-12 w-full">
@@ -305,14 +309,14 @@ export default function LandingPage() {
               to="/auth"
               className="group inline-flex items-center justify-center gap-2 w-full sm:w-auto px-8 py-4 bg-[#00F0B5] text-[#020617] font-bold rounded-lg hover:bg-[#00dba5] transition-all duration-200 text-base"
             >
-              Get Started Free
+              Find My Clients Free
               <ArrowRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
             </Link>
             <a
               href="#demo"
               className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-8 py-4 border border-white/10 text-gray-300 font-semibold rounded-full hover:bg-white/[0.04] hover:border-white/20 transition-all duration-300 text-base"
             >
-              See it in action
+              See how it finds clients
             </a>
           </div>
 
@@ -350,7 +354,7 @@ export default function LandingPage() {
               <p className="text-sm text-gray-400">
                 Joined by{" "}
                 <span className="text-white font-semibold">2,400+</span>{" "}
-                freelancers on Reddit, Craigslist & X
+                freelancers already finding clients on Reddit, X & Threads
               </p>
             </div>
           </div>
@@ -374,11 +378,11 @@ export default function LandingPage() {
       <section className="relative border-y border-white/[0.05]">
         <div className="max-w-5xl mx-auto px-4 py-5 text-center">
           <p className="text-sm sm:text-base text-gray-400">
-            Reddit gig posts get{" "}
+            Right now a client is posting on Reddit, X or Threads looking for
+            someone with your exact skills.{" "}
             <span className="text-white font-semibold">
-              20+ applicants in the first 10 minutes.
-            </span>{" "}
-            If you&apos;re not first, you&apos;re invisible.
+              Without GigAlertPro you will never know they existed.
+            </span>
           </p>
         </div>
       </section>
@@ -421,12 +425,14 @@ export default function LandingPage() {
             <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
               Not just alerts.{" "}
               <span className="text-[#00F0B5]">
-                A complete system for winning gigs.
+                A complete system for finding clients who are already looking
+                for you.
               </span>
             </h2>
             <p className="mt-4 text-gray-400 text-lg max-w-xl mx-auto">
-              Everything you need to find, evaluate, and win freelance gigs
-              before your competition even opens their browser.
+              Every feature is built around one goal — connecting you with
+              clients who are already posting what they need across Reddit, X
+              and Threads.
             </p>
           </div>
 
@@ -436,28 +442,28 @@ export default function LandingPage() {
                 icon: Radio,
                 title: "Real-Time Gig Radar",
                 description:
-                  "We scan Reddit, Craigslist, and X every 2 minutes. You see gigs within seconds of being posted, not hours later. Early applicants get 3x more responses.",
+                  "We scan Reddit, X and Threads continuously so the moment a client posts looking for your skills it appears in your dashboard instantly. Clients who post are already looking — you just need to find them.",
                 accent: "from-[#00F0B5] to-[#00D4FF]",
               },
               {
                 icon: Globe,
                 title: "Multi-Platform Coverage",
                 description:
-                  "Reddit (34+ subs), Craigslist (10 cities), X/Twitter, all in one dashboard. Stop wasting 2+ hours a day jumping between tabs. One feed covers everything.",
+                  "Clients post across Reddit, X and Threads every single day. Instead of manually checking every platform GigAlertPro watches all of them simultaneously and brings every matching client post into one dashboard.",
                 accent: "from-orange-400 to-orange-500",
               },
               {
                 icon: TrendingUp,
                 title: "Gig Quality Scoring",
                 description:
-                  "Every gig gets a 0 to 100 score based on budget, keyword match, and competition level. Freelancers who focus on high-score gigs close 2x more deals.",
+                  "Not every client post is worth your time. Every post gets a 0 to 100 quality score based on budget, how well it matches your skills and how serious the client is. Focus only on the clients most likely to hire you.",
                 accent: "from-[#f59e0b] to-[#fbbf24]",
               },
               {
                 icon: Bell,
                 title: "Instant Alerts",
                 description:
-                  "Get an instant alert the second a matching gig appears. No more refreshing feeds. Our fastest users apply within 3 minutes and consistently win the project.",
+                  "The moment a client posts looking for your skills across any platform you get an instant browser alert. No more manual searching. No more missing client posts. Just real clients landing in your dashboard the moment they appear.",
                 accent: "from-blue-400 to-blue-500",
               },
               {
@@ -465,14 +471,14 @@ export default function LandingPage() {
                 title: "AI Proposal Generator",
                 badge: "AI",
                 description:
-                  "One click generates a personalized, ready-to-send proposal built from your profile, skills, and past wins. Apply 10x faster than writing from scratch.",
+                  "Finding the client is only half the battle. Our AI reads their post, understands exactly what they need, and writes you a personalized proposal in a human tone tailored to that specific client's problem. Not a template. A real message that sounds like you.",
                 accent: "from-[#7c3aed] to-[#a78bfa]",
               },
               {
                 icon: Trophy,
                 title: "Win Rate Learning",
                 description:
-                  "Mark proposals as Won, Got Reply, or No Response. The AI studies your winning patterns and writes sharper proposals over time. Users report 2x higher win rates after 30 days.",
+                  "Mark each outreach as Won, Got Reply or No Response. The AI studies what works for your specific skills and niche and writes better proposals every time. The more you use it the better it gets at finding and converting the right clients for you.",
                 accent: "from-emerald-400 to-emerald-500",
               },
             ].map((f, i) => (
@@ -502,8 +508,10 @@ export default function LandingPage() {
               How It Works
             </p>
             <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-              Three steps.{" "}
-              <span className="text-[#00F0B5]">Apply first. Win.</span>
+              Three steps to{" "}
+              <span className="text-[#00F0B5]">
+                finding clients who are already looking for you.
+              </span>
             </h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -511,20 +519,20 @@ export default function LandingPage() {
               {
                 step: "01",
                 emoji: "\ud83c\udfaf",
-                title: "Tell Us What You Do",
-                desc: "Enter your skills like \u201cReact developer\u201d, \u201clogo design\u201d, or \u201cvirtual assistant.\u201d Our radar starts scanning 37+ sources across Reddit, Craigslist, and X immediately. Takes 45 seconds.",
+                title: "Tell Us Your Skills",
+                desc: "Enter what you do \u2014 graphic design, web development, video editing, copywriting. GigAlertPro immediately starts scanning Reddit, X and Threads for clients already posting what they need in your niche.",
               },
               {
                 step: "02",
                 emoji: "\u26a1",
-                title: "Get Alerted Instantly",
-                desc: "The moment a matching gig is posted, you get an instant alert. No refreshing. No scrolling. Every gig is scored 0 to 100 so you know which ones are worth your time.",
+                title: "We Find The Clients For You",
+                desc: "The moment a client posts looking for your skills across any platform you get an instant alert. No searching. No scrolling. No missing posts. Just clients who need exactly what you offer landing in your dashboard automatically.",
               },
               {
                 step: "03",
                 emoji: "\u2728",
-                title: "Apply First & Close the Deal",
-                desc: "Generate an AI-powered proposal in one click, copy it, and DM the client. While others are still browsing Reddit, you\u2019ve already sent your pitch. First reply wins 80% of the time.",
+                title: "Reach Out With The Perfect Message",
+                desc: "Our AI reads the client\u2019s post and writes you a personalized proposal tailored to their exact problem. Not a template. A real message that sounds like you wrote it yourself. Review it, tweak it if you want, and send it directly to the client.",
               },
             ].map(({ step, emoji, title, desc }, i) => (
               <div
@@ -564,12 +572,11 @@ export default function LandingPage() {
               Live Demo
             </p>
             <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-              See how gigs appear in real time
+              See how GigAlertPro finds clients for you in real time
             </h2>
             <p className="mt-4 text-gray-400 text-lg max-w-xl mx-auto">
-              Set your keywords, and watch as matching gigs stream in from
-              Reddit, Craigslist, and X/Twitter, scored and ranked
-              automatically.
+              Enter your skills and watch as GigAlertPro finds real clients
+              posting what they need across Reddit, X and Threads automatically.
             </p>
           </div>
           <div
@@ -601,24 +608,24 @@ export default function LandingPage() {
                 Real Results
               </p>
               <h2 className="text-3xl sm:text-4xl font-extrabold leading-tight tracking-tight">
-                Freelancers are closing{" "}
-                <span className="text-[#00F0B5]">$5K+ deals</span> by showing up
-                first.
+                Freelancers are finding clients{" "}
+                <span className="text-[#00F0B5]">they never knew existed</span>{" "}
+                and closing $5K+ deals.
               </h2>
 
               <div className="mt-10 space-y-5">
-                <BenefitItem text="Apply to gigs 10x faster than manual searching" />
-                <BenefitItem text="Save 10+ hours a week on prospecting" />
-                <BenefitItem text="Cover Reddit, Craigslist & X/Twitter from one dashboard" />
-                <BenefitItem text="Quality scores help you skip lowball posts" />
-                <BenefitItem text="AI proposals that sound like you, not a template" />
+                <BenefitItem text="Find clients already looking for your skills across Reddit, X and Threads" />
+                <BenefitItem text="Stop spending hours manually searching platforms that don't work" />
+                <BenefitItem text="One dashboard shows every client post matching your skills in real time" />
+                <BenefitItem text="Quality scores help you focus only on serious clients with real budgets" />
+                <BenefitItem text="AI proposals written specifically for each client's exact problem" />
               </div>
 
               <Link
                 to="/auth"
                 className="group inline-flex items-center justify-center gap-2 w-full sm:w-auto px-8 py-4 mt-8 sm:mt-12 bg-[#00F0B5] text-[#020617] font-bold rounded-lg hover:bg-[#00dba5] transition-all duration-200 text-base"
               >
-                Get Started Free
+                Find My Clients Free
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
               </Link>
             </div>
@@ -626,6 +633,10 @@ export default function LandingPage() {
             <div
               className={`space-y-5 transition-all duration-700 ease-out delay-200 ${proofVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
             >
+              <h3 className="text-xl sm:text-2xl font-extrabold tracking-tight">
+                Real freelancers finding real clients they never would have
+                discovered.
+              </h3>
               <TestimonialCard
                 quote="Got an alert 3 minutes after someone posted on r/forhire looking for a designer. Applied immediately. Closed a $3,000 project that same afternoon. Without this tool I never would've seen that post."
                 name="Sarah J."
@@ -637,7 +648,7 @@ export default function LandingPage() {
                 rating={5}
               />
               <TestimonialCard
-                quote="I was spending 2 hours a day refreshing Reddit and Craigslist. Now I just wait for the ping. Landed $8,000 in new work my first month. Honestly can’t believe I used to do this manually."
+                quote="I was spending 2 hours a day refreshing Reddit and Threads. Now I just wait for the ping. Landed $8,000 in new work my first month. Honestly can’t believe I used to do this manually."
                 name="Marcus T."
                 role="React Developer"
                 amount="$8,000"
@@ -680,26 +691,26 @@ export default function LandingPage() {
           <div className="space-y-3">
             {[
               {
-                q: "How fast do gigs actually show up?",
-                a: "Fast. We scan Reddit, Craigslist, and X every 1 to 2 minutes. Most gigs appear in your feed within seconds of being posted on the original platform. You'll get an instant alert with no refreshing, no checking back. Our fastest users apply within 3 minutes of a gig going live.",
+                q: "How does GigAlertPro find clients for me?",
+                a: "GigAlertPro scans Reddit, X and Threads continuously 24/7. The moment a client posts looking for a freelancer matching your skills it appears in your dashboard and you get an instant alert. Clients post what they need every day on these platforms \u2014 most freelancers just never know where to look. GigAlertPro does the finding for you automatically.",
                 defaultOpen: true,
               },
               {
                 q: "How is this different from Upwork or Fiverr?",
-                a: "On Upwork and Fiverr, you\u2019re competing with 50 to 100 other freelancers on every posted job. By the time you see it, the client is already drowning in proposals. GigAlertPro scans places most freelancers never check: Reddit subs, Craigslist gigs, X/Twitter posts. It alerts you in seconds. You\u2019re often the first or second person to reply. That\u2019s how you win.",
+                a: "Upwork and Fiverr are marketplaces where you compete with hundreds of freelancers for the same posted jobs. GigAlertPro finds clients who post what they need organically on Reddit, X and Threads \u2014 places most freelancers never look. Those clients are not overwhelmed with proposals. They posted because they need help and they are waiting for the right person to reach out.",
                 defaultOpen: true,
               },
               {
-                q: "What sources does GigAlertPro scan?",
-                a: "We scan 37+ sources including Reddit (34+ subreddits like r/forhire, r/freelance, r/hiring), Craigslist (10 major cities), and X/Twitter freelance accounts. New sources are added regularly. One dashboard replaces hours of manual searching.",
+                q: "What platforms does GigAlertPro find clients on?",
+                a: "GigAlertPro scans Reddit including 34+ subreddits like r/forhire and r/freelance, X/Twitter and Threads. We are constantly adding new sources to make sure no client post goes unnoticed. All matching posts appear in one dashboard so you never have to manually check multiple platforms again.",
               },
               {
-                q: "What does the AI proposal generator do?",
-                a: "It writes a personalized, ready-to-send proposal in one click. It pulls from your profile, skills, and past wins to craft something that sounds like you, not a generic template. Freelancers report applying 10x faster. You generate, tweak a sentence or two, and send. Done.",
+                q: "What does the AI proposal writer do?",
+                a: "Once GigAlertPro finds a client post matching your skills our AI reads the post and understands exactly what that specific client needs. It then writes you a personalized proposal in a human tone tailored to their exact problem. It does not send a generic template. It writes a real message that sounds like you sat down and wrote it yourself specifically for that client.",
               },
               {
                 q: "Can I cancel anytime?",
-                a: "Yes. One click from your account settings. No questions, no hidden fees, no guilt trips. Cancel anytime and you won\u2019t be charged again.",
+                a: "Yes. No contracts. No cancellation fees. Cancel directly from your dashboard in one click. We also offer a 7 day free trial on all paid plans so you can experience GigAlertPro finding real clients for you before being charged anything.",
               },
             ].map(({ q, a, defaultOpen }, i) => (
               <FaqItem
@@ -724,21 +735,24 @@ export default function LandingPage() {
             <div className="absolute inset-0 bg-gradient-to-br from-[#00F0B5]/[0.06] to-[#00D4FF]/[0.03]" />
             <div className="relative">
               <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-4">
-                Someone just posted your perfect gig. Are you going to see it?
+                Your next client is out there right now posting what they need.
+                Will you find them?
               </h2>
               <p className="text-gray-400 text-lg max-w-lg mx-auto mb-8">
-                Every minute you're not using GigAlertPro, another freelancer is
-                applying first. Stop losing gigs you should be winning.
+                Clients post on Reddit, X and Threads every single day looking
+                for freelancers exactly like you. Without GigAlertPro those
+                posts disappear and you never know they existed. Start finding
+                your clients today.
               </p>
               <Link
                 to="/auth"
                 className="group inline-flex items-center justify-center gap-2 w-full sm:w-auto px-8 py-4 bg-[#00F0B5] text-[#020617] font-bold rounded-lg hover:bg-[#00dba5] transition-all duration-200 text-base"
               >
-                Get Started Free
+                Find My Clients Free
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
               </Link>
               <p className="text-sm text-gray-500 mt-5">
-                Join 2,400+ freelancers already landing gigs with GigAlertPro
+                Join 2,400+ freelancers already finding clients with GigAlertPro
               </p>
             </div>
           </div>
@@ -761,8 +775,8 @@ export default function LandingPage() {
                 </span>
               </div>
               <p className="text-sm text-gray-500 leading-relaxed">
-                Real-time freelance gig scanner. We find the opportunities, you
-                close the deals.
+                We find the clients who are already looking for you. You close
+                the deals.
               </p>
             </div>
             <div>
@@ -1220,7 +1234,7 @@ function PricingSection({ priceRef, priceVis, handleCheckout }) {
       tier: "basic",
       popular: false,
       features: [
-        { text: "All platforms Reddit, X/Twitter, Craigslist & Threads" },
+        { text: "All platforms Reddit, X/Twitter & Threads" },
         { text: "Up to 5 active keywords" },
         { text: "Gig quality scoring (0-100)" },
         { text: "Filter by source & category · Sort by score" },
@@ -1266,7 +1280,7 @@ function PricingSection({ priceRef, priceVis, handleCheckout }) {
         { text: "Early access to all new features" },
         { text: "Priority support" },
       ],
-      ctaLabel: "Get Agency",
+      ctaLabel: "Get Started Free",
       ctaClass:
         "w-full py-3.5 border border-white/10 text-gray-300 font-semibold rounded-xl hover:bg-white/[0.04] hover:border-white/20 transition-all duration-300 flex items-center justify-center gap-2 text-sm",
     },
