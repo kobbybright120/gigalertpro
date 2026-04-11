@@ -681,12 +681,12 @@ export default function LandingPage() {
             {[
               {
                 q: "How does GigAlertPro find clients for me?",
-                a: "GigAlertPro scans Reddit, X and Threads continuously 24/7. The moment a client posts looking for a freelancer matching your skills it appears in your dashboard and you get an instant alert. Clients post what they need every day on these platforms \u2014 most freelancers just never know where to look. GigAlertPro does the finding for you automatically.",
+                a: "GigAlertPro scans Reddit, X and Threads continuously 24/7. The moment a client posts looking for a freelancer matching your skills it appears in your dashboard and you get an instant alert. Clients post what they need every day on these platforms. Most freelancers just never know where to look. GigAlertPro does the finding for you automatically.",
                 defaultOpen: true,
               },
               {
                 q: "How is this different from Upwork or Fiverr?",
-                a: "Upwork and Fiverr are marketplaces where you compete with hundreds of freelancers for the same posted jobs. GigAlertPro finds clients who post what they need organically on Reddit, X and Threads \u2014 places most freelancers never look. Those clients are not overwhelmed with proposals. They posted because they need help and they are waiting for the right person to reach out.",
+                a: "Upwork and Fiverr are marketplaces where you compete with hundreds of freelancers for the same posted jobs. GigAlertPro finds clients who post what they need organically on Reddit, X and Threads. Places most freelancers never look. Those clients are not overwhelmed with proposals. They posted because they need help and they are waiting for the right person to reach out.",
                 defaultOpen: true,
               },
               {
