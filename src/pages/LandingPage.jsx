@@ -290,18 +290,14 @@ export default function LandingPage() {
           </div>
 
           <h1 className="text-[2.25rem] sm:text-5xl lg:text-7xl font-extrabold leading-[1.1] tracking-tight">
-            Your next client is already out there{" "}
+            Your next client is looking for you.{" "}
             <br className="hidden sm:block" />
-            <span className="text-gradient">
-              looking for you. GigAlertPro finds them.
-            </span>
+            <span className="text-gradient">GigAlertPro finds them.</span>
           </h1>
 
           <p className="mt-7 text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
-            Clients post what they need every day on Reddit, X and Threads. Most
-            freelancers never see those posts. GigAlertPro finds them for you
-            automatically and writes a personalized proposal so you know exactly
-            what to say to that specific client.
+            Clients post what they need every day on Reddit, X and Threads.
+            GigAlertPro finds them automatically and writes your proposal.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mt-10 sm:mt-12 w-full">
@@ -423,17 +419,10 @@ export default function LandingPage() {
               Features
             </p>
             <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-              Not just alerts.{" "}
               <span className="text-[#00F0B5]">
-                A complete system for finding clients who are already looking
-                for you.
+                Everything you need to find clients who are already looking.
               </span>
             </h2>
-            <p className="mt-4 text-gray-400 text-lg max-w-xl mx-auto">
-              Every feature is built around one goal — connecting you with
-              clients who are already posting what they need across Reddit, X
-              and Threads.
-            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -442,28 +431,28 @@ export default function LandingPage() {
                 icon: Radio,
                 title: "Real-Time Gig Radar",
                 description:
-                  "We scan Reddit, X and Threads continuously so the moment a client posts looking for your skills it appears in your dashboard instantly. Clients who post are already looking — you just need to find them.",
+                  "The moment a client posts looking for your skills it appears in your dashboard instantly.",
                 accent: "from-[#00F0B5] to-[#00D4FF]",
               },
               {
                 icon: Globe,
                 title: "Multi-Platform Coverage",
                 description:
-                  "Clients post across Reddit, X and Threads every single day. Instead of manually checking every platform GigAlertPro watches all of them simultaneously and brings every matching client post into one dashboard.",
+                  "Reddit, X and Threads monitored simultaneously. Every matching client post in one dashboard.",
                 accent: "from-orange-400 to-orange-500",
               },
               {
                 icon: TrendingUp,
                 title: "Gig Quality Scoring",
                 description:
-                  "Not every client post is worth your time. Every post gets a 0 to 100 quality score based on budget, how well it matches your skills and how serious the client is. Focus only on the clients most likely to hire you.",
+                  "Every post scored 0-100 by budget and client seriousness. Focus only on the best ones.",
                 accent: "from-[#f59e0b] to-[#fbbf24]",
               },
               {
                 icon: Bell,
                 title: "Instant Alerts",
                 description:
-                  "The moment a client posts looking for your skills across any platform you get an instant browser alert. No more manual searching. No more missing client posts. Just real clients landing in your dashboard the moment they appear.",
+                  "Instant browser alert the moment a client posts looking for your skills. Never miss one again.",
                 accent: "from-blue-400 to-blue-500",
               },
               {
@@ -471,14 +460,14 @@ export default function LandingPage() {
                 title: "AI Proposal Generator",
                 badge: "AI",
                 description:
-                  "Finding the client is only half the battle. Our AI reads their post, understands exactly what they need, and writes you a personalized proposal in a human tone tailored to that specific client's problem. Not a template. A real message that sounds like you.",
+                  "Our AI reads the client's post and writes a personalized proposal tailored to their exact problem.",
                 accent: "from-[#7c3aed] to-[#a78bfa]",
               },
               {
                 icon: Trophy,
                 title: "Win Rate Learning",
                 description:
-                  "Mark each outreach as Won, Got Reply or No Response. The AI studies what works for your specific skills and niche and writes better proposals every time. The more you use it the better it gets at finding and converting the right clients for you.",
+                  "The AI studies what wins for you and gets better every time you use it.",
                 accent: "from-emerald-400 to-emerald-500",
               },
             ].map((f, i) => (
@@ -510,7 +499,7 @@ export default function LandingPage() {
             <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
               Three steps to{" "}
               <span className="text-[#00F0B5]">
-                finding clients who are already looking for you.
+                finding clients already looking for you.
               </span>
             </h2>
           </div>
@@ -520,19 +509,19 @@ export default function LandingPage() {
                 step: "01",
                 emoji: "\ud83c\udfaf",
                 title: "Tell Us Your Skills",
-                desc: "Enter what you do \u2014 graphic design, web development, video editing, copywriting. GigAlertPro immediately starts scanning Reddit, X and Threads for clients already posting what they need in your niche.",
+                desc: "Enter your skills. GigAlertPro immediately starts scanning Reddit, X and Threads for matching clients.",
               },
               {
                 step: "02",
                 emoji: "\u26a1",
                 title: "We Find The Clients For You",
-                desc: "The moment a client posts looking for your skills across any platform you get an instant alert. No searching. No scrolling. No missing posts. Just clients who need exactly what you offer landing in your dashboard automatically.",
+                desc: "The moment a client posts looking for your skills you get an instant alert. No searching needed.",
               },
               {
                 step: "03",
                 emoji: "\u2728",
                 title: "Reach Out With The Perfect Message",
-                desc: "Our AI reads the client\u2019s post and writes you a personalized proposal tailored to their exact problem. Not a template. A real message that sounds like you wrote it yourself. Review it, tweak it if you want, and send it directly to the client.",
+                desc: "Our AI reads their post and writes a personalized proposal. Review it and send.",
               },
             ].map(({ step, emoji, title, desc }, i) => (
               <div
@@ -614,11 +603,11 @@ export default function LandingPage() {
               </h2>
 
               <div className="mt-10 space-y-5">
-                <BenefitItem text="Find clients already looking for your skills across Reddit, X and Threads" />
-                <BenefitItem text="Stop spending hours manually searching platforms that don't work" />
-                <BenefitItem text="One dashboard shows every client post matching your skills in real time" />
-                <BenefitItem text="Quality scores help you focus only on serious clients with real budgets" />
-                <BenefitItem text="AI proposals written specifically for each client's exact problem" />
+                <BenefitItem text="Find clients already looking for your skills" />
+                <BenefitItem text="One dashboard covers Reddit, X and Threads" />
+                <BenefitItem text="Skip low quality posts with quality scoring" />
+                <BenefitItem text="AI proposals written for each specific client" />
+                <BenefitItem text="Stop wasting hours searching manually" />
               </div>
 
               <Link
@@ -735,14 +724,11 @@ export default function LandingPage() {
             <div className="absolute inset-0 bg-gradient-to-br from-[#00F0B5]/[0.06] to-[#00D4FF]/[0.03]" />
             <div className="relative">
               <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-4">
-                Your next client is out there right now posting what they need.
-                Will you find them?
+                Your next client is posting right now. Will you find them?
               </h2>
               <p className="text-gray-400 text-lg max-w-lg mx-auto mb-8">
-                Clients post on Reddit, X and Threads every single day looking
-                for freelancers exactly like you. Without GigAlertPro those
-                posts disappear and you never know they existed. Start finding
-                your clients today.
+                Without GigAlertPro those posts disappear and you never know
+                they existed.
               </p>
               <Link
                 to="/auth"
@@ -775,8 +761,7 @@ export default function LandingPage() {
                 </span>
               </div>
               <p className="text-sm text-gray-500 leading-relaxed">
-                We find the clients who are already looking for you. You close
-                the deals.
+                We find the clients. You close the deals.
               </p>
             </div>
             <div>
