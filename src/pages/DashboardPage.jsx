@@ -27,11 +27,21 @@ import {
   useProfile,
 } from "../lib/useSupabase";
 import { supabase } from "../lib/supabase";
+import {
+  trackKeywordAdded,
+  trackKeywordRemoved,
+  trackProposalGenerated,
+  trackPageViewed,
+} from "../lib/umami";
 
 export default function DashboardPage() {
   const navigate = useNavigate();
   const [input, setInput] = useState("");
   const [proposalGig, setProposalGig] = useState(null);
+
+  useEffect(() => {
+    trackPageViewed("dashboard");
+  }, []);
 
   const { profile } = useProfile();
   const { keywords, addKeyword, removeKeyword } = useKeywords(profile?.plan);
@@ -105,6 +115,7 @@ export default function DashboardPage() {
     setKeywordError("");
     try {
       await addKeyword(input);
+      trackKeywordAdded(input.trim());
       setInput("");
     } catch (err) {
       setKeywordError(err.message);
@@ -113,6 +124,7 @@ export default function DashboardPage() {
 
   function handleGenerateProposal(gig) {
     setProposalGig(gig);
+    trackProposalGenerated(gig.id ?? gig.title, gig.source);
   }
 
   async function handleSaveProposal(text) {
@@ -262,7 +274,10 @@ export default function DashboardPage() {
                 >
                   {kwObj.keyword}
                   <button
-                    onClick={() => removeKeyword(kwObj.id)}
+                    onClick={() => {
+                      trackKeywordRemoved(kwObj.keyword);
+                      removeKeyword(kwObj.id);
+                    }}
                     className="hover:text-red-400 transition-colors"
                   >
                     <X className="w-3.5 h-3.5" />

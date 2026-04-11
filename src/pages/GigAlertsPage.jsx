@@ -27,6 +27,12 @@ import {
   useProfile,
 } from "../lib/useSupabase";
 import { useNewGigCount } from "../context/NewGigCountContext";
+import {
+  trackPageViewed,
+  trackKeywordAdded,
+  trackKeywordRemoved,
+  trackProposalGenerated,
+} from "../lib/umami";
 
 /** Format a Unix-ms timestamp as a relative string ("2 min ago") */
 function formatUpdated(ts, now) {
@@ -46,6 +52,10 @@ export default function GigAlertsPage() {
   const [activeCategory, setActiveCategory] = useState("all");
   const [sortBy, setSortBy] = useState("time"); // "time" | "score"
   const [proposalGig, setProposalGig] = useState(null); // gig selected for AI proposal
+
+  useEffect(() => {
+    trackPageViewed("gig_alerts");
+  }, []);
 
   const { profile } = useProfile();
   const { keywords, addKeyword, removeKeyword } = useKeywords(profile?.plan);
@@ -87,6 +97,7 @@ export default function GigAlertsPage() {
     setKeywordError("");
     try {
       await addKeyword(input);
+      trackKeywordAdded(input.trim());
       setInput("");
     } catch (err) {
       setKeywordError(err.message);
@@ -95,6 +106,7 @@ export default function GigAlertsPage() {
 
   function handleGenerateProposal(gig) {
     setProposalGig(gig);
+    trackProposalGenerated(gig.id ?? gig.title, gig.source);
   }
 
   async function handleSaveProposal(text) {
@@ -209,7 +221,10 @@ export default function GigAlertsPage() {
               >
                 {kwObj.keyword}
                 <button
-                  onClick={() => removeKeyword(kwObj.id)}
+                  onClick={() => {
+                    trackKeywordRemoved(kwObj.keyword);
+                    removeKeyword(kwObj.id);
+                  }}
                   className="hover:text-red-400 transition-colors"
                 >
                   <X className="w-3.5 h-3.5" />

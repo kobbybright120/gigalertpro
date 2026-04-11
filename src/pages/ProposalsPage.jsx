@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Bot,
   Trash2,
@@ -11,6 +11,7 @@ import {
   MinusCircle,
 } from "lucide-react";
 import { useProposals } from "../lib/useSupabase";
+import { trackPageViewed, trackProposalOutcomeMarked } from "../lib/umami";
 
 const OUTCOMES = [
   {
@@ -39,6 +40,10 @@ const OUTCOMES = [
 export default function ProposalsPage() {
   const { proposals, loading, deleteProposal, saveOutcome } = useProposals();
   const [copiedId, setCopiedId] = useState(null);
+
+  useEffect(() => {
+    trackPageViewed("proposals");
+  }, []);
 
   function handleCopy(id, text) {
     navigator.clipboard.writeText(text);
@@ -126,7 +131,12 @@ export default function ProposalsPage() {
                     return (
                       <button
                         key={key}
-                        onClick={() => saveOutcome(p.id, isActive ? null : key)}
+                        onClick={() => {
+                          const newOutcome = isActive ? null : key;
+                          saveOutcome(p.id, newOutcome);
+                          if (newOutcome)
+                            trackProposalOutcomeMarked(newOutcome);
+                        }}
                         className={`inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all duration-200 ${
                           isActive
                             ? active

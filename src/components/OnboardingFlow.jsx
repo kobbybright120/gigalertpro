@@ -2,6 +2,12 @@ import { useState, useEffect, useRef } from "react";
 import { Search, Plus, X, Radar, ArrowRight, Sparkles } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
+import {
+  trackOnboardingStepViewed,
+  trackOnboardingSkillAdded,
+  trackOnboardingSkillRemoved,
+  trackOnboardingCompleted,
+} from "../lib/umami";
 
 const DISABLE_AUTH =
   import.meta.env.VITE_DISABLE_AUTH === "true" ||
@@ -27,7 +33,10 @@ export default function OnboardingFlow({ onComplete }) {
   const [gigCount, setGigCount] = useState(0);
   const scanRef = useRef(null);
 
-  // Suggested skills as pills
+  // Track step 1 on mount
+  useEffect(() => {
+    trackOnboardingStepViewed(1);
+  }, []);
   const suggestions = [
     "React Developer",
     "Logo Design",
@@ -44,11 +53,13 @@ export default function OnboardingFlow({ onComplete }) {
     if (!clean) return;
     if (skills.some((s) => s.toLowerCase() === clean.toLowerCase())) return;
     setSkills((prev) => [...prev, clean]);
+    trackOnboardingSkillAdded(clean);
     setInput("");
   }
 
   function removeSkill(skill) {
     setSkills((prev) => prev.filter((s) => s !== skill));
+    trackOnboardingSkillRemoved(skill);
   }
 
   function handleSubmitSkills(e) {
@@ -59,6 +70,7 @@ export default function OnboardingFlow({ onComplete }) {
   // Step 2: scanning animation
   useEffect(() => {
     if (step !== 2) return;
+    trackOnboardingStepViewed(2);
     let idx = 0;
     let progress = 0;
     const interval = setInterval(() => {
@@ -105,6 +117,7 @@ export default function OnboardingFlow({ onComplete }) {
     if (count === 0) count = Math.floor(Math.random() * 15) + 8;
     setGigCount(count);
     setStep(3);
+    trackOnboardingStepViewed(3);
   }
 
   async function handleFinishOnboarding() {
@@ -147,6 +160,7 @@ export default function OnboardingFlow({ onComplete }) {
       } catch {}
     }
     onComplete(skills, gigCount);
+    trackOnboardingCompleted(skills);
   }
 
   return (

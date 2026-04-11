@@ -3,6 +3,15 @@ import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { PAYMENTS_ENABLED } from "../../payments.config.js";
 import {
+  trackScrollDepth,
+  trackHeroCtaClick,
+  trackSecondaryCtaClick,
+  trackSectionViewed,
+  trackFaqOpened,
+  trackPricingPlanClicked,
+  trackLiveDemoStarted,
+} from "../lib/umami";
+import {
   ArrowRight,
   Sparkles,
   CheckCircle2,
@@ -204,6 +213,48 @@ export default function LandingPage() {
   const [faqRef, faqVis] = useReveal(0.08);
   const [ctaRef, ctaVis] = useReveal();
 
+  /* ── Scroll depth tracking ── */
+  useEffect(() => {
+    const THRESHOLDS = [25, 50, 75, 90, 100];
+    const fired = new Set();
+    function onScroll() {
+      const scrolled = window.scrollY + window.innerHeight;
+      const total = document.documentElement.scrollHeight;
+      const pct = Math.round((scrolled / total) * 100);
+      THRESHOLDS.forEach((t) => {
+        if (pct >= t && !fired.has(t)) {
+          fired.add(t);
+          trackScrollDepth(t);
+        }
+      });
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  /* ── Section visibility tracking ── */
+  useEffect(() => {
+    if (featVis) trackSectionViewed("features");
+  }, [featVis]);
+  useEffect(() => {
+    if (howVis) trackSectionViewed("how_it_works");
+  }, [howVis]);
+  useEffect(() => {
+    if (demoVis) trackSectionViewed("live_demo");
+  }, [demoVis]);
+  useEffect(() => {
+    if (priceVis) trackSectionViewed("pricing");
+  }, [priceVis]);
+  useEffect(() => {
+    if (proofVis) trackSectionViewed("social_proof");
+  }, [proofVis]);
+  useEffect(() => {
+    if (faqVis) trackSectionViewed("faq");
+  }, [faqVis]);
+  useEffect(() => {
+    if (ctaVis) trackSectionViewed("final_cta");
+  }, [ctaVis]);
+
   const location = useLocation();
 
   useEffect(() => {
@@ -261,6 +312,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-3">
             <Link
               to="/auth"
+              onClick={() => trackHeroCtaClick("navbar")}
               className="inline-flex items-center gap-1 px-3 py-2 sm:px-5 sm:py-2.5 bg-[#00F0B5] text-[#020617] text-xs sm:text-sm font-semibold rounded-lg hover:bg-[#00dba5] transition-all duration-200"
             >
               <span className="hidden sm:inline">Find My Clients Free</span>
@@ -303,6 +355,7 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mt-10 sm:mt-12 w-full">
             <Link
               to="/auth"
+              onClick={() => trackHeroCtaClick("hero_primary")}
               className="group inline-flex items-center justify-center gap-2 w-full sm:w-auto px-8 py-4 bg-[#00F0B5] text-[#020617] font-bold rounded-lg hover:bg-[#00dba5] transition-all duration-200 text-base"
             >
               Find My Clients Free
@@ -310,6 +363,7 @@ export default function LandingPage() {
             </Link>
             <a
               href="#demo"
+              onClick={() => trackSecondaryCtaClick("see_how_it_finds")}
               className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-8 py-4 border border-white/10 text-gray-300 font-semibold rounded-full hover:bg-white/[0.04] hover:border-white/20 transition-all duration-300 text-base"
             >
               See how it finds clients
@@ -612,6 +666,7 @@ export default function LandingPage() {
 
               <Link
                 to="/auth"
+                onClick={() => trackHeroCtaClick("real_results")}
                 className="group inline-flex items-center justify-center gap-2 w-full sm:w-auto px-8 py-4 mt-8 sm:mt-12 bg-[#00F0B5] text-[#020617] font-bold rounded-lg hover:bg-[#00dba5] transition-all duration-200 text-base"
               >
                 Find My Clients Free
@@ -732,6 +787,7 @@ export default function LandingPage() {
               </p>
               <Link
                 to="/auth"
+                onClick={() => trackHeroCtaClick("final_cta")}
                 className="group inline-flex items-center justify-center gap-2 w-full sm:w-auto px-8 py-4 bg-[#00F0B5] text-[#020617] font-bold rounded-lg hover:bg-[#00dba5] transition-all duration-200 text-base"
               >
                 Find My Clients Free
@@ -850,6 +906,7 @@ function LiveDemo() {
 
   function handleScan() {
     if (scanning) return;
+    trackLiveDemoStarted();
     setScanning(true);
     setVisibleGigs([]);
     setSelectedGig(null);
@@ -1341,7 +1398,10 @@ function PricingSection({ priceRef, priceVis, handleCheckout }) {
               </ul>
 
               <button
-                onClick={() => handleCheckout(plan.tier)}
+                onClick={() => {
+                  trackPricingPlanClicked(plan.tier);
+                  handleCheckout(plan.tier);
+                }}
                 className={plan.ctaClass}
               >
                 {plan.ctaLabel}
@@ -1444,13 +1504,20 @@ function BenefitItem({ text }) {
 
 function FaqItem({ question, answer, visible, index, defaultOpen }) {
   const [open, setOpen] = useState(!!defaultOpen);
+
+  function handleToggle() {
+    const opening = !open;
+    setOpen(opening);
+    if (opening) trackFaqOpened(question);
+  }
+
   return (
     <div
       className={`glass-card rounded-xl overflow-hidden transition-all duration-700 ease-out ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
       style={stagger(index)}
     >
       <button
-        onClick={() => setOpen(!open)}
+        onClick={handleToggle}
         className="w-full flex items-center justify-between gap-4 p-5 text-left hover:bg-white/[0.02] transition-colors"
       >
         <span className="text-sm font-semibold text-white">{question}</span>
