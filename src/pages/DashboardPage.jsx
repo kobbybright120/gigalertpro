@@ -14,6 +14,7 @@ import {
   Globe,
   Activity,
   Sparkles,
+  Lightbulb,
 } from "lucide-react";
 import GigCard from "../components/GigCard";
 import NotificationToggle from "../components/NotificationToggle";
@@ -265,6 +266,18 @@ export default function DashboardPage() {
           {keywordError && (
             <p className="text-red-400 text-xs mt-2">{keywordError}</p>
           )}
+          {/* Keyword tip */}
+          <div className="flex items-start gap-2 px-3 py-2 mt-2.5 rounded-xl bg-[#00F0B5]/[0.04] border border-[#00F0B5]/10">
+            <Lightbulb className="w-3.5 h-3.5 text-[#00F0B5] mt-0.5 shrink-0" />
+            <p className="text-[11px] leading-relaxed text-gray-400">
+              <span className="text-[#00F0B5] font-medium">Tip:</span> Use
+              specific names like{" "}
+              <span className="text-white/70">"shopify"</span>,{" "}
+              <span className="text-white/70">"figma"</span>, or{" "}
+              <span className="text-white/70">"after effects"</span> — tool
+              names beat broad words like "design" or "marketing".
+            </p>
+          </div>
           {keywords.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-3">
               {keywords.map((kwObj) => (
