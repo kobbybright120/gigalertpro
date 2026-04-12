@@ -227,11 +227,14 @@ export default function OnboardingFlow({ onComplete }) {
               <Lightbulb className="w-3.5 h-3.5 text-[#00F0B5] mt-0.5 shrink-0" />
               <p className="text-[11px] leading-relaxed text-gray-400">
                 <span className="text-[#00F0B5] font-medium">Tip:</span> Use
-                tool/platform names like{" "}
-                <span className="text-white/70">"shopify"</span>,{" "}
-                <span className="text-white/70">"figma"</span>, or{" "}
-                <span className="text-white/70">"google ads"</span> instead of
-                broad words like "design". You'll get far more relevant gigs.
+                clear keywords like{" "}
+                <span className="text-white/70">Shopify</span>,{" "}
+                <span className="text-white/70">React</span>,{" "}
+                <span className="text-white/70">WordPress</span> or full task
+                phrases like{" "}
+                <span className="text-white/70">"logo design"</span> or{" "}
+                <span className="text-white/70">"React developer"</span> to get
+                better results.
               </p>
             </div>
 

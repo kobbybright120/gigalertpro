@@ -215,11 +215,13 @@ export default function GigAlertsPage() {
         <div className="flex items-start gap-2 px-3 py-2 mt-2.5 rounded-xl bg-[#00F0B5]/[0.04] border border-[#00F0B5]/10">
           <Lightbulb className="w-3.5 h-3.5 text-[#00F0B5] mt-0.5 shrink-0" />
           <p className="text-[11px] leading-relaxed text-gray-400">
-            <span className="text-[#00F0B5] font-medium">Tip:</span> Use
-            specific names like <span className="text-white/70">"shopify"</span>
-            , <span className="text-white/70">"figma"</span>, or{" "}
-            <span className="text-white/70">"after effects"</span>. Tool names
-            beat broad words like "design" or "marketing".
+            <span className="text-[#00F0B5] font-medium">Tip:</span> Use clear
+            keywords like <span className="text-white/70">Shopify</span>,{" "}
+            <span className="text-white/70">React</span>,{" "}
+            <span className="text-white/70">WordPress</span> or full task
+            phrases like <span className="text-white/70">"logo design"</span> or{" "}
+            <span className="text-white/70">"React developer"</span> to get
+            better results.
           </p>
         </div>
 
