@@ -218,7 +218,7 @@ export default function GigAlertsPage() {
             <span className="text-[#00F0B5] font-medium">Tip:</span> Use
             specific names like <span className="text-white/70">"shopify"</span>
             , <span className="text-white/70">"figma"</span>, or{" "}
-            <span className="text-white/70">"after effects"</span> — tool names
+            <span className="text-white/70">"after effects"</span>. Tool names
             beat broad words like "design" or "marketing".
           </p>
         </div>

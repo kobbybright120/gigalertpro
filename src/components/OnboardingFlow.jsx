@@ -231,7 +231,7 @@ export default function OnboardingFlow({ onComplete }) {
                 <span className="text-white/70">"shopify"</span>,{" "}
                 <span className="text-white/70">"figma"</span>, or{" "}
                 <span className="text-white/70">"google ads"</span> instead of
-                broad words like "design" — you'll get far more relevant gigs.
+                broad words like "design". You'll get far more relevant gigs.
               </p>
             </div>
 

@@ -274,8 +274,8 @@ export default function DashboardPage() {
               specific names like{" "}
               <span className="text-white/70">"shopify"</span>,{" "}
               <span className="text-white/70">"figma"</span>, or{" "}
-              <span className="text-white/70">"after effects"</span> — tool
-              names beat broad words like "design" or "marketing".
+              <span className="text-white/70">"after effects"</span>. Tool names
+              beat broad words like "design" or "marketing".
             </p>
           </div>
           {keywords.length > 0 && (
