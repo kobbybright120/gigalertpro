@@ -257,7 +257,7 @@ const KEYWORD_EXPANSIONS = {
   "seo writing": ["seo", "content writing", "blog", "article"],
 
   // Marketing
-  marketing: ["digital marketing", "marketer", "growth", "advertising"],
+  marketing: ["digital marketing", "marketer", "advertising", "growth hacking"],
   "digital marketing": ["marketing", "seo", "social media", "ppc", "ads"],
   seo: [
     "search engine",
@@ -349,7 +349,14 @@ const KEYWORD_EXPANSIONS = {
     "automation",
     "scrapy",
   ],
-  automation: ["automate", "bot", "scripting", "zapier", "n8n", "workflow"],
+  automation: [
+    "automate",
+    "scripting",
+    "zapier",
+    "n8n",
+    "workflow",
+    "automated",
+  ],
 
   // Business & Admin
   "virtual assistant": [
@@ -373,7 +380,7 @@ const KEYWORD_EXPANSIONS = {
     "outreach",
     "business development",
     "lead gen",
-    "closing",
+    "commission sales",
   ],
   "cold calling": ["cold call", "telemarketing", "outreach", "sales"],
   "lead gen": ["lead generation", "leads", "prospecting", "outreach"],
@@ -451,6 +458,29 @@ function expandKeywords(keywords) {
   }
   return [...expanded];
 }
+
+// ── Exact-boundary keywords ─────────────────────────────────────────────────
+// These keywords MUST match as whole words on both sides (\bword\b).
+// Without the trailing \b, stem matching causes serious false positives:
+//   "java"  → matches "javascript"  (completely different language)
+//   "react" → matches "reaction", "reacts", "reactive"
+//   "rust"  → matches "rustic", "rusted"
+//   "agent" → matches real-estate / insurance contexts
+//   "bot"   → matches "bottle", "bottom", "botox"
+//   "ion"   → matches "passion", "mission", "vision" (Ionic framework)
+//   "sol"   → matches "solution", "solar" (Solana blockchain)
+const EXACT_MATCH_REQUIRED = new Set([
+  "java",
+  "react",
+  "rust",
+  "ruby",
+  "node",
+  "agent",
+  "bot",
+  "ion",
+  "sol",
+  "hub",
+]);
 
 // ── Self-Promotion Detection (freelancer ads — we REJECT these) ──────────────
 const SELF_PROMO_PATTERNS = [
@@ -837,6 +867,24 @@ const JUNK_PATTERNS = [
   /\b(?:finally|actually)\s+(?:getting|landing)\s+(?:hired|interviews?|offers?)\b/i,
   /\bif\s+you(?:'re|\s+are)\s+(?:a\s+)?(?:junior|mid-?level|senior|unemployed|job\s*seeking|looking\s+for\s+(?:a\s+)?(?:job|work|your\s+(?:first|next)))\b/i,
   /\b(?:real\s+)?insights?\b.{0,20}\b(?:from|for|about)\b.{0,20}\b(?:the\s+(?:market|industry)|job\s+(?:search|market|hunt)|hiring|interview)\b/i,
+
+  // ── Personal freelance journey / advice / rant posts ──
+  // These appear in freelance subreddits but are NOT job postings.
+  /\bhow\s+I\s+(?:got|landed?|made|earned|built|grew|quit)\b.{0,40}\b(?:clients?|income|first\s+client|freelanc|my\s+first)\b/i,
+  /\bmy\s+(?:freelance\s+)?(?:journey|story|experience)\b/i,
+  /\b(?:what\s+I\s+(?:wish\s+I\s+)?(?:learned|knew)|lessons?\s+(?:I\s+)?learned)\b.{0,30}\b(?:freelanc|client|startup|develop)\b/i,
+  /\bday\s+\d+\s+(?:of|as)\b/i,
+  /\bI\s+quit(?:ted)?\s+my\s+(?:9-?5|job|full[\s-]?time)\b/i,
+  /\b(?:anyone\s+else|does\s+anyone|is\s+anyone)\b.{0,30}\b(?:struggling|experiencing|feeling|noticed?)\b/i,
+  /\bwhy\s+(?:do|are|is)\b.{0,20}\b(?:clients?|companies|employers?)\b.{0,30}\b(?:not\s+pay|lowball|ghost|expect)\b/i,
+  /\brant(?:ing)?\b.{0,20}\b(?:client|freelanc|design|develop|pay|hire)\b/i,
+  /\bstory\s*time\b/i,
+  // ── Rate / pricing discussion posts ──
+  /\bwhat(?:'s|\s+is)\s+(?:your|the\s+best|a\s+good|an?\s+average)\s+(?:rate|price|charge|fee)\b/i,
+  /\bhow\s+much\s+(?:do|should|can|would)\s+(?:you|I|one)\s+(?:charge|make|earn|ask)\b/i,
+  /\bshare\s+your\b.{0,20}\b(?:rate|price|experience|portfolio|thoughts?)\b/i,
+  // ── Side project / showcase (not a job) ──
+  /\b(?:built|made|created|launched)\s+(?:this|a|an)\s+(?:side\s+)?(?:project|tool|app|extension)\b.{0,40}\b(?:looking\s+for\s+feedback|feedback\s+welcome|thoughts?)\b/i,
 ];
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -1294,8 +1342,21 @@ function matchAndScore(posts, lowerKws) {
       } else {
         // Single word: word boundary + stem matching
         const escaped = kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        // Allow stem matches: "develop" matches "developer", "development"
-        const rx = new RegExp(`\\b${escaped}`, "i");
+        // Short keywords (≤3 chars) AND explicitly ambiguous keywords need exact word
+        // boundaries on both sides to prevent false positives:
+        //   "ai"    → must not match "aim", "aid", "airline"
+        //   "java"  → must not match "javascript"
+        //   "react" → must not match "reaction", "reacts"
+        //   "bot"   → must not match "bottle", "bottom"
+        //   "agent" → must not match real-estate / insurance contexts
+        // Longer unambiguous keywords use stem matching so "develop" matches
+        // "developer", "development", etc.
+        const needsExactBoundary =
+          kw.length <= 3 || EXACT_MATCH_REQUIRED.has(kw);
+        const rx = new RegExp(
+          `\\b${escaped}${needsExactBoundary ? "\\b" : ""}`,
+          "i",
+        );
         const inTitle = rx.test(titleLower);
         if (inTitle) {
           titleHits++;
@@ -1344,7 +1405,25 @@ function matchAndScore(posts, lowerKws) {
       score = Math.min(100, score + 5);
 
     // ── Skip low-relevance posts (spammy pitches that barely match) ──
-    if (score < 10) continue;
+    // Raised from 10 → 22: a score of 10 let through anything with a single keyword
+    // mention and zero hiring signals, producing unrelated results for broad niches.
+    if (score < 22) continue;
+
+    // ── Body-only single expansion match → require stronger hiring signal ──
+    // If the keyword only surfaced via an expansion synonym (not the user's own word)
+    // AND it appears only in the body (never in the title), that's a very weak signal.
+    // e.g. user searches "marketing" → expands to "advertising" → "advertising" appears
+    // once deep in a post body with no hiring language → almost certainly noise.
+    if (
+      !isXPost &&
+      !isThreadsPost &&
+      !isCLPost &&
+      titleHits === 0 &&
+      matched.length === 1 &&
+      !originalSet.has(matched[0])
+    ) {
+      if (score < 35) continue;
+    }
 
     // ── Category ──
     const category = detectCategory(combined);
