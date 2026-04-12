@@ -1,12 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { ArrowRight, Check } from "lucide-react";
 import { PAYMENTS_ENABLED } from "../../payments.config.js";
+import {
+  trackPricingModalViewed,
+  trackPricingModalClosed,
+  trackPricingCheckoutStarted,
+} from "../lib/umami";
 
 export default function PricingModal({ open, onClose }) {
   const { user } = useAuth();
   const [loadingTier, setLoadingTier] = useState(null);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (open) trackPricingModalViewed("app");
+  }, [open]);
 
   const plans = [
     {
@@ -56,6 +65,8 @@ export default function PricingModal({ open, onClose }) {
 
     setError("");
     setLoadingTier(tier);
+    const plan = plans.find((p) => p.tier === tier);
+    trackPricingCheckoutStarted(tier, plan?.price);
     try {
       const res = await fetch("/api/create-dodo-checkout", {
         method: "POST",
@@ -83,7 +94,10 @@ export default function PricingModal({ open, onClose }) {
         <div className="flex items-center justify-between mb-8">
           <h3 className="text-2xl font-bold text-white">Choose a plan</h3>
           <button
-            onClick={onClose}
+            onClick={() => {
+              trackPricingModalClosed();
+              onClose();
+            }}
             className="text-gray-400 hover:text-white text-sm px-3 py-1.5 rounded-lg border border-white/10 hover:border-white/20 transition-colors"
           >
             Close

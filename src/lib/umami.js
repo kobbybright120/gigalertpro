@@ -97,6 +97,20 @@ export function trackUpgradeClicked(source) {
   track("upgrade_clicked", { source });
 }
 
+/* ─── Pricing modal ─────────────────────────────────────────────────────── */
+
+export function trackPricingModalViewed(source) {
+  track("pricing_modal_viewed", { source });
+}
+
+export function trackPricingModalClosed() {
+  track("pricing_modal_closed");
+}
+
+export function trackPricingCheckoutStarted(tier, price) {
+  track("pricing_checkout_started", { tier, price });
+}
+
 /* ─── Page navigation ───────────────────────────────────────────────────── */
 
 export function trackPageViewed(page) {
