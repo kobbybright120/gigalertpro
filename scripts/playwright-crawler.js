@@ -61,12 +61,72 @@ async function crawlSeeds(seeds) {
   const page = await context.newPage();
   const collected = [];
 
+  // ── Dismiss the cookie consent wall that Threads now shows ──
+  // Without this, the page shows a modal and zero post content loads.
+  let cookiesDismissed = false;
+  async function dismissCookieWall() {
+    if (cookiesDismissed) return;
+    try {
+      // Look for common cookie consent buttons on Threads/Meta
+      const selectors = [
+        'button:has-text("Allow all cookies")',
+        'button:has-text("Allow essential and optional cookies")',
+        'button:has-text("Decline optional cookies")',
+        'button:has-text("Accept all")',
+        'button:has-text("Accept")',
+        '[role="dialog"] button:first-of-type',
+      ];
+      for (const sel of selectors) {
+        const btn = page.locator(sel).first();
+        if (await btn.isVisible({ timeout: 1500 }).catch(() => false)) {
+          await btn.click();
+          console.log("  → Dismissed cookie wall via:", sel);
+          cookiesDismissed = true;
+          await page.waitForTimeout(1500);
+          return;
+        }
+      }
+    } catch {
+      /* no cookie wall — continue */
+    }
+  }
+
   for (const seed of seeds) {
     try {
       console.log("Visiting:", seed);
       await page.goto(seed, { waitUntil: "networkidle", timeout: 60000 });
+
+      // Dismiss cookie/login wall (Threads added this — blocks all content)
+      await dismissCookieWall();
+
       // Wait for posts to render (Threads loads content via AJAX)
       await page.waitForTimeout(2000 + Math.random() * 1500);
+
+      // Check if we're stuck on a login wall (no article content visible)
+      const hasContent = await page.evaluate(() => {
+        return (
+          document.querySelectorAll("article").length > 0 ||
+          document.querySelectorAll('div[role="article"]').length > 0 ||
+          document.querySelectorAll("div[data-pressable-container]").length > 0
+        );
+      });
+
+      if (!hasContent) {
+        // Try dismissing any remaining dialogs / overlays
+        await page.evaluate(() => {
+          // Close any visible modals by clicking backdrop or escape
+          const dialogs = document.querySelectorAll('[role="dialog"]');
+          dialogs.forEach((d) => d.remove());
+          // Remove overlay divs that might block content
+          const overlays = document.querySelectorAll(
+            'div[style*="position: fixed"], div[style*="z-index"]',
+          );
+          overlays.forEach((o) => {
+            if (o.querySelector("button")) o.remove();
+          });
+        });
+        await page.waitForTimeout(2000);
+      }
 
       // Scroll down to trigger lazy-loaded posts
       for (let scroll = 0; scroll < 3; scroll++) {
@@ -77,9 +137,8 @@ async function crawlSeeds(seeds) {
       const pagePosts = await page.evaluate(() => {
         const out = [];
 
-        // Try <article> elements first (standard Threads DOM)
+        // ── Find post containers — try multiple selectors (Threads changes DOM) ──
         let containers = Array.from(document.querySelectorAll("article"));
-        // Fallback: Threads may use div-based layout without <article>
         if (containers.length === 0) {
           containers = Array.from(
             document.querySelectorAll(
@@ -87,19 +146,53 @@ async function crawlSeeds(seeds) {
             ),
           );
         }
+        // Fallback: Threads 2025+ uses nested divs with specific data attributes
+        if (containers.length === 0) {
+          containers = Array.from(
+            document.querySelectorAll(
+              '[data-testid="post-container"], [data-testid*="thread"]',
+            ),
+          );
+        }
+        // Last resort: find containers that have both a time element and text
+        if (containers.length === 0) {
+          const timeEls = document.querySelectorAll("time[datetime]");
+          const parentSet = new Set();
+          for (const t of timeEls) {
+            // Walk up to find a meaningful container (3-5 levels up)
+            let parent = t.parentElement;
+            for (let i = 0; i < 5 && parent; i++) {
+              if (
+                parent.innerText &&
+                parent.innerText.length > 20 &&
+                !parentSet.has(parent)
+              ) {
+                parentSet.add(parent);
+                break;
+              }
+              parent = parent.parentElement;
+            }
+          }
+          containers = Array.from(parentSet);
+        }
+
         if (containers.length > 0) {
           for (const el of containers.slice(0, 50)) {
             try {
               const timeEl = el.querySelector("time");
               const time = timeEl ? timeEl.getAttribute("datetime") : null;
+              // Author: try multiple patterns
               const authorEl =
-                el.querySelector('a[href*="/@"]') || el.querySelector("a");
+                el.querySelector('a[href*="/@"]') ||
+                el.querySelector('a[href*="/profile/"]') ||
+                el.querySelector("a");
               const author = authorEl ? authorEl.innerText.trim() : null;
-              // Threads uses div[dir="auto"] for post text; grab all of them
-              const textDivs = el.querySelectorAll('div[dir="auto"]');
+              // Post text: div[dir="auto"] or spans with text content
+              const textDivs = el.querySelectorAll(
+                'div[dir="auto"], span[dir="auto"]',
+              );
               let text = "";
               if (textDivs.length > 0) {
-                // Pick the longest div[dir="auto"] — the post body
                 for (const d of textDivs) {
                   const t = (d.innerText || "").replace(/\s+/g, " ").trim();
                   if (t.length > text.length) text = t;
@@ -107,10 +200,11 @@ async function crawlSeeds(seeds) {
               } else {
                 text = (el.innerText || "").replace(/\s+/g, " ").trim();
               }
-              if (text.length < 10) continue; // skip empty/short containers
+              if (text.length < 10) continue;
               const linkEl =
                 el.querySelector('a[href*="/post/"]') ||
                 el.querySelector('a[href*="/status/"]') ||
+                el.querySelector('a[href*="/@"]') ||
                 el.querySelector("a");
               const url = linkEl ? linkEl.href : window.location.href;
               out.push({
@@ -158,6 +252,21 @@ async function crawlSeeds(seeds) {
 
       collected.push(...pagePosts);
       console.log(`  → ${pagePosts.length} posts extracted`);
+
+      // Diagnostic: if 0 posts, log what's on the page to help debug
+      if (pagePosts.length === 0) {
+        const diag = await page.evaluate(() => ({
+          url: window.location.href,
+          title: document.title,
+          hasLoginBtn: !!document.querySelector('a[href*="/login"]'),
+          hasCookieDialog: !!document.querySelector('[role="dialog"]'),
+          articleCount: document.querySelectorAll("article").length,
+          divArticleCount: document.querySelectorAll('[role="article"]').length,
+          timeCount: document.querySelectorAll("time").length,
+          bodySnippet: document.body?.innerText?.slice(0, 200) || "",
+        }));
+        console.warn("  ⚠ 0 posts — page state:", JSON.stringify(diag));
+      }
     } catch (err) {
       console.warn("Seed error:", seed, err.message || err);
     }

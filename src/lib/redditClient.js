@@ -1404,6 +1404,11 @@ function matchAndScore(posts, lowerKws) {
     if (isCLPost && (p.selftext || "").length > 100)
       score = Math.min(100, score + 5);
 
+    // ── Threads score boost ──
+    // Threads posts come from gig-specific search queries (#hiring, "web developer",
+    // etc.) in the Playwright crawler, so keyword matches are higher signal.
+    if (isThreadsPost) score = Math.min(100, score + 8);
+
     // ── Skip low-relevance posts (spammy pitches that barely match) ──
     // Raised from 10 → 22: a score of 10 let through anything with a single keyword
     // mention and zero hiring signals, producing unrelated results for broad niches.
