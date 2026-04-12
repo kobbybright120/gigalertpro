@@ -206,7 +206,7 @@ const KEYWORD_EXPANSIONS = {
   mongodb: ["nosql", "database", "mongoose"],
 
   // Design
-  design: ["designer", "graphic design", "ui", "ux", "figma"],
+  design: ["designer", "graphic design"],
   "graphic design": [
     "graphics",
     "designer",
@@ -214,14 +214,8 @@ const KEYWORD_EXPANSIONS = {
     "illustrator",
     "canva",
   ],
-  "logo design": [
-    "logo",
-    "branding",
-    "brand identity",
-    "brand",
-    "graphic design",
-  ],
-  logo: ["logo design", "branding", "brand identity"],
+  "logo design": ["logo", "graphic design"],
+  logo: ["logo design"],
   "ui/ux": [
     "ux",
     "ui",
@@ -237,11 +231,11 @@ const KEYWORD_EXPANSIONS = {
   photoshop: ["photo editing", "graphic design", "adobe", "image editing"],
   illustrator: ["illustration", "vector", "graphic design", "adobe"],
   illustration: ["illustrator", "drawing", "art", "artist", "digital art"],
-  branding: ["brand", "brand identity", "logo", "visual identity"],
-  "web design": ["website design", "ui", "frontend", "landing page"],
+  branding: ["brand", "brand identity", "visual identity"],
+  "web design": ["website design", "landing page"],
 
   // Writing & Content
-  writing: ["writer", "content", "copywriting", "blog", "article"],
+  writing: ["writer", "copywriting"],
   copywriting: ["copywriter", "copy", "sales copy", "landing page", "email"],
   "content writing": ["content writer", "blog", "article", "seo writing"],
   blogging: ["blog", "blog post", "content", "article"],
@@ -257,7 +251,7 @@ const KEYWORD_EXPANSIONS = {
   "seo writing": ["seo", "content writing", "blog", "article"],
 
   // Marketing
-  marketing: ["digital marketing", "marketer", "advertising", "growth hacking"],
+  marketing: ["digital marketing", "marketer"],
   "digital marketing": ["marketing", "seo", "social media", "ppc", "ads"],
   seo: [
     "search engine",
@@ -266,14 +260,7 @@ const KEYWORD_EXPANSIONS = {
     "on-page",
     "off-page",
   ],
-  "social media": [
-    "social media marketing",
-    "smm",
-    "instagram",
-    "tiktok",
-    "facebook",
-    "twitter",
-  ],
+  "social media": ["social media marketing", "smm"],
   "social media marketing": ["social media", "smm", "content creation"],
   ppc: ["google ads", "facebook ads", "advertising", "paid ads", "sem"],
   "google ads": ["ppc", "sem", "adwords", "paid search"],
@@ -1260,6 +1247,14 @@ function matchAndScore(posts, lowerKws) {
     if (seen.has(postId)) continue;
     seen.add(postId);
 
+    // ── Content-based dedup — catch identical posts with different IDs ──
+    const titleNorm = (p.title || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "")
+      .slice(0, 80);
+    if (titleNorm.length > 15 && seen.has("t:" + titleNorm)) continue;
+    if (titleNorm.length > 15) seen.add("t:" + titleNorm);
+
     // ── Skip junk (mod posts, rules, meta) ──
     if (isJunk(p.title || "")) continue;
 
@@ -1413,6 +1408,17 @@ function matchAndScore(posts, lowerKws) {
     // Raised from 10 → 22: a score of 10 let through anything with a single keyword
     // mention and zero hiring signals, producing unrelated results for broad niches.
     if (score < 22) continue;
+
+    // ── Expansion-only match gate ──
+    // If NONE of the user's original keyword words appear in the matched terms,
+    // all matches came from distant synonyms (e.g. "logo designer" → "branding").
+    // Require a much higher score to pass — these are almost always noise.
+    const originalWords = new Set(lowerKws.flatMap((kw) => kw.split(/\s+/)));
+    const hasCloseMatch = matched.some((m) => {
+      if (originalSet.has(m)) return true;
+      return m.split(/\s+/).some((w) => originalWords.has(w));
+    });
+    if (!hasCloseMatch && score < 40) continue;
 
     // ── Body-only single expansion match → require stronger hiring signal ──
     // If the keyword only surfaced via an expansion synonym (not the user's own word)
