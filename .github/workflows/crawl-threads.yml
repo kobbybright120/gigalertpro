@@ -2,7 +2,7 @@ name: Crawl Threads (Playwright)
 
 on:
   schedule:
-    - cron: "0 * * * *" # every 1 hour (Playwright ~8min runtime — can't safely go lower)
+    - cron: "*/15 * * * *" # every 15 min (Playwright takes ~8min per run — can't go faster)
   workflow_dispatch: {}
 
 jobs:
@@ -13,7 +13,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "24"
           cache: "npm"
       - name: Install dependencies
         run: npm ci
