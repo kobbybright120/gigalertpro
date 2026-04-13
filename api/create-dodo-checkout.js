@@ -57,7 +57,7 @@ export default async function handler(req, res) {
     return res.status(503).json({ error: "Dodo Payments not configured" });
   }
 
-  const { tier, email } = req.body || {};
+  const { tier, email, userId } = req.body || {};
 
   if (!tier || !["basic", "pro", "agency"].includes(tier)) {
     return res
@@ -79,7 +79,7 @@ export default async function handler(req, res) {
       product_cart: [{ product_id: productId, quantity: 1 }],
       return_url: `${APP_URL}/dashboard?checkout=success`,
       payment_link: true,
-      metadata: { tier, auth_email: email || "" },
+      metadata: { tier, auth_email: email || "", auth_user_id: userId || "" },
     };
 
     // Attach customer email if available

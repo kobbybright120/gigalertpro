@@ -71,7 +71,11 @@ export default function PricingModal({ open, onClose }) {
       const res = await fetch("/api/create-dodo-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tier, email: user?.email ?? undefined }),
+        body: JSON.stringify({
+          tier,
+          email: user?.email ?? undefined,
+          userId: user?.id ?? undefined,
+        }),
       });
       const data = await res.json();
       if (data?.url) {

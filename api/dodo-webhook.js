@@ -112,22 +112,72 @@ function supabaseHeaders() {
   };
 }
 
-async function upsertProfileByEmail(email, fields) {
+async function upsertProfileByEmail(email, fields, userId) {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return;
 
-  const lookupRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/profiles?email=eq.${encodeURIComponent(email)}&select=id`,
-    { headers: supabaseHeaders() },
-  );
-  const rows = await lookupRes.json().catch(() => []);
-  const userId = rows?.[0]?.id;
+  let profileId = null;
 
-  if (!userId) {
-    console.warn(`[dodo-webhook] No profile found for email: ${email}`);
+  // 1. Prefer direct user ID lookup (always matches — it's the primary key)
+  if (userId) {
+    const idRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=id`,
+      { headers: supabaseHeaders() },
+    );
+    const idRows = await idRes.json().catch(() => []);
+    profileId = idRows?.[0]?.id;
+  }
+
+  // 2. Fallback: lookup by email column
+  if (!profileId && email) {
+    const lookupRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/profiles?email=eq.${encodeURIComponent(email)}&select=id`,
+      { headers: supabaseHeaders() },
+    );
+    const rows = await lookupRes.json().catch(() => []);
+    profileId = rows?.[0]?.id;
+  }
+
+  // 3. Last resort: query auth.users via Supabase admin API to find user by email
+  if (!profileId && email) {
+    try {
+      const authRes = await fetch(
+        `${SUPABASE_URL}/auth/v1/admin/users?page=1&per_page=50`,
+        {
+          headers: {
+            apikey: SUPABASE_SERVICE_KEY,
+            Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+          },
+        },
+      );
+      const authData = await authRes.json().catch(() => ({}));
+      const matchedUser = (authData?.users || []).find(
+        (u) => u.email?.toLowerCase() === email.toLowerCase(),
+      );
+      if (matchedUser?.id) {
+        profileId = matchedUser.id;
+        // Backfill the email column so future lookups work
+        await fetch(
+          `${SUPABASE_URL}/rest/v1/profiles?id=eq.${matchedUser.id}`,
+          {
+            method: "PATCH",
+            headers: supabaseHeaders(),
+            body: JSON.stringify({ email }),
+          },
+        );
+      }
+    } catch (err) {
+      console.warn("[dodo-webhook] auth.users lookup failed:", err.message);
+    }
+  }
+
+  if (!profileId) {
+    console.warn(
+      `[dodo-webhook] No profile found for email: ${email}, userId: ${userId}`,
+    );
     return;
   }
 
-  await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}`, {
+  await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${profileId}`, {
     method: "PATCH",
     headers: supabaseHeaders(),
     body: JSON.stringify({ ...fields, updated_at: new Date().toISOString() }),
@@ -168,6 +218,7 @@ export default async function handler(req, res) {
     // Prefer the auth_email from checkout metadata (matches Supabase profile)
     // Fall back to customer email from the payment form
     const email = data?.metadata?.auth_email || data?.customer?.email;
+    const authUserId = data?.metadata?.auth_user_id || null;
     const subscriptionId = data?.subscription_id;
     const interval = data?.payment_frequency_interval; // "Month" | "Year"
     const period =
@@ -175,72 +226,96 @@ export default async function handler(req, res) {
 
     // ── subscription.active ─────────────────────────────────────────────────
     if (eventType === "subscription.active") {
-      if (email) {
+      if (email || authUserId) {
         const plan = resolvePlan(data);
-        await upsertProfileByEmail(email, {
-          plan,
-          subscription_status: "active",
-          billing_period: period,
-          dodo_subscription_id: subscriptionId || null,
-          cancel_at_period_end: false,
-        });
+        await upsertProfileByEmail(
+          email,
+          {
+            plan,
+            subscription_status: "active",
+            billing_period: period,
+            dodo_subscription_id: subscriptionId || null,
+            cancel_at_period_end: false,
+          },
+          authUserId,
+        );
         console.info(
-          `[dodo-webhook] Activated ${plan} subscription for ${email}`,
+          `[dodo-webhook] Activated ${plan} subscription for ${email} (uid: ${authUserId})`,
         );
       }
     }
 
     // ── subscription.renewed ────────────────────────────────────────────────
     else if (eventType === "subscription.renewed") {
-      if (email) {
-        await upsertProfileByEmail(email, {
-          subscription_status: "active",
-          billing_period: period,
-          cancel_at_period_end: false,
-        });
+      if (email || authUserId) {
+        await upsertProfileByEmail(
+          email,
+          {
+            subscription_status: "active",
+            billing_period: period,
+            cancel_at_period_end: false,
+          },
+          authUserId,
+        );
         console.info(`[dodo-webhook] Subscription renewed for ${email}`);
       }
     }
 
     // ── subscription.on_hold ────────────────────────────────────────────────
     else if (eventType === "subscription.on_hold") {
-      if (email) {
-        await upsertProfileByEmail(email, {
-          subscription_status: "past_due",
-        });
+      if (email || authUserId) {
+        await upsertProfileByEmail(
+          email,
+          {
+            subscription_status: "past_due",
+          },
+          authUserId,
+        );
         console.warn(`[dodo-webhook] Subscription on hold for ${email}`);
       }
     }
 
     // ── subscription.cancelled ──────────────────────────────────────────────
     else if (eventType === "subscription.cancelled") {
-      if (email) {
-        await upsertProfileByEmail(email, {
-          subscription_status: "cancelled",
-          cancel_at_period_end: true,
-        });
+      if (email || authUserId) {
+        await upsertProfileByEmail(
+          email,
+          {
+            subscription_status: "cancelled",
+            cancel_at_period_end: true,
+          },
+          authUserId,
+        );
         console.info(`[dodo-webhook] Subscription cancelled for ${email}`);
       }
     }
 
     // ── subscription.failed ─────────────────────────────────────────────────
     else if (eventType === "subscription.failed") {
-      if (email) {
-        await upsertProfileByEmail(email, {
-          subscription_status: "cancelled",
-        });
+      if (email || authUserId) {
+        await upsertProfileByEmail(
+          email,
+          {
+            subscription_status: "cancelled",
+          },
+          authUserId,
+        );
         console.warn(`[dodo-webhook] Subscription failed for ${email}`);
       }
     }
 
     // ── subscription.expired ────────────────────────────────────────────────
     else if (eventType === "subscription.expired") {
-      if (email) {
-        await upsertProfileByEmail(email, {
-          subscription_status: "cancelled",
-          dodo_subscription_id: null,
-          billing_period: null,
-        });
+      if (email || authUserId) {
+        await upsertProfileByEmail(
+          email,
+          {
+            subscription_status: "cancelled",
+            dodo_subscription_id: null,
+            billing_period: null,
+          },
+          authUserId,
+        );
         console.info(`[dodo-webhook] Subscription expired for ${email}`);
       }
     }
