@@ -6,6 +6,7 @@ import UpgradeBanner from "./UpgradeBanner";
 import WelcomeModal from "./WelcomeModal";
 import { LockedDashboardContext } from "../context/LockedDashboardContext";
 import { PAYMENTS_ENABLED } from "../../payments.config.js";
+import { supabase } from "../lib/supabase";
 
 const DISABLE_AUTH =
   import.meta.env.VITE_DISABLE_AUTH === "true" ||
@@ -34,15 +35,42 @@ export default function SubscriptionGate({ children }) {
   const [polling, setPolling] = useState(isCheckoutReturn);
   const pollRef = useRef(null);
   const pollStart = useRef(null);
+  const verifyCalledRef = useRef(false);
 
   useEffect(() => {
     if (pollStart.current === null) pollStart.current = Date.now();
   }, []);
 
+  // Call verify-checkout endpoint to directly activate the subscription
+  // This is the safety net — works even if the Dodo webhook fails/delays
+  async function callVerifyCheckout() {
+    if (verifyCalledRef.current) return;
+    verifyCalledRef.current = true;
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.access_token) return;
+      await fetch("/api/verify-checkout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+    } catch {
+      // silently continue — the poll will pick up the change
+    }
+  }
+
   useEffect(() => {
     if (!isCheckoutReturn || !PAYMENTS_ENABLED || DISABLE_AUTH) return;
 
     const tick = async () => {
+      // On the first tick, also call our verify endpoint as a safety net
+      if (!verifyCalledRef.current) {
+        await callVerifyCheckout();
+      }
       await refetch();
       if (Date.now() - pollStart.current > POLL_TIMEOUT) {
         clearInterval(pollRef.current);
