@@ -880,6 +880,19 @@ export default function LandingPage() {
                 </Link>
               </div>
             </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-300 mb-3">Contact</p>
+              <div className="space-y-2 text-sm text-gray-500">
+                <a
+                  href="https://www.linkedin.com/in/kobby-bright-35699a2a6"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block hover:text-[#00F0B5] transition-colors"
+                >
+                  LinkedIn — Kobby Bright
+                </a>
+              </div>
+            </div>
           </div>
           <div className="pt-8 border-t border-white/[0.04] text-center">
             <p className="text-sm text-gray-600">

@@ -505,6 +505,28 @@ export default function ProfilePage() {
               )}
             </div>
           )}
+
+          {/* Contact the Founder */}
+          <div className="glass-card rounded-2xl p-6">
+            <div className="flex items-center gap-2 mb-3">
+              <ExternalLink className="w-4 h-4 text-[#00F0B5]" />
+              <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">
+                Contact
+              </h3>
+            </div>
+            <p className="text-gray-500 text-sm mb-4">
+              Questions, feedback, or partnership inquiries? Reach out directly.
+            </p>
+            <a
+              href="https://www.linkedin.com/in/kobby-bright-35699a2a6"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-white/[0.04] border border-white/[0.06] rounded-xl text-sm text-gray-300 hover:text-[#00F0B5] hover:border-[#00F0B5]/20 transition-all duration-200"
+            >
+              <ExternalLink className="w-4 h-4" />
+              LinkedIn &mdash; Kobby Bright
+            </a>
+          </div>
         </div>
       </div>
     </div>
