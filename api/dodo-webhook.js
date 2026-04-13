@@ -224,6 +224,8 @@ export default async function handler(req, res) {
     const period =
       interval === "Year" || interval === "year" ? "yearly" : "monthly";
 
+    const customerId = data?.customer?.customer_id || null;
+
     // ── subscription.active ─────────────────────────────────────────────────
     if (eventType === "subscription.active") {
       if (email || authUserId) {
@@ -235,12 +237,14 @@ export default async function handler(req, res) {
             subscription_status: "active",
             billing_period: period,
             dodo_subscription_id: subscriptionId || null,
+            dodo_customer_id: customerId,
             cancel_at_period_end: false,
+            ...(email ? { email } : {}),
           },
           authUserId,
         );
         console.info(
-          `[dodo-webhook] Activated ${plan} subscription for ${email} (uid: ${authUserId})`,
+          `[dodo-webhook] Activated ${plan} subscription for ${email} (uid: ${authUserId}, cust: ${customerId})`,
         );
       }
     }

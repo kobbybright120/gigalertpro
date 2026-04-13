@@ -211,8 +211,16 @@ export default async function handler(req, res) {
             payMatch?.metadata?.tier ||
             "basic";
           if (!["basic", "pro", "agency"].includes(plan)) plan = "basic";
+          const payCustId = payMatch?.customer?.customer_id || null;
 
-          await activateProfile(userId, userEmail, plan, "monthly", null);
+          await activateProfile(
+            userId,
+            userEmail,
+            plan,
+            "monthly",
+            null,
+            payCustId,
+          );
           return res.status(200).json({ status: "activated", plan });
         }
       }
@@ -232,9 +240,10 @@ export default async function handler(req, res) {
     const period =
       interval === "Year" || interval === "year" ? "yearly" : "monthly";
     const subId = match?.subscription_id || match?.id || null;
+    const custId = match?.customer?.customer_id || null;
 
     // ── 5. Activate the profile ───────────────────────────────────────────
-    await activateProfile(userId, userEmail, plan, period, subId);
+    await activateProfile(userId, userEmail, plan, period, subId, custId);
 
     console.info(
       `[verify-checkout] ✅ Activated ${plan} for ${userEmail} (uid: ${userId})`,
@@ -246,7 +255,7 @@ export default async function handler(req, res) {
   }
 }
 
-async function activateProfile(userId, email, plan, period, subId) {
+async function activateProfile(userId, email, plan, period, subId, custId) {
   const patchRes = await fetch(
     `${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}`,
     {
@@ -257,6 +266,7 @@ async function activateProfile(userId, email, plan, period, subId) {
         subscription_status: "active",
         billing_period: period,
         dodo_subscription_id: subId,
+        dodo_customer_id: custId,
         cancel_at_period_end: false,
         email,
         updated_at: new Date().toISOString(),
