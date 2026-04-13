@@ -315,7 +315,7 @@ export default function LandingPage() {
               onClick={() => trackHeroCtaClick("navbar")}
               className="inline-flex items-center gap-1 px-3 py-2 sm:px-5 sm:py-2.5 bg-[#00F0B5] text-[#020617] text-xs sm:text-sm font-semibold rounded-lg hover:bg-[#00dba5] transition-all duration-200"
             >
-              <span className="hidden sm:inline">Find My Clients Free</span>
+              <span className="hidden sm:inline">Find My Clients</span>
               <span className="sm:hidden">Find Clients</span>
               <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </Link>
@@ -358,7 +358,7 @@ export default function LandingPage() {
               onClick={() => trackHeroCtaClick("hero_primary")}
               className="group inline-flex items-center justify-center gap-2 w-full sm:w-auto px-8 py-4 bg-[#00F0B5] text-[#020617] font-bold rounded-lg hover:bg-[#00dba5] transition-all duration-200 text-base"
             >
-              Find My Clients Free
+              Find My Clients
               <ArrowRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
             </Link>
             <a
@@ -669,7 +669,7 @@ export default function LandingPage() {
                 onClick={() => trackHeroCtaClick("real_results")}
                 className="group inline-flex items-center justify-center gap-2 w-full sm:w-auto px-8 py-4 mt-8 sm:mt-12 bg-[#00F0B5] text-[#020617] font-bold rounded-lg hover:bg-[#00dba5] transition-all duration-200 text-base"
               >
-                Find My Clients Free
+                Find My Clients
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
               </Link>
             </div>
@@ -790,7 +790,7 @@ export default function LandingPage() {
                 onClick={() => trackHeroCtaClick("final_cta")}
                 className="group inline-flex items-center justify-center gap-2 w-full sm:w-auto px-8 py-4 bg-[#00F0B5] text-[#020617] font-bold rounded-lg hover:bg-[#00dba5] transition-all duration-200 text-base"
               >
-                Find My Clients Free
+                Find My Clients
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
               </Link>
               <p className="text-sm text-gray-500 mt-5">
