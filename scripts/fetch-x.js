@@ -666,18 +666,30 @@ async function fetchAllNitter() {
 
 async function fetchAllPosts() {
   const diagnostics = { craigslist: [], nitter: [] };
+  const skipCraigslist = process.env.SKIP_CRAIGSLIST === "true";
+  const skipNitter = process.env.SKIP_NITTER === "true";
 
   // ── Craigslist ──
-  console.log("\n[fetcher] === Craigslist Gigs ===");
-  const cl = await fetchAllCraigslist();
-  diagnostics.craigslist = cl.diagnostics;
-  console.log(`[fetcher] Craigslist: ${cl.posts.length} fetched`);
+  let cl = { posts: [], diagnostics: [] };
+  if (!skipCraigslist) {
+    console.log("\n[fetcher] === Craigslist Gigs ===");
+    cl = await fetchAllCraigslist();
+    diagnostics.craigslist = cl.diagnostics;
+    console.log(`[fetcher] Craigslist: ${cl.posts.length} fetched`);
+  } else {
+    console.log("\n[fetcher] === Craigslist Gigs === SKIPPED");
+  }
 
   // ── Nitter / X ──
-  console.log("\n[fetcher] === Nitter / X (Twitter) ===");
-  const nitter = await fetchAllNitter();
-  diagnostics.nitter = nitter.diagnostics;
-  console.log(`[fetcher] Nitter: ${nitter.posts.length} fetched`);
+  let nitter = { posts: [], diagnostics: [] };
+  if (!skipNitter) {
+    console.log("\n[fetcher] === Nitter / X (Twitter) ===");
+    nitter = await fetchAllNitter();
+    diagnostics.nitter = nitter.diagnostics;
+    console.log(`[fetcher] Nitter: ${nitter.posts.length} fetched`);
+  } else {
+    console.log("\n[fetcher] === Nitter / X (Twitter) === SKIPPED");
+  }
 
   // Deduplicate across all sources
   const seen = new Set();
