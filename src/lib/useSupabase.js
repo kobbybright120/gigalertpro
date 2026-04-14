@@ -73,12 +73,25 @@ export function useKeywords(plan) {
     }
 
     if (!userId) return;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("keywords")
       .select("id, keyword")
       .eq("user_id", userId)
       .order("created_at", { ascending: true });
-    setKeywords(data || []);
+    if (error) {
+      console.warn("[useKeywords] fetch error:", error.code, error.message);
+      // On 409 / PGRST conflict — session may be stale; retry once
+      if (error.code === "PGRST109" || error.message?.includes("409")) {
+        const { data: retryData } = await supabase
+          .from("keywords")
+          .select("id, keyword")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: true });
+        setKeywords(retryData || []);
+      }
+    } else {
+      setKeywords(data || []);
+    }
     setLoading(false);
   }, [userId]);
 

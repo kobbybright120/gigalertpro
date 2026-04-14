@@ -232,7 +232,7 @@ export default async function handler(req, res) {
 
   try {
     // ── 1) Try Upstash Redis first (production path) ──
-    // Read both the main X+CL key and the separate Threads key in parallel
+    // Read all platform keys in parallel
     const [cached, threadsCached] = await Promise.all([
       redisGet(REDIS_KEY),
       redisGet(THREADS_REDIS_KEY),
@@ -245,27 +245,36 @@ export default async function handler(req, res) {
         : { posts: [] };
 
       // Normalize Playwright-crawler posts to match expected schema
-      const threadsPosts = (threadsData.posts || []).map((p) => ({
-        id: p.id || `threads_${Date.now()}`,
-        name: p.id || `threads_${Date.now()}`,
-        title: p.title || "",
-        selftext: p.body_preview || p.selftext || p.title || "",
-        author: (p.author || "unknown").replace(/^@/, ""),
-        author_name: p.author || "Threads",
-        permalink: p.url || p.permalink || "",
-        subreddit: null,
-        created_utc: p.posted_at
-          ? Math.floor(new Date(p.posted_at).getTime() / 1000)
-          : p.created_utc || Math.floor(Date.now() / 1000),
-        num_comments: 0,
-        ups: 0,
-        link_flair_text: "Threads",
-        compensation: null,
-        employment_type: null,
-        location: null,
-        _sub: p._sub || "threads",
-        source: p.source || "threads-playwright",
-      }));
+      function normalizeCrawlerPosts(data, platform, subKey, sourceDefault) {
+        return (data.posts || []).map((p) => ({
+          id: p.id || `${subKey}_${Date.now()}`,
+          name: p.id || `${subKey}_${Date.now()}`,
+          title: p.title || "",
+          selftext: p.body_preview || p.selftext || p.title || "",
+          author: (p.author || "unknown").replace(/^@/, ""),
+          author_name: p.author || platform,
+          permalink: p.url || p.permalink || "",
+          subreddit: null,
+          created_utc: p.posted_at
+            ? Math.floor(new Date(p.posted_at).getTime() / 1000)
+            : p.created_utc || Math.floor(Date.now() / 1000),
+          num_comments: 0,
+          ups: 0,
+          link_flair_text: platform,
+          compensation: null,
+          employment_type: null,
+          location: null,
+          _sub: p._sub || subKey,
+          source: p.source || sourceDefault,
+        }));
+      }
+
+      const threadsPosts = normalizeCrawlerPosts(
+        threadsData,
+        "Threads",
+        "threads",
+        "threads-playwright",
+      );
 
       // Merge + dedup
       const seen = new Set();
@@ -285,7 +294,7 @@ export default async function handler(req, res) {
           threadsData.cached_at ||
           new Date().toISOString(),
         post_count: merged.length,
-        feed: cached ? mainData.feed || "x-cached" : "threads-only",
+        feed: cached ? mainData.feed || "x-cached" : "multi-platform",
       });
 
       console.log(

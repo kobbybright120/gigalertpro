@@ -9,6 +9,7 @@ import {
   ArrowBigUp,
   Bookmark,
   MapPin,
+  Crown,
 } from "lucide-react";
 
 function ScoreBadge({ score }) {
@@ -30,6 +31,15 @@ function ScoreBadge({ score }) {
     >
       <TrendingUp className="w-3 h-3" />
       {score} · {label}
+    </span>
+  );
+}
+
+function GoldBadge({ qualityScore }) {
+  return (
+    <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-lg border bg-yellow-500/15 text-yellow-400 border-yellow-500/30 shadow-[0_0_12px_rgba(234,179,8,0.15)] animate-pulse-slow">
+      <Crown className="w-3.5 h-3.5" />
+      Gold · {qualityScore}
     </span>
   );
 }
@@ -95,21 +105,27 @@ export default function GigCard({
   isSaved,
 }) {
   const isHot = gig.score >= 70;
+  const isGold = gig.is_gold === true;
   const cleanBudget = gig?.budget
     ? String(gig.budget).trim().replace(/^\$+/, "").replace(/\s+/g, " ")
     : null;
 
   return (
     <div
-      className={`glass-card rounded-2xl p-5 sm:p-6 group transition-all duration-300 hover:border-white/10 relative overflow-hidden ${isHot ? "glow-green" : ""}`}
+      className={`glass-card rounded-2xl p-5 sm:p-6 group transition-all duration-300 hover:border-white/10 relative overflow-hidden ${isGold ? "glow-gold" : isHot ? "glow-green" : ""}`}
     >
-      {/* Hot gig accent bar */}
-      {isHot && (
+      {/* Gold lead accent bar */}
+      {isGold && (
+        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-500"></div>
+      )}
+      {/* Hot gig accent bar (only when not gold) */}
+      {!isGold && isHot && (
         <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#00F0B5] to-[#00D4FF]"></div>
       )}
 
       {/* Top row: badges */}
       <div className="flex flex-wrap items-center gap-2 mb-3.5">
+        {isGold && <GoldBadge qualityScore={gig.quality_score} />}
         {gig.source_platform && <SourceBadge platform={gig.source_platform} />}
         {gig.category && (
           <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-500/8 border border-indigo-500/15 text-indigo-400 text-xs font-semibold rounded-lg">

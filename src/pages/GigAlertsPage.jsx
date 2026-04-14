@@ -15,6 +15,7 @@ import {
   RefreshCw,
   Lock,
   Lightbulb,
+  Crown,
 } from "lucide-react";
 import GigCard from "../components/GigCard";
 import ProposalModal from "../components/ProposalModal";
@@ -123,9 +124,11 @@ export default function GigAlertsPage() {
     navigate("/proposals");
   }
 
-  // Filter alerts by source + category, then sort
+  // Filter alerts by source + category + gold, then sort
   let filtered = alerts;
-  if (activeFilter !== "all")
+  if (activeFilter === "gold")
+    filtered = filtered.filter((a) => a.is_gold === true);
+  else if (activeFilter !== "all")
     filtered = filtered.filter(
       (a) => a.source_platform?.toLowerCase() === activeFilter,
     );
@@ -136,7 +139,8 @@ export default function GigAlertsPage() {
   if (sortBy === "score")
     filtered = [...filtered].sort((a, b) => (b.score || 0) - (a.score || 0));
 
-  // Count by source
+  // Count by source + gold
+  const goldCount = alerts.filter((a) => a.is_gold === true).length;
   const redditCount = alerts.filter(
     (a) => a.source_platform === "Reddit",
   ).length;
@@ -256,6 +260,13 @@ export default function GigAlertsPage() {
             {[
               { key: "all", label: "All", count: alerts.length, locked: false },
               {
+                key: "gold",
+                label: "⭐ Gold Leads",
+                count: goldCount,
+                locked: false,
+                gold: true,
+              },
+              {
                 key: "reddit",
                 label: "Reddit",
                 count: redditCount,
@@ -279,7 +290,7 @@ export default function GigAlertsPage() {
                 count: threadsCount,
                 locked: isLocked,
               },
-            ].map(({ key, label, count, locked }) => (
+            ].map(({ key, label, count, locked, gold }) => (
               <button
                 key={key}
                 onClick={() => {
@@ -292,9 +303,13 @@ export default function GigAlertsPage() {
                 className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 relative ${
                   locked
                     ? "text-gray-600 border border-white/[0.04] cursor-pointer hover:border-[#00F0B5]/15"
-                    : activeFilter === key
-                      ? "bg-[#00F0B5]/[0.08] text-[#00F0B5] border border-[#00F0B5]/15 shadow-[inset_0_0_0_1px_rgba(0,240,181,0.05)]"
-                      : "text-gray-500 hover:text-gray-300 hover:bg-white/[0.03] border border-transparent"
+                    : activeFilter === key && gold
+                      ? "bg-yellow-500/[0.1] text-yellow-400 border border-yellow-500/20 shadow-[inset_0_0_0_1px_rgba(234,179,8,0.05)]"
+                      : activeFilter === key
+                        ? "bg-[#00F0B5]/[0.08] text-[#00F0B5] border border-[#00F0B5]/15 shadow-[inset_0_0_0_1px_rgba(0,240,181,0.05)]"
+                        : gold
+                          ? "text-yellow-500/70 hover:text-yellow-400 hover:bg-yellow-500/[0.05] border border-transparent"
+                          : "text-gray-500 hover:text-gray-300 hover:bg-white/[0.03] border border-transparent"
                 }`}
               >
                 {locked && (
@@ -472,6 +487,11 @@ export default function GigAlertsPage() {
                       upvotes: alert.upvotes,
                       source_platform: alert.source_platform || "Reddit",
                       location: alert.location || null,
+                      is_gold: alert.is_gold,
+                      quality_score: alert.quality_score,
+                      clean_summary: alert.clean_summary,
+                      extracted_budget: alert.extracted_budget,
+                      filter_reason: alert.filter_reason,
                     }}
                     onGenerateProposal={() => {}}
                   />
@@ -504,6 +524,11 @@ export default function GigAlertsPage() {
                   upvotes: alert.upvotes,
                   source_platform: alert.source_platform || "Reddit",
                   location: alert.location || null,
+                  is_gold: alert.is_gold,
+                  quality_score: alert.quality_score,
+                  clean_summary: alert.clean_summary,
+                  extracted_budget: alert.extracted_budget,
+                  filter_reason: alert.filter_reason,
                 }}
                 onGenerateProposal={
                   isLocked && index > 0

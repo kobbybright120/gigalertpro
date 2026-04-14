@@ -101,6 +101,7 @@ const COMBINED_SUBS_2 = [
   "jobnetworking",
   "RemoteJobs",
   "NashvilleJobs",
+  "UGCForBrands",
 ];
 const SEARCH_SUBS = [
   { name: "forhire", search: "flair:Hiring" },

@@ -116,7 +116,13 @@ export function AuthProvider({ children }) {
 
   async function signUp(email, password) {
     if (DISABLE_AUTH) return { success: true, user: null };
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/dashboard`,
+      },
+    });
     if (error) return { success: false, error: error.message };
     // Supabase returns a user with identities=[] when email confirmation is required
     const needsConfirmation =

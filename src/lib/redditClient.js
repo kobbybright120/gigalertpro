@@ -4,6 +4,8 @@
 // Filters out freelancer self-promotions. Scores & ranks by relevance.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { enrichWithGoldScores } from "./goldLeadScorer";
+
 // ── Subreddit Config ─────────────────────────────────────────────────────────
 // Each entry defines name, fetch mode, and weight multiplier for scoring.
 // "search" mode uses Reddit flair search to pre-filter at the API level.
@@ -51,6 +53,7 @@ const SUBREDDITS = [
   { name: "RecruitingHiringPH", mode: "new", weight: 1.0 },
   { name: "VancouverJobs", mode: "new", weight: 1.0 },
   { name: "remotelegaljobs", mode: "new", weight: 1.0 },
+  { name: "UGCForBrands", mode: "new", weight: 1.0 },
 ];
 
 // ── Cache (persisted in localStorage — survives tab close + app reopen) ────────
@@ -1550,5 +1553,6 @@ function matchAndScore(posts, lowerKws) {
     return b.score - a.score;
   });
 
-  return results;
+  // ── Enrich with Gold Lead scores ──
+  return enrichWithGoldScores(results, lowerKws);
 }

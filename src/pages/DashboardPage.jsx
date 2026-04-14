@@ -423,6 +423,9 @@ export default function DashboardPage() {
                       comment_count: alert.comment_count,
                       upvotes: alert.upvotes,
                       source_platform: alert.source_platform || "Reddit",
+                      is_gold: alert.is_gold,
+                      quality_score: alert.quality_score,
+                      filter_reason: alert.filter_reason,
                     }}
                     onGenerateProposal={() => {}}
                   />
@@ -456,6 +459,9 @@ export default function DashboardPage() {
                     comment_count: alert.comment_count,
                     upvotes: alert.upvotes,
                     source_platform: alert.source_platform || "Reddit",
+                    is_gold: alert.is_gold,
+                    quality_score: alert.quality_score,
+                    filter_reason: alert.filter_reason,
                   }}
                   onGenerateProposal={handleGenerateProposal}
                 />
