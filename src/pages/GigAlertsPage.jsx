@@ -333,12 +333,13 @@ export default function GigAlertsPage() {
           </div>
           <button
             onClick={() => setSortNewest((v) => !v)}
-            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 flex items-center gap-1.5 ${
               sortNewest
-                ? "bg-[#00F0B5]/[0.08] text-[#00F0B5] border border-[#00F0B5]/15"
-                : "text-gray-500 hover:text-gray-300 hover:bg-white/[0.03] border border-white/[0.04]"
+                ? "bg-[#00F0B5] text-[#020617] shadow-[0_0_14px_rgba(0,240,181,0.25)]"
+                : "bg-[#00F0B5]/[0.1] text-[#00F0B5] border border-[#00F0B5]/25 hover:bg-[#00F0B5]/[0.18] animate-pulse"
             }`}
           >
+            <Radar className="w-3.5 h-3.5" />
             New Gigs
           </button>
         </div>
