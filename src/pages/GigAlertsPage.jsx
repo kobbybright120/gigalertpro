@@ -55,6 +55,7 @@ export default function GigAlertsPage() {
   }, []);
 
   const { profile } = useProfile();
+  const { isLocked, onUpgrade, onSeePlans } = useLockedDashboard();
   const { keywords, addKeyword, removeKeyword } = useKeywords(profile?.plan);
   const {
     alerts,
@@ -65,7 +66,6 @@ export default function GigAlertsPage() {
   const { saveProposal } = useProposals();
   const { savedIds, toggleSave } = useSavedGigs();
   const { reset: resetGigCount } = useNewGigCount();
-  const { isLocked, onUpgrade, onSeePlans } = useLockedDashboard();
   const [keywordError, setKeywordError] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [now, setNow] = useState(() => Date.now());
