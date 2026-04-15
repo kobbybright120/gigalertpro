@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Search,
@@ -13,7 +13,6 @@ import {
   Zap,
   Globe,
   Activity,
-  Sparkles,
   Lightbulb,
 } from "lucide-react";
 import GigCard from "../components/GigCard";
@@ -27,7 +26,6 @@ import {
   useProposals,
   useProfile,
 } from "../lib/useSupabase";
-import { supabase } from "../lib/supabase";
 import {
   trackKeywordAdded,
   trackKeywordRemoved,
@@ -48,19 +46,9 @@ export default function DashboardPage() {
   const { keywords, addKeyword, removeKeyword } = useKeywords(profile?.plan);
   const { alerts, loading: alertsLoading } = useGigAlerts(keywords);
   const { saveProposal } = useProposals();
-  const {
-    isLocked,
-    onUpgrade,
-    onSeePlans,
-    gigCount: lockedGigCount,
-    setGigCount,
-  } = useLockedDashboard();
+  const { isLocked, onUpgrade, onSeePlans, setGigCount } = useLockedDashboard();
 
   const [keywordError, setKeywordError] = useState("");
-
-  // For locked state, track a dynamic gig count
-  const [fetchedGigCount, setFetchedGigCount] = useState(0);
-  const realGigCount = lockedGigCount > 0 ? lockedGigCount : fetchedGigCount;
 
   // Sync real alert count to the banner so numbers match what's actually shown
   useEffect(() => {
@@ -68,55 +56,6 @@ export default function DashboardPage() {
       setGigCount(alerts.length);
     }
   }, [isLocked, alertsLoading, alerts.length, setGigCount]);
-
-  useEffect(() => {
-    if (!isLocked || lockedGigCount > 0) return;
-    // Try to get real count from DB
-    async function fetchCount() {
-      try {
-        const kws = keywords.map((k) => k.keyword);
-        if (kws.length === 0) return;
-        const twentyFourHoursAgo = new Date(
-          Date.now() - 24 * 60 * 60 * 1000,
-        ).toISOString();
-        const orFilter = kws
-          .flatMap((kw) => {
-            const safe = kw.replace(/[%_]/g, "\\$&");
-            return [`title.ilike.%${safe}%`, `body_preview.ilike.%${safe}%`];
-          })
-          .join(",");
-        const { count } = await supabase
-          .from("gig_alerts")
-          .select("id", { count: "exact", head: true })
-          .or(orFilter)
-          .gte("reddit_created", twentyFourHoursAgo);
-        if (count > 0) setFetchedGigCount(count);
-      } catch {
-        // ignore fetch errors
-      }
-    }
-    fetchCount();
-  }, [isLocked, keywords, lockedGigCount]);
-
-  // Pick the best gig to show free users: Gold Leads first, then highest score
-  const bestGig = (() => {
-    if (!alerts.length) return null;
-    const eligible = alerts.filter((a) => !a._is_full_time_job);
-    const gold = eligible.filter((a) => a.is_gold);
-    if (gold.length)
-      return gold.sort(
-        (a, b) => (b.quality_score || 0) - (a.quality_score || 0),
-      )[0];
-    if (eligible.length)
-      return eligible.sort((a, b) => (b.score || 0) - (a.score || 0))[0];
-    return alerts.sort((a, b) => (b.score || 0) - (a.score || 0))[0];
-  })();
-
-  const sampleProposalText = useMemo(() => {
-    if (!isLocked || !bestGig) return "";
-    const skills = profile?.skills?.join(", ") || "your area of expertise";
-    return `Hi there,\n\nI came across your post "${bestGig.title}" and I'm excited about this opportunity. With my experience in ${skills}, I'm confident I can deliver exactly what you're looking for.\n\nI've completed similar projects before and can start right away. I'd love to discuss the details and share some relevant work samples.\n\nLooking forward to hearing from you!\n\nBest regards`;
-  }, [isLocked, bestGig, profile]);
 
   async function handleAddKeyword(e) {
     e.preventDefault();
@@ -359,63 +298,37 @@ export default function DashboardPage() {
                 keywords
               </p>
             </div>
-          ) : isLocked && bestGig ? (
+          ) : isLocked && topAlerts.length > 0 ? (
             <>
               {/* First gig: fully visible */}
               <GigCard
-                key={bestGig.id}
+                key={topAlerts[0].id}
                 gig={{
-                  id: bestGig.id,
-                  title: bestGig.title,
-                  body_preview: bestGig.body_preview || "",
-                  budget: bestGig.budget || null,
-                  source:
-                    bestGig.source_platform === "Reddit"
-                      ? "Reddit"
-                      : bestGig.source_platform === "Craigslist"
-                        ? "Craigslist"
-                        : bestGig.source_platform || "Reddit",
-                  url: bestGig.url,
+                  id: topAlerts[0].id,
+                  title: topAlerts[0].title,
+                  body_preview: topAlerts[0].body_preview || "",
+                  budget: topAlerts[0].budget || null,
+                  source: topAlerts[0].source_platform || "Reddit",
+                  url: topAlerts[0].url,
                   postedAt:
-                    bestGig.time_ago ||
-                    new Date(bestGig.reddit_created).toLocaleDateString(),
-                  keywords: bestGig.matched_keywords,
-                  score: bestGig.score,
-                  category: bestGig.category,
-                  flair: bestGig.flair,
-                  comment_count: bestGig.comment_count,
-                  upvotes: bestGig.upvotes,
-                  source_platform: bestGig.source_platform || "Reddit",
+                    topAlerts[0].time_ago ||
+                    new Date(topAlerts[0].reddit_created).toLocaleDateString(),
+                  keywords: topAlerts[0].matched_keywords,
+                  score: topAlerts[0].score,
+                  category: topAlerts[0].category,
+                  flair: topAlerts[0].flair,
+                  comment_count: topAlerts[0].comment_count,
+                  upvotes: topAlerts[0].upvotes,
+                  source_platform: topAlerts[0].source_platform || "Reddit",
+                  is_gold: topAlerts[0].is_gold,
+                  quality_score: topAlerts[0].quality_score,
+                  filter_reason: topAlerts[0].filter_reason,
                 }}
                 onGenerateProposal={handleGenerateProposal}
               />
 
-              {/* Sample AI Proposal for first gig */}
-              {sampleProposalText && (
-                <div className="glass-card rounded-2xl p-5 glow-green">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#00F0B5]/15 to-[#00D4FF]/10 flex items-center justify-center">
-                      <Sparkles className="w-4 h-4 text-[#00F0B5]" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-white">
-                        AI-Generated Proposal Preview
-                      </h3>
-                      <p className="text-xs text-gray-500">
-                        For: {bestGig.title}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="bg-[#020617]/60 border border-white/[0.06] rounded-xl p-4">
-                    <p className="text-sm text-gray-300 whitespace-pre-line leading-relaxed">
-                      {sampleProposalText}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* Locked gigs (blurred) */}
-              {alerts.slice(1, 4).map((alert) => (
+              {/* Locked gigs (blurred) — same Gold-first sort */}
+              {topAlerts.slice(1).map((alert) => (
                 <LockOverlay
                   key={alert.id}
                   onUpgrade={onUpgrade}
