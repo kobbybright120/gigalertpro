@@ -28,6 +28,7 @@ import {
   ChevronDown,
   Users,
   X,
+  Mail,
 } from "lucide-react";
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -1463,9 +1464,10 @@ function PricingSection({ priceRef, priceVis, handleCheckout }) {
         <p className="text-center text-sm text-gray-500 mt-8">
           Questions?{" "}
           <a
-            href="mailto:support@gigalertpro.com"
-            className="text-[#00F0B5] hover:underline"
+            href="mailto:brightadenyo05@gmail.com"
+            className="inline-flex items-center gap-1.5 text-[#00F0B5] hover:underline"
           >
+            <Mail className="w-3.5 h-3.5" />
             Contact us
           </a>
           . We reply within 24 hours.

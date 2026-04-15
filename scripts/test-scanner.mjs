@@ -82,23 +82,35 @@ const { _testMatchAndScore } = await import("../src/lib/redditClient.js");
 
 // ── Keywords to test ────────────────────────────────────────────────────────
 const KEYWORDS = [
-  // Audio / Voice / Music
+  // ── Original niches ──
+  "graphic designer",
+  "video editor",
+  "web developer",
+  "copywriter",
+  "social media manager",
+  "logo design",
+  "react developer",
+  "wordpress developer",
+  "virtual assistant",
+  "motion graphics",
+  "ui ux designer",
+  "content writer",
+  "seo specialist",
+  "python developer",
+  "mobile app developer",
+  // ── Diverse niches ──
   "voice over",
   "podcast editor",
   "music producer",
-  // Writing / Translation
   "ghostwriter",
   "translator",
   "proofreader",
-  // Finance / Admin
   "bookkeeper",
   "data entry",
   "executive assistant",
-  // Marketing / Growth
   "email marketing",
   "lead generation",
   "digital marketing",
-  // 3D / Animation / Photo
   "3d artist",
   "photographer",
   "illustrator",
