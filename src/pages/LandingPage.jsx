@@ -888,13 +888,9 @@ export default function LandingPage() {
               </p>
               <div className="flex flex-col gap-3 text-sm text-gray-500">
                 <a
-                  href="mailto:brightadenyo05@gmail.com"
+                  href="https://mail.google.com/mail/?view=cm&fs=1&to=brightadenyo05@gmail.com"
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    window.open("mailto:brightadenyo05@gmail.com", "_blank");
-                  }}
                   className="inline-flex items-center gap-1.5 hover:text-[#00F0B5] transition-colors"
                 >
                   <Mail className="w-4 h-4" />
@@ -1477,7 +1473,9 @@ function PricingSection({ priceRef, priceVis, handleCheckout }) {
         <p className="text-center text-sm text-gray-500 mt-8">
           Questions?{" "}
           <a
-            href="mailto:brightadenyo05@gmail.com"
+            href="https://mail.google.com/mail/?view=cm&fs=1&to=brightadenyo05@gmail.com"
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 text-[#00F0B5] hover:underline"
           >
             <Mail className="w-3.5 h-3.5" />
