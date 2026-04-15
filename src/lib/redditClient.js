@@ -488,8 +488,8 @@ const SELF_PROMO_PATTERNS = [
   /\bfor\s?hire\b/i,
   /\bhire\s?me\b/i,
   /\[offer\]/i,
-  /\bi\s?(?:am|'m)\s+(?:a|an)\b.{0,50}\b(designer|developer|writer|editor|freelanc|coder|artist|programmer|marketer|consultant|engineer|animator|videograph)/i,
-  /\bi\s?(?:am|'m)\s+an?\s+experienced\b/i,
+  /\bi\s?(?:am|[\u2018\u2019\u0027]m)\s+(?:a|an)\b.{0,50}\b(designer|developer|writer|editor|freelanc|coder|artist|programmer|marketer|consultant|engineer|animator|videograph)/i,
+  /\bi\s?(?:am|[\u2018\u2019\u0027]m)\s+an?\s+experienced\b/i,
   /\boffering\s+my\b/i,
   /\boffering\b.{0,25}\bservices?\b/i,
   /\bavailable\s+for\b.{0,25}\b(work|projects?|freelanc|gigs?|hire)\b/i,
@@ -978,8 +978,12 @@ function isSelfPromotion(title, body, flair) {
       return true;
   }
 
-  // Strong hiring signal in the TITLE (not body) overrides body self-promo
-  if (HIRING_SIGNALS.some((s) => s.rx.test(title))) return false;
+  // Strong hiring signal in the TITLE (not body) overrides body self-promo,
+  // UNLESS the title itself contains a clear "I am a [role]" self-identification.
+  const iAmARole =
+    /\bi\s?(?:am|[\u2018\u2019\u0027]m)\s+(?:a|an)\b.{0,50}\b(?:designer|developer|writer|editor|freelanc|coder|artist|programmer|marketer|consultant|engineer|animator|videograph)/i;
+  if (HIRING_SIGNALS.some((s) => s.rx.test(title)) && !iAmARole.test(title))
+    return false;
 
   const text = title + " " + body;
   return SELF_PROMO_PATTERNS.some((rx) => rx.test(text));
@@ -1416,20 +1420,24 @@ function matchAndScore(posts, lowerKws) {
     const isThreadsPost =
       p._sub === "threads" || p._source_platform === "Threads";
 
+    // Decode common HTML entities so regex filters work on clean text
+    const decodeEntities = (s) =>
+      (s || "")
+        .replace(/&apos;/g, "\u2019")
+        .replace(/&amp;/g, "&")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&quot;/g, '"');
+    const rawTitle = decodeEntities(p.title);
+    const rawBody = decodeEntities(p.selftext);
+
     if (!aiApproved) {
-      // ── Skip self-promotions (freelancer ads) — skip for X/Nitter & CL posts
-      //    (tweets are pre-screened by search query; CL posts are real gig listings) ──
-      if (
-        !isXPost &&
-        !isCLPost &&
-        !isThreadsPost &&
-        isSelfPromotion(p.title || "", p.selftext || "", p.link_flair_text)
-      )
-        continue;
+      // ── Skip self-promotions (freelancer ads) ──
+      if (isSelfPromotion(rawTitle, rawBody, p.link_flair_text)) continue;
 
       // ── X/Tweet quality gate ──
       if (isXPost) {
-        const tweetText = (p.title || "") + " " + (p.selftext || "");
+        const tweetText = rawTitle + " " + rawBody;
         // Reject non-tech "developer" (real estate, housing, etc.)
         if (NON_TECH_DEVELOPER_RX.test(tweetText)) continue;
         // Reject replies, retweets, stories, negations, commentary

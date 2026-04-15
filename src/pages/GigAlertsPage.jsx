@@ -7,11 +7,7 @@ import {
   AlertCircle,
   Radar,
   Bell,
-  SlidersHorizontal,
   Filter,
-  ArrowUpDown,
-  Clock,
-  TrendingUp,
   RefreshCw,
   Lock,
   Lightbulb,
@@ -52,8 +48,6 @@ export default function GigAlertsPage() {
   const [input, setInput] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
   const [activeCategory, setActiveCategory] = useState("all");
-  const [sortBy, setSortBy] = useState("time"); // "time" | "score"
-  const [freelanceOnly, setFreelanceOnly] = useState(true); // hide full-time job listings
   const [proposalGig, setProposalGig] = useState(null); // gig selected for AI proposal
 
   useEffect(() => {
@@ -137,18 +131,18 @@ export default function GigAlertsPage() {
     filtered = filtered.filter(
       (a) => a.category?.toLowerCase() === activeCategory.toLowerCase(),
     );
-  if (freelanceOnly) filtered = filtered.filter((a) => !a._is_full_time_job);
-  if (sortBy === "score")
-    filtered = [...filtered].sort((a, b) => (b.score || 0) - (a.score || 0));
 
-  // When locked, put the best gig first so free users see the most relevant one
-  if (isLocked && filtered.length > 1) {
-    const gold = filtered.filter((a) => a.is_gold);
-    const best = gold.length
-      ? gold.sort((a, b) => (b.quality_score || 0) - (a.quality_score || 0))[0]
-      : filtered.sort((a, b) => (b.score || 0) - (a.score || 0))[0];
-    if (best) filtered = [best, ...filtered.filter((a) => a.id !== best.id)];
-  }
+  // Default sort: Gold leads first (by quality_score), then by relevance score
+  filtered = [...filtered].sort((a, b) => {
+    // Gold leads always come first
+    if (a.is_gold && !b.is_gold) return -1;
+    if (!a.is_gold && b.is_gold) return 1;
+    // Within gold leads, sort by quality_score
+    if (a.is_gold && b.is_gold)
+      return (b.quality_score || 0) - (a.quality_score || 0);
+    // Non-gold: sort by relevance score
+    return (b.score || 0) - (a.score || 0);
+  });
 
   // Count by source + gold
   const goldCount = alerts.filter((a) => a.is_gold === true).length;
@@ -330,50 +324,9 @@ export default function GigAlertsPage() {
               </button>
             ))}
           </div>
-          <div className="flex items-center gap-3">
-            {/* Freelance-only toggle */}
-            <button
-              onClick={() => setFreelanceOnly((v) => !v)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 border ${
-                freelanceOnly
-                  ? "bg-[#00F0B5]/[0.1] text-[#00F0B5] border-[#00F0B5]/15"
-                  : "text-gray-500 hover:text-gray-300 border-white/[0.04] hover:border-white/10"
-              }`}
-              title="Hide full-time job listings"
-            >
-              <SlidersHorizontal className="w-3 h-3" />
-              Freelance Only
-            </button>
-
-            {/* Sort toggle */}
-            <div className="flex items-center gap-1 glass-card rounded-lg p-0.5">
-              <button
-                onClick={() => setSortBy("time")}
-                className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold transition-all duration-200 ${
-                  sortBy === "time"
-                    ? "bg-[#00F0B5]/[0.1] text-[#00F0B5]"
-                    : "text-gray-500 hover:text-gray-300"
-                }`}
-              >
-                <Clock className="w-3 h-3" />
-                Newest
-              </button>
-              <button
-                onClick={() => setSortBy("score")}
-                className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold transition-all duration-200 ${
-                  sortBy === "score"
-                    ? "bg-[#00F0B5]/[0.1] text-[#00F0B5]"
-                    : "text-gray-500 hover:text-gray-300"
-                }`}
-              >
-                <TrendingUp className="w-3 h-3" />
-                Top Score
-              </button>
-            </div>
-            <span className="text-xs text-gray-600 font-medium">
-              {filtered.length} result{filtered.length !== 1 ? "s" : ""}
-            </span>
-          </div>
+          <span className="text-xs text-gray-600 font-medium">
+            {filtered.length} result{filtered.length !== 1 ? "s" : ""}
+          </span>
         </div>
 
         {/* Category filter pills */}
