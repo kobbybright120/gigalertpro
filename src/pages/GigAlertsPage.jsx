@@ -48,6 +48,7 @@ export default function GigAlertsPage() {
   const [input, setInput] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
   const [activeCategory, setActiveCategory] = useState("all");
+  const [sortNewest, setSortNewest] = useState(false);
   const [proposalGig, setProposalGig] = useState(null); // gig selected for AI proposal
 
   useEffect(() => {
@@ -133,7 +134,13 @@ export default function GigAlertsPage() {
     );
 
   // Default sort: Gold leads first (by quality_score), then by relevance score
+  // When sortNewest is on, sort by timestamp (newest first)
   filtered = [...filtered].sort((a, b) => {
+    if (sortNewest) {
+      const tA = a.created_utc || a.created_at || 0;
+      const tB = b.created_utc || b.created_at || 0;
+      return tB - tA;
+    }
     // Gold leads always come first
     if (a.is_gold && !b.is_gold) return -1;
     if (!a.is_gold && b.is_gold) return 1;
@@ -324,9 +331,16 @@ export default function GigAlertsPage() {
               </button>
             ))}
           </div>
-          <span className="text-xs text-gray-600 font-medium">
-            {filtered.length} result{filtered.length !== 1 ? "s" : ""}
-          </span>
+          <button
+            onClick={() => setSortNewest((v) => !v)}
+            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 ${
+              sortNewest
+                ? "bg-[#00F0B5]/[0.08] text-[#00F0B5] border border-[#00F0B5]/15"
+                : "text-gray-500 hover:text-gray-300 hover:bg-white/[0.03] border border-white/[0.04]"
+            }`}
+          >
+            New Gigs
+          </button>
         </div>
 
         {/* Category filter pills */}
