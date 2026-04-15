@@ -15,7 +15,7 @@ const DISABLE_AUTH =
   !import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 const ACTIVE_STATUSES = ["active"];
-const PAID_PLANS = ["basic", "pro", "agency"];
+const PAID_PLANS = ["basic", "basic_annual", "pro", "pro_annual"];
 const POLL_TIMEOUT = 60_000;
 const POLL_INTERVAL = 3_000;
 

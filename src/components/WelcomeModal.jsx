@@ -18,8 +18,7 @@ export default function WelcomeModal({ plan, onClose }) {
   const [notifEnabled, setNotifEnabled] = useState(
     getPermission?.() === "granted",
   );
-  const isPro = plan === "pro" || plan === "agency";
-  const isAgency = plan === "agency";
+  const isPro = plan === "pro" || plan === "pro_annual";
 
   async function handleEnableNotifications() {
     const granted = await requestPermission();
@@ -116,16 +115,12 @@ export default function WelcomeModal({ plan, onClose }) {
               <div className="w-6 h-6 rounded-md bg-white/[0.04] flex items-center justify-center">
                 <Square className="w-4 h-4 text-gray-500" />
               </div>
-              <span
-                className={`text-sm flex items-center gap-1.5 ${isAgency ? "text-white" : "text-gray-600"}`}
-              >
+              <span className="text-sm flex items-center gap-1.5 text-gray-600">
                 <Hash className="w-3.5 h-3.5 text-gray-500" />
                 Connect Slack
-                {!isAgency && (
-                  <span className="text-[10px] text-gray-500 bg-white/[0.04] px-1.5 py-0.5 rounded">
-                    Agency
-                  </span>
-                )}
+                <span className="text-[10px] text-gray-500 bg-white/[0.04] px-1.5 py-0.5 rounded">
+                  Coming Soon
+                </span>
               </span>
             </div>
           </div>

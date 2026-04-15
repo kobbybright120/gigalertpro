@@ -55,7 +55,12 @@ function supabaseHeaders() {
 }
 
 // ── Daily quota check per plan ─────────────────────────────────────────────────
-const DAILY_LIMITS = { basic: 10, pro: 50, agency: Infinity };
+const DAILY_LIMITS = {
+  basic: 10,
+  basic_annual: 10,
+  pro: Infinity,
+  pro_annual: Infinity,
+};
 
 async function checkDailyQuota(userId) {
   const baseUrl = process.env.VITE_SUPABASE_URL;

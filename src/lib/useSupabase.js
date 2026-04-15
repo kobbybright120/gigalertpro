@@ -48,7 +48,7 @@ function writeLS(key, value) {
 }
 
 // ── Keywords ──
-const KEYWORD_LIMITS = { basic: 5, pro: 20, agency: Infinity };
+const KEYWORD_LIMITS = { basic: 5, basic_annual: 5, pro: 20, pro_annual: 20 };
 
 export function useKeywords(plan) {
   const { user } = useAuth();

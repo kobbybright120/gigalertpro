@@ -20,9 +20,12 @@ const DODO_BASE_URL =
 
 const PRODUCT_TO_PLAN = {
   [process.env.DODO_PRODUCT_BASIC]: "basic",
+  [process.env.DODO_PRODUCT_BASIC_ANNUAL]: "basic_annual",
   [process.env.DODO_PRODUCT_PRO]: "pro",
-  [process.env.DODO_PRODUCT_AGENCY]: "agency",
+  [process.env.DODO_PRODUCT_PRO_ANNUAL]: "pro_annual",
 };
+
+const VALID_PLANS = ["basic", "basic_annual", "pro", "pro_annual"];
 
 function supabaseHeaders() {
   return {
@@ -98,7 +101,9 @@ export default async function handler(req, res) {
     const profiles = await profileRes.json().catch(() => []);
     if (
       profiles?.[0]?.subscription_status === "active" &&
-      ["basic", "pro", "agency"].includes(profiles?.[0]?.plan)
+      ["basic", "basic_annual", "pro", "pro_annual"].includes(
+        profiles?.[0]?.plan,
+      )
     ) {
       console.info("[verify-checkout] Already active, skipping");
       return res.status(200).json({ status: "already_active" });
@@ -210,7 +215,7 @@ export default async function handler(req, res) {
             (productId && PRODUCT_TO_PLAN[productId]) ||
             payMatch?.metadata?.tier ||
             "basic";
-          if (!["basic", "pro", "agency"].includes(plan)) plan = "basic";
+          if (!VALID_PLANS.includes(plan)) plan = "basic";
           const payCustId = payMatch?.customer?.customer_id || null;
 
           await activateProfile(
@@ -234,7 +239,7 @@ export default async function handler(req, res) {
       (productId && PRODUCT_TO_PLAN[productId]) ||
       match?.metadata?.tier ||
       "basic";
-    if (!["basic", "pro", "agency"].includes(plan)) plan = "basic";
+    if (!VALID_PLANS.includes(plan)) plan = "basic";
 
     const interval = match?.payment_frequency_interval;
     const period =

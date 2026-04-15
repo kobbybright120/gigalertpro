@@ -26,9 +26,12 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 // Map Dodo product IDs to plan tiers
 const PRODUCT_TO_PLAN = {
   [process.env.DODO_PRODUCT_BASIC]: "basic",
+  [process.env.DODO_PRODUCT_BASIC_ANNUAL]: "basic_annual",
   [process.env.DODO_PRODUCT_PRO]: "pro",
-  [process.env.DODO_PRODUCT_AGENCY]: "agency",
+  [process.env.DODO_PRODUCT_PRO_ANNUAL]: "pro_annual",
 };
+
+const VALID_PLANS = ["basic", "basic_annual", "pro", "pro_annual"];
 
 function resolvePlan(data) {
   // Try product_id from the webhook event data
@@ -38,7 +41,7 @@ function resolvePlan(data) {
   }
   // Fallback: check metadata.tier set during checkout
   const tier = data?.metadata?.tier;
-  if (tier && ["basic", "pro", "agency"].includes(tier)) {
+  if (tier && VALID_PLANS.includes(tier)) {
     return tier;
   }
   // Default to basic if we can't determine

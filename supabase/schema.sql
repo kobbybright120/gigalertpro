@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   portfolio_links TEXT[] NOT NULL DEFAULT '{}',
   hourly_rate    NUMERIC,
   availability   TEXT NOT NULL DEFAULT 'available' CHECK (availability IN ('available', 'busy', 'unavailable')),
-  plan        TEXT CHECK (plan IN ('basic', 'pro', 'agency')),
+  plan        TEXT CHECK (plan IN ('free', 'basic', 'basic_annual', 'pro', 'pro_annual')),
   -- Dodo Payments subscription fields
   dodo_customer_id         TEXT,
   dodo_subscription_id     TEXT,

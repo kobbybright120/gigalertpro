@@ -6,52 +6,95 @@ export default function UpgradeModal({ open, onClose, gigCount = 0 }) {
   const { user } = useAuth();
   const [loadingTier, setLoadingTier] = useState(null);
   const [error, setError] = useState("");
+  const [billingPeriod, setBillingPeriod] = useState("monthly");
+  const isAnnual = billingPeriod === "annual";
 
-  const plans = [
-    {
-      name: "Basic",
-      tier: "basic",
-      price: 9,
-      features: [
-        "1 Keyword Tracker",
-        "25 Daily Alerts",
-        "Email Notifications",
-        "Unlimited AI Proposals",
-        "Reddit only",
-      ],
-      ctaLabel: "Start with Basic",
-    },
-    {
-      name: "Pro",
-      tier: "pro",
-      price: 29,
-      popular: true,
-      features: [
-        "3 Keyword Trackers",
-        "100 Daily Alerts",
-        "Email + Telegram",
-        "Unlimited AI Proposals",
-        "Reddit + X + Threads",
-        "Priority scanning every 10 min",
-      ],
-      ctaLabel: "Go Pro",
-    },
-    {
-      name: "Agency",
-      tier: "agency",
-      price: 99,
-      features: [
-        "10 Keyword Trackers",
-        "500 Daily Alerts",
-        "Email + Telegram + Slack",
-        "Unlimited AI Proposals",
-        "All platforms",
-        "5 Team Seats",
-        "Priority scanning every 5 min",
-      ],
-      ctaLabel: "Get Agency",
-    },
-  ];
+  const DODO_LINKS = {
+    basic: import.meta.env.NEXT_PUBLIC_DODO_LINK_BASIC || "",
+    basic_annual: import.meta.env.NEXT_PUBLIC_DODO_LINK_BASIC_ANNUAL || "",
+    pro: import.meta.env.NEXT_PUBLIC_DODO_LINK_PRO || "",
+    pro_annual: import.meta.env.NEXT_PUBLIC_DODO_LINK_PRO_ANNUAL || "",
+  };
+
+  const plans = isAnnual
+    ? [
+        {
+          name: "Basic",
+          tier: "basic_annual",
+          price: 122,
+          priceSuffix: "/year",
+          crossedOut: "$144/year",
+          saveBadge: "Save $22 — 15% off",
+          features: [
+            "25 daily alerts",
+            "Reddit, X and Threads",
+            "5 keyword trackers",
+            "Gig quality scoring",
+            "10 AI proposals per day",
+            "Browser and email notifications",
+            "Profile builder",
+          ],
+          ctaLabel: "Get Started",
+          ctaLink: DODO_LINKS.basic_annual,
+        },
+        {
+          name: "Pro",
+          tier: "pro_annual",
+          price: 296,
+          priceSuffix: "/year",
+          crossedOut: "$348/year",
+          saveBadge: "Save $52 — 15% off",
+          popular: true,
+          features: [
+            "Everything in Basic",
+            "100 daily alerts",
+            "20 keyword trackers",
+            "Unlimited AI proposals",
+            "AI learns from winning proposals",
+            "Priority scanning every 10 minutes",
+            "Won/Reply/No Response analytics",
+          ],
+          ctaLabel: "Get Started",
+          ctaLink: DODO_LINKS.pro_annual,
+        },
+      ]
+    : [
+        {
+          name: "Basic",
+          tier: "basic",
+          price: 12,
+          priceSuffix: "/month",
+          features: [
+            "25 daily alerts",
+            "Reddit, X and Threads",
+            "5 keyword trackers",
+            "Gig quality scoring",
+            "10 AI proposals per day",
+            "Browser and email notifications",
+            "Profile builder",
+          ],
+          ctaLabel: "Get Started",
+          ctaLink: DODO_LINKS.basic,
+        },
+        {
+          name: "Pro",
+          tier: "pro",
+          price: 29,
+          priceSuffix: "/month",
+          popular: true,
+          features: [
+            "Everything in Basic",
+            "100 daily alerts",
+            "20 keyword trackers",
+            "Unlimited AI proposals",
+            "AI learns from winning proposals",
+            "Priority scanning every 10 minutes",
+            "Won/Reply/No Response analytics",
+          ],
+          ctaLabel: "Get Started",
+          ctaLink: DODO_LINKS.pro,
+        },
+      ];
 
   async function handleCheckout(tier) {
     setError("");
@@ -105,15 +148,34 @@ export default function UpgradeModal({ open, onClose, gigCount = 0 }) {
           </p>
         </div>
 
-        {/* Free trial notice */}
-        <div className="mb-6 p-3.5 rounded-xl bg-[#00F0B5]/[0.06] border border-[#00F0B5]/15 text-center">
-          <p className="text-sm text-[#00F0B5] font-semibold">
-            Try any plan free for 7 days — cancel anytime, no charge.
-          </p>
+        {/* Monthly / Annual toggle */}
+        <div className="flex justify-center mb-6">
+          <div className="inline-flex items-center bg-white/5 border border-white/10 rounded-full p-1">
+            <button
+              onClick={() => setBillingPeriod("monthly")}
+              className={`px-5 py-2 text-sm font-semibold rounded-full transition-all duration-200 ${
+                !isAnnual
+                  ? "bg-[#00F0B5] text-[#020617]"
+                  : "text-gray-400 hover:text-white"
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              onClick={() => setBillingPeriod("annual")}
+              className={`px-5 py-2 text-sm font-semibold rounded-full transition-all duration-200 ${
+                isAnnual
+                  ? "bg-[#00F0B5] text-[#020617]"
+                  : "text-gray-400 hover:text-white"
+              }`}
+            >
+              Annual <span className="text-xs opacity-80">Save 15%</span>
+            </button>
+          </div>
         </div>
 
         {/* Plan cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {plans.map((plan) => (
             <div
               key={plan.tier}
@@ -135,12 +197,24 @@ export default function UpgradeModal({ open, onClose, gigCount = 0 }) {
                 <h4 className="font-bold text-xl text-white mb-1">
                   {plan.name}
                 </h4>
+                {plan.crossedOut && (
+                  <p className="text-gray-500 text-sm line-through">
+                    {plan.crossedOut}
+                  </p>
+                )}
                 <div className="flex items-baseline gap-1">
                   <span className="text-4xl font-extrabold text-white">
                     ${plan.price}
                   </span>
-                  <span className="text-gray-400 text-sm">/month</span>
+                  <span className="text-gray-400 text-sm">
+                    {plan.priceSuffix}
+                  </span>
                 </div>
+                {plan.saveBadge && (
+                  <span className="inline-block mt-2 px-2.5 py-1 bg-[#00F0B5]/10 text-[#00F0B5] text-xs font-bold rounded-full border border-[#00F0B5]/20">
+                    {plan.saveBadge}
+                  </span>
+                )}
               </div>
 
               <ul className="space-y-2.5 text-sm text-gray-300 flex-1 mb-6">
@@ -152,28 +226,38 @@ export default function UpgradeModal({ open, onClose, gigCount = 0 }) {
                 ))}
               </ul>
 
-              <button
-                disabled={!!loadingTier}
-                onClick={() => handleCheckout(plan.tier)}
-                className={`w-full py-3 font-bold rounded-xl flex items-center justify-center gap-2 transition-all duration-200 ${
-                  plan.popular
-                    ? "bg-[#00F0B5] text-[#020617] hover:bg-[#00dba5] hover:shadow-[0_0_20px_rgba(0,240,181,0.25)]"
-                    : "bg-white/5 text-white border border-white/10 hover:bg-white/10"
-                }`}
-              >
-                {loadingTier === plan.tier ? "Redirecting..." : plan.ctaLabel}
-                <ArrowRight className="w-4 h-4" />
-              </button>
+              {plan.ctaLink ? (
+                <a
+                  href={plan.ctaLink}
+                  className={`w-full py-3 font-bold rounded-xl flex items-center justify-center gap-2 transition-all duration-200 ${
+                    plan.popular
+                      ? "bg-[#00F0B5] text-[#020617] hover:bg-[#00dba5] hover:shadow-[0_0_20px_rgba(0,240,181,0.25)]"
+                      : "bg-white/5 text-white border border-white/10 hover:bg-white/10"
+                  }`}
+                >
+                  {plan.ctaLabel}
+                  <ArrowRight className="w-4 h-4" />
+                </a>
+              ) : (
+                <button
+                  disabled={!!loadingTier}
+                  onClick={() => handleCheckout(plan.tier)}
+                  className={`w-full py-3 font-bold rounded-xl flex items-center justify-center gap-2 transition-all duration-200 ${
+                    plan.popular
+                      ? "bg-[#00F0B5] text-[#020617] hover:bg-[#00dba5] hover:shadow-[0_0_20px_rgba(0,240,181,0.25)]"
+                      : "bg-white/5 text-white border border-white/10 hover:bg-white/10"
+                  }`}
+                >
+                  {loadingTier === plan.tier ? "Redirecting..." : plan.ctaLabel}
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              )}
             </div>
           ))}
         </div>
 
         {/* Trust badges */}
         <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mt-6 text-sm text-gray-400">
-          <span className="flex items-center gap-1.5">
-            <Check className="w-4 h-4 text-[#00F0B5]" />7 day free trial on all
-            plans
-          </span>
           <span className="flex items-center gap-1.5">
             <Check className="w-4 h-4 text-[#00F0B5]" />
             Cancel anytime

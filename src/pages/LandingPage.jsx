@@ -756,7 +756,7 @@ export default function LandingPage() {
               },
               {
                 q: "Can I cancel anytime?",
-                a: "Yes. No contracts. No cancellation fees. Cancel directly from your dashboard in one click. We also offer a 7 day free trial on all paid plans so you can experience GigAlertPro finding real clients for you before being charged anything.",
+                a: "Yes. No contracts. No cancellation fees. Cancel directly from your dashboard in one click. Cancel anytime. No hidden fees.",
               },
             ].map(({ q, a, defaultOpen }, i) => (
               <FaqItem
@@ -1302,65 +1302,109 @@ function LiveDemo() {
    PRICING SECTION
    ═══════════════════════════════════════════════════════════════════════ */
 function PricingSection({ priceRef, priceVis, handleCheckout }) {
-  const plans = [
-    {
-      name: "Basic",
-      tagline: "Perfect for getting started",
-      price: 9,
-      tier: "basic",
-      popular: false,
-      features: [
-        { text: "All platforms Reddit, X/Twitter, Threads & Craigslist" },
-        { text: "Up to 5 active keywords" },
-        { text: "Gig quality scoring (0-100)" },
-        { text: "Filter by source & category · Sort by score" },
-        { text: "Browser push notifications" },
-        { text: "10 AI proposals per day" },
-        { text: "Save proposals + outcome tracking" },
-        { text: "Profile builder (bio, skills, portfolio)" },
-      ],
-      ctaLabel: "Get Started",
-      ctaClass:
-        "w-full py-3.5 border border-white/10 text-gray-300 font-semibold rounded-xl hover:bg-white/[0.04] hover:border-white/20 transition-all duration-300 flex items-center justify-center gap-2 text-sm",
-    },
-    {
-      name: "Pro",
-      tagline: "For serious freelancers",
-      price: 29,
-      tier: "pro",
-      popular: true,
-      features: [
-        { text: "Everything in Basic" },
-        { text: "Up to 20 active keywords" },
-        { text: "50 AI proposals per day" },
-        { text: "AI learns from your winning proposals" },
-        { text: "Won / Reply / No Response outcome analytics" },
-        { text: "In-app notification bell with unread count" },
-        { text: "Priority access to new features" },
-      ],
-      ctaLabel: "Get Started",
-      ctaClass:
-        "w-full py-3.5 bg-[#00F0B5] text-[#020617] font-bold rounded-xl hover:bg-[#00dba5] transition-all duration-200 flex items-center justify-center gap-2 text-sm",
-    },
-    {
-      name: "Agency",
-      tagline: "For power users & agencies",
-      price: 99,
-      tier: "agency",
-      popular: false,
-      features: [
-        { text: "Everything in Pro" },
-        { text: "Unlimited active keywords" },
-        { text: "Unlimited AI proposals per day" },
-        { text: "Highest priority gig scanning" },
-        { text: "Early access to all new features" },
-        { text: "Priority support" },
-      ],
-      ctaLabel: "Get Started Free",
-      ctaClass:
-        "w-full py-3.5 border border-white/10 text-gray-300 font-semibold rounded-xl hover:bg-white/[0.04] hover:border-white/20 transition-all duration-300 flex items-center justify-center gap-2 text-sm",
-    },
-  ];
+  const [billingPeriod, setBillingPeriod] = useState("monthly");
+  const isAnnual = billingPeriod === "annual";
+
+  const DODO_LINKS = {
+    basic: import.meta.env.NEXT_PUBLIC_DODO_LINK_BASIC || "",
+    basic_annual: import.meta.env.NEXT_PUBLIC_DODO_LINK_BASIC_ANNUAL || "",
+    pro: import.meta.env.NEXT_PUBLIC_DODO_LINK_PRO || "",
+    pro_annual: import.meta.env.NEXT_PUBLIC_DODO_LINK_PRO_ANNUAL || "",
+  };
+
+  const plans = isAnnual
+    ? [
+        {
+          name: "Basic",
+          tagline: "Perfect for getting started",
+          price: 122,
+          priceSuffix: "/year",
+          crossedOut: "$144/year",
+          saveBadge: "Save $22 — 15% off",
+          tier: "basic_annual",
+          popular: false,
+          features: [
+            { text: "25 daily alerts" },
+            { text: "Reddit, X and Threads" },
+            { text: "5 keyword trackers" },
+            { text: "Gig quality scoring" },
+            { text: "10 AI proposals per day" },
+            { text: "Browser and email notifications" },
+            { text: "Profile builder" },
+          ],
+          ctaLabel: "Get Started",
+          ctaLink: DODO_LINKS.basic_annual,
+          ctaClass:
+            "w-full py-3.5 border border-white/10 text-gray-300 font-semibold rounded-xl hover:bg-white/[0.04] hover:border-white/20 transition-all duration-300 flex items-center justify-center gap-2 text-sm",
+        },
+        {
+          name: "Pro",
+          tagline: "For serious freelancers",
+          price: 296,
+          priceSuffix: "/year",
+          crossedOut: "$348/year",
+          saveBadge: "Save $52 — 15% off",
+          tier: "pro_annual",
+          popular: true,
+          features: [
+            { text: "Everything in Basic" },
+            { text: "100 daily alerts" },
+            { text: "20 keyword trackers" },
+            { text: "Unlimited AI proposals" },
+            { text: "AI learns from winning proposals" },
+            { text: "Priority scanning every 10 minutes" },
+            { text: "Won/Reply/No Response analytics" },
+          ],
+          ctaLabel: "Get Started",
+          ctaLink: DODO_LINKS.pro_annual,
+          ctaClass:
+            "w-full py-3.5 bg-[#00F0B5] text-[#020617] font-bold rounded-xl hover:bg-[#00dba5] transition-all duration-200 flex items-center justify-center gap-2 text-sm",
+        },
+      ]
+    : [
+        {
+          name: "Basic",
+          tagline: "Perfect for getting started",
+          price: 12,
+          priceSuffix: "/month",
+          tier: "basic",
+          popular: false,
+          features: [
+            { text: "25 daily alerts" },
+            { text: "Reddit, X and Threads" },
+            { text: "5 keyword trackers" },
+            { text: "Gig quality scoring" },
+            { text: "10 AI proposals per day" },
+            { text: "Browser and email notifications" },
+            { text: "Profile builder" },
+          ],
+          ctaLabel: "Get Started",
+          ctaLink: DODO_LINKS.basic,
+          ctaClass:
+            "w-full py-3.5 border border-white/10 text-gray-300 font-semibold rounded-xl hover:bg-white/[0.04] hover:border-white/20 transition-all duration-300 flex items-center justify-center gap-2 text-sm",
+        },
+        {
+          name: "Pro",
+          tagline: "For serious freelancers",
+          price: 29,
+          priceSuffix: "/month",
+          tier: "pro",
+          popular: true,
+          features: [
+            { text: "Everything in Basic" },
+            { text: "100 daily alerts" },
+            { text: "20 keyword trackers" },
+            { text: "Unlimited AI proposals" },
+            { text: "AI learns from winning proposals" },
+            { text: "Priority scanning every 10 minutes" },
+            { text: "Won/Reply/No Response analytics" },
+          ],
+          ctaLabel: "Get Started",
+          ctaLink: DODO_LINKS.pro,
+          ctaClass:
+            "w-full py-3.5 bg-[#00F0B5] text-[#020617] font-bold rounded-xl hover:bg-[#00dba5] transition-all duration-200 flex items-center justify-center gap-2 text-sm",
+        },
+      ];
 
   return (
     <section
@@ -1382,13 +1426,37 @@ function PricingSection({ priceRef, priceVis, handleCheckout }) {
           <p className="mt-4 text-gray-400 text-lg max-w-xl mx-auto">
             Pick the plan that fits your workload. Cancel anytime.
           </p>
+
+          {/* Monthly / Annual toggle */}
+          <div className="mt-6 inline-flex items-center bg-white/5 border border-white/10 rounded-full p-1">
+            <button
+              onClick={() => setBillingPeriod("monthly")}
+              className={`px-5 py-2 text-sm font-semibold rounded-full transition-all duration-200 ${
+                !isAnnual
+                  ? "bg-[#00F0B5] text-[#020617]"
+                  : "text-gray-400 hover:text-white"
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              onClick={() => setBillingPeriod("annual")}
+              className={`px-5 py-2 text-sm font-semibold rounded-full transition-all duration-200 ${
+                isAnnual
+                  ? "bg-[#00F0B5] text-[#020617]"
+                  : "text-gray-400 hover:text-white"
+              }`}
+            >
+              Annual <span className="text-xs opacity-80">Save 15%</span>
+            </button>
+          </div>
         </div>
 
         {/* Pricing cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
           {plans.map((plan, i) => (
             <div
-              key={plan.name}
+              key={plan.tier}
               className={`relative flex flex-col rounded-2xl p-5 sm:p-8 transition-all duration-700 ease-out glass-card ${
                 plan.popular
                   ? "border-[#00F0B5]/20 hover:border-[#00F0B5]/30 glow-green"
@@ -1410,15 +1478,29 @@ function PricingSection({ priceRef, priceVis, handleCheckout }) {
               </div>
 
               <div className="mb-8">
+                {plan.crossedOut && (
+                  <p className="text-gray-500 text-sm line-through mb-1">
+                    {plan.crossedOut}
+                  </p>
+                )}
                 <div className="flex items-end gap-1">
                   <span className="text-5xl font-extrabold text-white">
                     ${plan.price}
                   </span>
-                  <span className="text-gray-500 text-sm pb-2">/month</span>
+                  <span className="text-gray-500 text-sm pb-2">
+                    {plan.priceSuffix}
+                  </span>
                 </div>
-                <p className="text-sm text-[#00F0B5] mt-1.5 font-medium">
-                  Billed monthly
-                </p>
+                {plan.saveBadge && (
+                  <span className="inline-block mt-2 px-2.5 py-1 bg-[#00F0B5]/10 text-[#00F0B5] text-xs font-bold rounded-full border border-[#00F0B5]/20">
+                    {plan.saveBadge}
+                  </span>
+                )}
+                {!plan.saveBadge && (
+                  <p className="text-sm text-[#00F0B5] mt-1.5 font-medium">
+                    Billed monthly
+                  </p>
+                )}
               </div>
 
               <ul className="space-y-3 mb-8 flex-1">
@@ -1431,22 +1513,35 @@ function PricingSection({ priceRef, priceVis, handleCheckout }) {
                 ))}
               </ul>
 
-              <button
-                onClick={() => {
-                  trackPricingPlanClicked(plan.tier);
-                  handleCheckout(plan.tier);
-                }}
-                className={plan.ctaClass}
-              >
-                {plan.ctaLabel}
-                <ArrowRight className="w-4 h-4" />
-              </button>
-              <p className="text-xs text-gray-600 text-center mt-3">
-                Cancel anytime.
-              </p>
+              {plan.ctaLink ? (
+                <a
+                  href={plan.ctaLink}
+                  onClick={() => trackPricingPlanClicked(plan.tier)}
+                  className={plan.ctaClass}
+                >
+                  {plan.ctaLabel}
+                  <ArrowRight className="w-4 h-4" />
+                </a>
+              ) : (
+                <button
+                  onClick={() => {
+                    trackPricingPlanClicked(plan.tier);
+                    handleCheckout(plan.tier);
+                  }}
+                  className={plan.ctaClass}
+                >
+                  {plan.ctaLabel}
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              )}
             </div>
           ))}
         </div>
+
+        {/* No credit card note */}
+        <p className="text-center text-gray-400 text-sm mt-6">
+          No credit card required to explore. Cancel anytime.
+        </p>
 
         {/* Trust strip */}
         <div
