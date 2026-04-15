@@ -82,41 +82,111 @@ const { _testMatchAndScore } = await import("../src/lib/redditClient.js");
 
 // ── Keywords to test ────────────────────────────────────────────────────────
 const KEYWORDS = [
-  // ── Original niches ──
+  // ── Design ──
   "graphic designer",
-  "video editor",
-  "web developer",
-  "copywriter",
-  "social media manager",
   "logo design",
+  "ui ux designer",
+  "web designer",
+  "brand designer",
+  "motion graphics",
+  "illustrator",
+  "3d artist",
+  "thumbnail designer",
+  "banner designer",
+
+  // ── Development ──
+  "web developer",
   "react developer",
   "wordpress developer",
-  "virtual assistant",
-  "motion graphics",
-  "ui ux designer",
-  "content writer",
-  "seo specialist",
+  "full stack developer",
   "python developer",
+  "node.js developer",
+  "shopify developer",
+  "php developer",
+  "android developer",
+  "ios developer",
+  "flutter developer",
   "mobile app developer",
-  // ── Diverse niches ──
-  "voice over",
-  "podcast editor",
-  "music producer",
+  "devops engineer",
+  "blockchain developer",
+  "game developer",
+
+  // ── Writing & Content ──
+  "copywriter",
+  "content writer",
   "ghostwriter",
-  "translator",
+  "technical writer",
+  "blog writer",
+  "seo writer",
   "proofreader",
-  "bookkeeper",
+  "scriptwriter",
+
+  // ── Marketing ──
+  "social media manager",
+  "seo specialist",
+  "email marketing",
+  "google ads specialist",
+  "facebook ads",
+  "digital marketing",
+  "lead generation",
+  "community manager",
+  "affiliate marketing",
+
+  // ── Video & Audio ──
+  "video editor",
+  "youtube editor",
+  "podcast editor",
+  "voice over",
+  "voice actor",
+  "animator",
+  "sound designer",
+  "audio engineer",
+
+  // ── Business & Admin ──
+  "virtual assistant",
   "data entry",
   "executive assistant",
-  "email marketing",
-  "lead generation",
-  "digital marketing",
-  "3d artist",
-  "photographer",
-  "illustrator",
-];
+  "bookkeeper",
+  "customer service",
+  "project manager",
+  "operations manager",
 
-// ── Run the test ────────────────────────────────────────────────────────────
+  // ── Sales ──
+  "sales representative",
+  "appointment setter",
+  "cold caller",
+  "account manager",
+  "business development",
+
+  // ── Data & AI ──
+  "data scientist",
+  "data analyst",
+  "machine learning engineer",
+  "ai engineer",
+  "prompt engineer",
+  "web scraper",
+
+  // ── Photography ──
+  "photographer",
+  "photo editor",
+  "retouching",
+
+  // ── Translation ──
+  "translator",
+  "transcriptionist",
+
+  // ── Specialized / Ecommerce ──
+  "ugc creator",
+  "amazon seller",
+  "tiktok marketing",
+  "dropshipping",
+
+  // ── Creative ──
+  "music producer",
+  "3d animator",
+  "concept artist",
+  "comic artist",
+];
 const allPosts = await fetchRawPosts();
 const summaryRows = [];
 

@@ -222,6 +222,18 @@ const KEYWORD_EXPANSIONS = {
     "photoshop",
     "illustrator",
     "canva",
+    "brand designer",
+    "visual designer",
+  ],
+  "graphic designer": [
+    "graphic design",
+    "logo design",
+    "branding",
+    "visual design",
+    "photoshop",
+    "illustrator",
+    "canva",
+    "graphics",
   ],
   "logo design": ["logo", "graphic design"],
   logo: ["logo design"],
@@ -242,6 +254,14 @@ const KEYWORD_EXPANSIONS = {
   illustration: ["illustrator", "drawing", "art", "artist", "digital art"],
   branding: ["brand", "brand identity", "visual identity"],
   "web design": ["website design", "landing page"],
+  "web designer": ["web design", "website design", "landing page design", "figma", "ui design", "ux design"],
+  "banner designer": ["banner design", "ad design", "display ad", "social media graphics", "graphic design", "creative design"],
+  "blog writer": ["blog post", "blog writing", "content writing", "article writing", "seo writing", "blogger"],
+  "dropshipping": ["dropship", "print on demand", "ecommerce store", "shopify store", "product sourcing", "amazon fba"],
+  "comic artist": ["comic", "manga", "sequential art", "storyboard", "webtoon", "illustration"],
+  "photo editor": ["photo editing", "photo retouching", "lightroom editing", "photoshop editing", "image editing"],
+  "php developer": ["php", "laravel", "wordpress", "symfony", "php developer", "backend php"],
+  "ghostwriter": ["ghostwriting", "ebook", "book writing", "memoir", "ghost writing"],
 
   // Writing & Content
   writing: ["writer", "copywriting"],
@@ -256,7 +276,9 @@ const KEYWORD_EXPANSIONS = {
   ],
   editing: ["editor", "proofreading", "proofread", "copy editing"],
   proofreading: ["proofread", "editor", "editing", "grammar"],
-  ghostwriting: ["ghostwriter", "ebook", "book writing"],
+  proofreader: ["proofreading", "proofread", "copy editing", "editing", "grammar check"],
+  ghostwriting: ["ghostwriter", "ebook", "book writing", "memoir", "ghost writer"],
+  ghostwriter: ["ghostwriting", "ebook", "book writing", "memoir", "ghost writer"],
   "seo writing": ["seo", "content writing", "blog", "article"],
 
   // Marketing
@@ -274,7 +296,7 @@ const KEYWORD_EXPANSIONS = {
   ppc: ["google ads", "facebook ads", "advertising", "paid ads", "sem"],
   "google ads": ["ppc", "sem", "adwords", "paid search"],
   "facebook ads": ["meta ads", "instagram ads", "social media ads", "ppc"],
-  "email marketing": ["email", "newsletter", "mailchimp", "drip campaign"],
+  "email marketing": ["email campaign", "newsletter", "mailchimp", "drip campaign", "klaviyo", "email automation", "email copywriter", "email sequence"],
   "lead generation": ["lead gen", "leads", "outreach", "b2b", "cold email"],
 
   // Video & Audio
@@ -303,6 +325,8 @@ const KEYWORD_EXPANSIONS = {
     "voice talent",
     "voice actor",
   ],
+  "voice over": ["voiceover", "voice acting", "narrator", "voice talent", "voice actor"],
+  "voice actor": ["voiceover", "voice over", "narrator", "voice talent"],
   "voice acting": ["voiceover", "voice over", "narrator", "voice talent"],
 
   // Data & AI
@@ -402,6 +426,7 @@ const KEYWORD_EXPANSIONS = {
   ],
 
   // 3D & CAD
+  "3d artist": ["3d modeling", "3d animation", "blender", "maya", "cinema 4d", "cgi", "3d render", "3d designer"],
   "3d modeling": ["3d", "blender", "maya", "3ds max", "cinema 4d", "cad"],
   blender: ["3d", "3d modeling", "3d artist", "rendering"],
   cad: ["autocad", "solidworks", "3d modeling", "drafting"],
@@ -414,18 +439,89 @@ const KEYWORD_EXPANSIONS = {
     "mastering",
     "audio",
   ],
+  "music producer": ["music production", "beatmaker", "beat making", "mixing engineer", "producer", "sound design", "audio production"],
   mixing: ["audio mixing", "music production", "mastering"],
   mastering: ["audio mastering", "music production", "mixing"],
 
   // Tutoring & Education
   tutoring: ["tutor", "teaching", "online tutor", "teacher", "instructor"],
   teaching: ["tutor", "tutoring", "teacher", "instructor", "course"],
+  tutor: ["tutoring", "teaching", "online tutor", "instructor", "teacher"],
+
+  // Photography
+  photographer: ["photography", "photo shoot", "headshot", "product photo", "portrait"],
+  photography: ["photographer", "photo shoot", "product photography", "headshot"],
+  retouching: ["photo retouching", "photo editing", "lightroom", "photoshop"],
+
+  // Copywriting / Writing specialties
+  copywriter: ["copywriting", "sales copy", "landing page copy", "ad copy", "email copy"],
+  "technical writer": ["technical writing", "documentation", "docs", "api docs", "user manual"],
+  "scriptwriter": ["script writing", "screenwriting", "screenplay", "video script"],
+  "blog writer": ["blog writing", "blog post", "article writing", "content writing"],
+
+  // Developer specialties
+  "shopify developer": ["shopify", "liquid", "ecommerce", "woocommerce"],
+  "wordpress developer": ["wordpress", "wp", "woocommerce", "elementor", "php"],
+  "php developer": ["php", "laravel", "wordpress", "symfony"],
+  "android developer": ["android", "kotlin", "java", "mobile app"],
+  "ios developer": ["ios", "swift", "swiftui", "xcode"],
+  "flutter developer": ["flutter", "dart", "mobile app", "cross-platform"],
+  "devops engineer": ["devops", "ci/cd", "docker", "kubernetes", "aws", "cloud"],
+  "blockchain developer": ["blockchain", "solidity", "smart contract", "web3", "crypto"],
+  "game developer": ["game dev", "unity", "unreal", "godot", "game design"],
+  "full stack developer": ["full stack", "fullstack", "frontend", "backend", "full-stack"],
+  "node developer": ["nodejs", "node.js", "express", "backend"],
+
+  // Marketing specialties
+  "google ads": ["ppc", "sem", "adwords", "paid search", "google adwords"],
+  "facebook ads": ["meta ads", "instagram ads", "social media ads", "ppc"],
+  "tiktok marketing": ["tiktok", "tiktok ads", "short form video", "social media"],
+  "community manager": ["community", "discord", "forum", "moderation"],
+  "affiliate marketing": ["affiliate", "performance marketing", "cpa", "referral"],
+
+  // Video specialties
+  "youtube editor": ["youtube", "video editing", "content creation", "youtuber"],
+  "tiktok editor": ["tiktok", "short form video", "reels", "video editing"],
+  animator: ["animation", "2d animation", "3d animation", "after effects", "motion graphics"],
+
+  // Audio
+  "sound designer": ["sound design", "audio", "sfx", "soundtrack", "foley"],
+  "audio engineer": ["audio engineering", "mixing", "mastering", "sound"],
+  "music mixer": ["mixing", "audio mixing", "mastering", "music production"],
+
+  // Sales
+  "sales rep": ["sales", "cold calling", "outreach", "business development"],
+  "appointment setter": ["appointment setting", "cold calling", "outreach", "sales"],
+  "cold caller": ["cold calling", "telemarketing", "outreach", "sales"],
+  "account manager": ["account management", "client management", "sales", "business development"],
+  "business development": ["biz dev", "partnerships", "sales", "outreach", "b2b"],
+
+  // Business/Admin
+  "customer service": ["customer support", "support agent", "helpdesk", "live chat"],
+  "customer support": ["customer service", "support agent", "helpdesk", "live chat"],
+  "project manager": ["project management", "pm", "scrum", "agile", "jira"],
+  "operations manager": ["operations", "business operations", "process improvement", "admin"],
+  "hr recruiter": ["recruiter", "hr", "talent acquisition", "hiring", "staffing"],
+
+  // AI/Data
+  "data scientist": ["data science", "machine learning", "python", "statistics", "sql"],
+  "data analyst": ["data analysis", "analytics", "excel", "tableau", "power bi", "sql"],
+  "machine learning engineer": ["ml", "machine learning", "ai", "deep learning", "python"],
+  "ai engineer": ["ai", "machine learning", "llm", "gpt", "prompt engineering"],
+  "prompt engineer": ["prompt engineering", "gpt", "llm", "ai", "chatgpt"],
+  "web scraper": ["web scraping", "data scraping", "crawling", "python", "automation"],
+
+  // Specialized / ecommerce
+  "ugc creator": ["ugc", "user generated content", "content creator", "tiktok", "brand content"],
+  transcriptionist: ["transcription", "transcribe", "audio to text", "captions", "subtitles"],
+  "amazon seller": ["amazon", "fba", "amazon listing", "product listing", "ecommerce"],
+  "etsy seller": ["etsy", "handmade", "etsy shop", "product photography"],
 
   // Misc
-  "no-code": ["nocode", "no code", "bubble", "webflow", "airtable"],
-  "low-code": ["lowcode", "no-code", "automation"],
   consulting: ["consultant", "advisory", "strategy"],
   coaching: ["coach", "mentor", "career coaching", "business coaching"],
+  "no-code": ["nocode", "no code", "bubble", "webflow", "airtable"],
+  "low-code": ["lowcode", "no-code", "automation"],
 };
 
 /**
@@ -1061,6 +1157,14 @@ const JOB_LISTING_PATTERNS = [
   /\bqualification:/i,
   /\bexperience:/i,
   /\baed \d+/i,
+  // India salary indicators — INR pay = location-locked India job, not a remote gig
+  /₹\s*[\d,]+/,
+  /\binr\s*[\d,]+/i,
+  /\brs\.?\s*[\d,]+/i,
+  // Indian city + physical presence required
+  /\b(wfo|work\s+from\s+office|work-from-office)\b/i,
+  /\b(bangalore|bengaluru|mumbai|hyderabad|delhi|chennai|pune|kolkata|noida|gurgaon|gurugram)\b.{0,60}\b(wfo|on-?site|in-?office|hybrid|office|physical)\b/i,
+  /\b(wfo|on-?site|in-?office|hybrid|office)\b.{0,60}\b(bangalore|bengaluru|mumbai|hyderabad|delhi|chennai|pune|kolkata|noida|gurgaon|gurugram)\b/i,
 ];
 
 const STRONG_JOB_PATTERNS = [
@@ -1084,6 +1188,14 @@ const STRONG_JOB_PATTERNS = [
   // "mobile" as physical service, not mobile app dev
   /\bmobile\s+(?:detailing|grooming|car\s+wash|notary|mechanic|massage|pet|cleaning|bartend)/i,
   /\b(?:detailing|grooming|car\s+wash|notary|massage|cleaning)\s+(?:service|business|company)/i,
+  // India salary indicators — INR pay = location-locked India job (applies to all sources)
+  /₹\s*[\d,]+/,
+  /\binr\s*[\d,]+/i,
+  /\brs\.?\s*[\d,]+\s*(?:per\s+(?:month|hour|day|photo|task)|\/)/i,
+  // Work From Office + Indian city = not a remote gig
+  /\b(wfo|work\s+from\s+office|work-from-office)\b/i,
+  /\b(bangalore|bengaluru|mumbai|hyderabad|delhi|chennai|pune|kolkata|noida|gurgaon|gurugram)\b.{0,60}\b(wfo|on-?site|in-?office|hybrid|office|physical)\b/i,
+  /\b(wfo|on-?site|in-?office)\b.{0,60}\b(bangalore|bengaluru|mumbai|hyderabad|delhi|chennai|pune|kolkata|noida|gurgaon|gurugram)\b/i,
 ];
 
 /** Detect full-time job listings that aren't freelance gigs */
