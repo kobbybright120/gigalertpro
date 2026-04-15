@@ -888,6 +888,19 @@ export default function LandingPage() {
               </p>
               <div className="space-y-2 text-sm text-gray-500">
                 <a
+                  href="mailto:brightadenyo05@gmail.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.open("mailto:brightadenyo05@gmail.com", "_blank");
+                  }}
+                  className="inline-flex items-center gap-1.5 hover:text-[#00F0B5] transition-colors"
+                >
+                  <Mail className="w-4 h-4" />
+                  Gmail
+                </a>
+                <a
                   href="https://www.linkedin.com/in/kobby-bright-35699a2a6"
                   target="_blank"
                   rel="noopener noreferrer"
