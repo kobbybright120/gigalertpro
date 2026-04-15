@@ -149,8 +149,16 @@ export default function DashboardPage() {
     navigate("/proposals");
   }
 
-  // Top 3 gigs for the preview
-  const topAlerts = alerts.slice(0, 3);
+  // Top 3 gigs for the preview — same sort as Gig Alerts: Gold first, then by score
+  const topAlerts = [...alerts]
+    .sort((a, b) => {
+      if (a.is_gold && !b.is_gold) return -1;
+      if (!a.is_gold && b.is_gold) return 1;
+      if (a.is_gold && b.is_gold)
+        return (b.quality_score || 0) - (a.quality_score || 0);
+      return (b.score || 0) - (a.score || 0);
+    })
+    .slice(0, 3);
   const hotCount = alerts.filter((a) => a.score >= 70).length;
 
   return (
