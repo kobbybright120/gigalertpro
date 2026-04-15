@@ -886,7 +886,7 @@ export default function LandingPage() {
               <p className="text-sm font-semibold text-gray-300 mb-3">
                 Contact
               </p>
-              <div className="space-y-2 text-sm text-gray-500">
+              <div className="flex flex-col gap-3 text-sm text-gray-500">
                 <a
                   href="mailto:brightadenyo05@gmail.com"
                   target="_blank"
