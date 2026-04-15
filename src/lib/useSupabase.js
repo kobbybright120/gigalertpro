@@ -189,8 +189,11 @@ const POLL_INTERVALS = [
   10 * 60 * 1000, // 10 min (idle — max backoff)
 ];
 
+// Premium sources — only paid users should get notifications for these
+const PREMIUM_SOURCES = new Set(["X", "Threads"]);
+
 // ── Gig Alerts (matched posts) with keyword filtering + auto-poll ──
-export function useGigAlerts(keywordList) {
+export function useGigAlerts(keywordList, { isPaid = true } = {}) {
   const { user } = useAuth();
   const userId = user?.id;
   const { bump } = useNewGigCount();
@@ -218,10 +221,13 @@ export function useGigAlerts(keywordList) {
         const results = await fetchRedditGigs(kws);
         // On first load, seed seen IDs; on polls, notify new gigs
         if (pollingRef.current) {
-          const newCount = notifyNewGigs(results);
+          const notifAlerts = isPaid
+            ? results
+            : results.filter((a) => !PREMIUM_SOURCES.has(a.source_platform));
+          const newCount = notifyNewGigs(notifAlerts);
           if (newCount > 0) {
             bump(newCount);
-            pollMissesRef.current = 0; // reset backoff — fresh gigs found
+            pollMissesRef.current = 0;
           } else {
             pollMissesRef.current = Math.min(
               pollMissesRef.current + 1,
@@ -295,7 +301,10 @@ export function useGigAlerts(keywordList) {
       }
 
       if (pollingRef.current) {
-        const newCount = notifyNewGigs(liveResults);
+        const notifAlerts = isPaid
+          ? liveResults
+          : liveResults.filter((a) => !PREMIUM_SOURCES.has(a.source_platform));
+        const newCount = notifyNewGigs(notifAlerts);
         if (newCount > 0) {
           bump(newCount);
           pollMissesRef.current = 0;
@@ -340,7 +349,10 @@ export function useGigAlerts(keywordList) {
         upvotes: row.upvotes ?? 0,
       }));
       if (pollingRef.current) {
-        const newCount = notifyNewGigs(results);
+        const notifAlerts = isPaid
+          ? results
+          : results.filter((a) => !PREMIUM_SOURCES.has(a.source_platform));
+        const newCount = notifyNewGigs(notifAlerts);
         if (newCount > 0) bump(newCount);
       } else {
         seedSeenIds(results);
@@ -349,7 +361,7 @@ export function useGigAlerts(keywordList) {
       setLastUpdated(Date.now());
     }
     setLoading(false);
-  }, [userId, keywordList, bump]);
+  }, [userId, keywordList, bump, isPaid]);
 
   // Initial fetch + re-fetch when keywords change
   useEffect(() => {

@@ -61,7 +61,7 @@ export default function GigAlertsPage() {
     loading: alertsLoading,
     lastUpdated,
     refetch,
-  } = useGigAlerts(keywords);
+  } = useGigAlerts(keywords, { isPaid: !isLocked });
   const { saveProposal } = useProposals();
   const { savedIds, toggleSave } = useSavedGigs();
   const { reset: resetGigCount } = useNewGigCount();

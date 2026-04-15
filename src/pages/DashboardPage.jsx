@@ -43,10 +43,12 @@ export default function DashboardPage() {
   }, []);
 
   const { profile } = useProfile();
-  const { keywords, addKeyword, removeKeyword } = useKeywords(profile?.plan);
-  const { alerts, loading: alertsLoading } = useGigAlerts(keywords);
-  const { saveProposal } = useProposals();
   const { isLocked, onUpgrade, onSeePlans, setGigCount } = useLockedDashboard();
+  const { keywords, addKeyword, removeKeyword } = useKeywords(profile?.plan);
+  const { alerts, loading: alertsLoading } = useGigAlerts(keywords, {
+    isPaid: !isLocked,
+  });
+  const { saveProposal } = useProposals();
 
   const [keywordError, setKeywordError] = useState("");
 

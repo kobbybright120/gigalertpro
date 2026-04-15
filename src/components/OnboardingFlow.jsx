@@ -121,8 +121,6 @@ export default function OnboardingFlow({ onComplete }) {
         count = 0;
       }
     }
-    // Ensure at least a realistic number for demo
-    if (count === 0) count = Math.floor(Math.random() * 15) + 8;
     setGigCount(count);
     setStep(3);
     trackOnboardingStepViewed(3);
@@ -357,25 +355,37 @@ export default function OnboardingFlow({ onComplete }) {
             </div>
 
             <h1 className="text-3xl font-extrabold text-white tracking-tight mb-3">
-              We found <span className="text-gradient">{gigCount} gigs</span>{" "}
-              matching your skills
+              {gigCount > 0 ? (
+                <>
+                  We found{" "}
+                  <span className="text-gradient">{gigCount} gigs</span>{" "}
+                  matching your skills
+                </>
+              ) : (
+                <>
+                  You're all set! We're scanning for{" "}
+                  <span className="text-gradient">your gigs</span>
+                </>
+              )}
             </h1>
-            <p className="text-gray-400 text-base mb-2">
-              {skills.join(", ")} in the last 24 hours
-            </p>
+            <p className="text-gray-400 text-base mb-2">{skills.join(", ")}</p>
             <p className="text-gray-500 text-sm mb-8">
-              Here's a preview of what's waiting for you 👇
+              {gigCount > 0
+                ? "Here's a preview of what's waiting for you 👇"
+                : "We'll notify you as soon as gigs matching your skills come in"}
             </p>
 
             {/* Animated counter */}
-            <div className="glass-card rounded-2xl p-6 mb-8 glow-green">
-              <div className="text-5xl font-extrabold text-gradient mb-2">
-                {gigCount}
+            {gigCount > 0 && (
+              <div className="glass-card rounded-2xl p-6 mb-8 glow-green">
+                <div className="text-5xl font-extrabold text-gradient mb-2">
+                  {gigCount}
+                </div>
+                <p className="text-sm text-gray-400">
+                  gigs matching your skills right now
+                </p>
               </div>
-              <p className="text-sm text-gray-400">
-                gigs matching your skills right now
-              </p>
-            </div>
+            )}
 
             <button
               onClick={handleFinishOnboarding}
