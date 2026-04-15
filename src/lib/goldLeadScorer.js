@@ -343,6 +343,38 @@ export function scoreGoldLead(gig, userKeywords = []) {
   // ── Final clamp ──
   qualityScore = Math.max(0, Math.min(100, qualityScore));
 
+  // ── SCAM / SPAM DETECTION — hard cap before gold tagging ──
+  const SCAM_SIGNALS = [
+    /\bcopy\s+(?:and|&)\s+paste\s+(?:task|job|work|them|it|into)s?\b/i,
+    /\bsimple\s+(?:online\s+)?(?:reposting|posting)\s+work\b/i,
+    /\b(?:micro\s+tasks?|simple\s+tasks?)\b.{0,30}\b(?:weekly\s+pay|\$\s*\d)\b/i,
+    /\bno\s+experience\s+(?:needed|required)\b.{0,40}\b(?:\$\s*\d|copy|paste)\b/i,
+    /\b(?:earn|make|get)\s+\$\s*\d+\s*(?:per|a|every)\s+(?:day|week)\b.{0,20}\b(?:easy|simple|basic)\b/i,
+    /\b(?:looking\s+for\s+)?\d{2,}\s+(?:people|individuals)\b.{0,30}\b(?:task|online|repost)/i,
+  ];
+  const isScam = SCAM_SIGNALS.some((rx) => rx.test(fullText));
+
+  // Unrealistic hourly rate — only flag when paired with scam signals.
+  // Legitimate senior devs/designers/consultants CAN charge $100-300/hr,
+  // so high rate alone is NOT enough. We need a second signal.
+  const budgetParsed = budgetStr ? parseDollarAmount(budgetStr) : null;
+  const hasHighRate =
+    budgetParsed && budgetParsed.type === "hourly" && budgetParsed.value >= 80;
+  const hasNoExpSignal =
+    /\bno\s+(?:experience|skills?)\s+(?:needed|required)\b/i.test(fullText);
+  const hasMultiRoleList = countRoleMentions(fullText) >= 4;
+  const isUnrealisticRate =
+    hasHighRate && (hasNoExpSignal || hasMultiRoleList || isScam);
+
+  if (isScam) {
+    qualityScore = Math.min(qualityScore, 25);
+    reasons.push("Scam/spam signals detected — capped");
+  }
+  if (isUnrealisticRate) {
+    qualityScore = Math.min(qualityScore, 35);
+    reasons.push("Unrealistic hourly rate for role level — capped");
+  }
+
   // ── Build output ──
   const category = gig.category || detectGoldCategory(fullText);
   const extractedBudget = budgetStr || "Not Specified";

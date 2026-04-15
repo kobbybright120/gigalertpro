@@ -82,7 +82,13 @@ function saveCache(c) {
     /* ignore */
   }
 }
-let cache = loadCache();
+// Polyfill localStorage for Node.js test harness
+let cache;
+try {
+  cache = loadCache();
+} catch {
+  cache = { data: null, ts: 0 };
+}
 
 // ── Gig Categories ───────────────────────────────────────────────────────────
 const CATEGORIES = [
@@ -239,7 +245,7 @@ const KEYWORD_EXPANSIONS = {
 
   // Writing & Content
   writing: ["writer", "copywriting"],
-  copywriting: ["copywriter", "copy", "sales copy", "landing page", "email"],
+  copywriting: ["copywriter", "sales copy", "landing page", "email copy"],
   "content writing": ["content writer", "blog", "article", "seo writing"],
   blogging: ["blog", "blog post", "content", "article"],
   "technical writing": [
@@ -470,6 +476,10 @@ const EXACT_MATCH_REQUIRED = new Set([
   "ion",
   "sol",
   "hub",
+  "copy",
+  "copywriting",
+  "copywriter",
+  "mobile",
 ]);
 
 // ── Self-Promotion Detection (freelancer ads — we REJECT these) ──────────────
@@ -520,6 +530,18 @@ const SELF_PROMO_PATTERNS = [
   /\bdecided\s+to\s+(?:throw|put)\s+it\s+out\s+there\b/i,
   /\bcurious\s+if\b.{0,40}\buseful\s+to\s+other/i,
   /\bi'?ve\s+been\s+(?:actively\s+)?(?:working|freelancing|building)\b/i,
+  // ── Scam / spam / copy-paste task posts ──
+  /\bcopy\s+(?:and|&)\s+paste\s+(?:task|job|work|them|it|into)s?\b/i,
+  /\bsimple\s+(?:online\s+)?(?:reposting|posting)\s+work\b/i,
+  /\b(?:repost|reposting)\s+(?:work|task|job)s?\b/i,
+  /\b\$\s*(?:0\.\d+|[0-2])\s*(?:per\s+(?:post|comment|task))\b/i,
+  /\b(?:micro\s+tasks?|simple\s+tasks?)\b.{0,30}\b(?:weekly\s+pay|\$\s*\d)\b/i,
+  /\bcopy\s+(?:and|&)\s+paste\b.{0,30}\b(?:subreddit|reddit|forum|website)s?\b/i,
+  // Unrealistic rates + low-skill role = scam (niche-agnostic)
+  /\$\s*(?:1\d{2}|[2-9]\d{2})\s*(?:\/|-|per)\s*(?:hr|hour)\b.{0,80}\b(?:no\s+(?:experience|skills?)\s+(?:needed|required)|anyone\s+can\s+do|basic\s+(?:task|work)|copy[- ]?paste)\b/i,
+  /\b(?:no\s+experience\s+(?:needed|required))\b.{0,60}\b(?:copy[- ]?paste|\$\s*\d)\b/i,
+  /\b(?:earn|make|get)\s+\$\s*\d+\s*(?:per|a|every|each)\s+(?:day|week|hour)\b.{0,30}\b(?:easy|simple|basic|no\s+experience)\b/i,
+  /\b(?:30|15|10)\s*(?:people|individuals|persons?)\b.{0,30}\b(?:online\s+task|simple\s+task|posting|reposting)\b/i,
   // ── Career advice / coaching / content creators ──
   /\bI\s+wanted\s+to\s+share\b.{0,30}\b(?:insights?|tips?|advice|video|resource|guide)\b/i,
   /\bthe\s+community\s+might\s+find\s+(?:useful|helpful|interesting)\b/i,
@@ -873,6 +895,14 @@ const JUNK_PATTERNS = [
   /\bwhat(?:'s|\s+is)\s+(?:your|the\s+best|a\s+good|an?\s+average)\s+(?:rate|price|charge|fee)\b/i,
   /\bhow\s+much\s+(?:do|should|can|would)\s+(?:you|I|one)\s+(?:charge|make|earn|ask)\b/i,
   /\bshare\s+your\b.{0,20}\b(?:rate|price|experience|portfolio|thoughts?)\b/i,
+
+  // ── Scam / spam gig posts ──
+  /\bcopy\s+(?:and|&)\s+paste\s+(?:task|job|work)s?\b/i,
+  /\bsimple\s+(?:online\s+)?(?:reposting|posting)\s+work\b/i,
+  /\bsimple\s+online\s+tasks?\b.{0,20}\b(?:weekly|daily)\s+pay\b/i,
+  /\bremote\s+micro\s+tasks?\b/i,
+  /\b(?:looking\s+for\s+)?\d{2,}\s+(?:people|individuals)\b.{0,30}\b(?:task|online|repost)/i,
+
   // ── Side project / showcase (not a job) ──
   /\b(?:built|made|created|launched)\s+(?:this|a|an)\s+(?:side\s+)?(?:project|tool|app|extension)\b.{0,40}\b(?:looking\s+for\s+feedback|feedback\s+welcome|thoughts?)\b/i,
 ];
@@ -960,6 +990,32 @@ function isJunk(title) {
   return JUNK_PATTERNS.some((rx) => rx.test(title));
 }
 
+/** True if title+body match known scam / spam patterns */
+const SCAM_BODY_PATTERNS = [
+  // Copy-paste / reposting tasks
+  /\bcopy\s+(?:and|&)\s+paste\s+(?:task|job|work|them|it|into)\b/i,
+  /\brepost(?:ing)?\s+(?:work|task|job|them|it)\b/i,
+  /\bgiven\s+the\s+same\s+text\b.{0,30}\btask\s+is\s+to\s+copy\b/i,
+  // Unrealistic mass hiring at trivially low pay
+  /\bhiring\s+\d{2,}\s+people\b/i,
+  /\blooking\s+for\s+\d{2,}\s+(?:reliable\s+)?(?:people|individuals)\b/i,
+  // Pay-per-micro-action
+  /\$\s*(?:0\.\d+|[0-3])\s*(?:per|\/)\s*(?:post|comment|task|click|view)\b/i,
+  /\$\s*(?:3|5)\s+per\s+comment\b/i,
+  // Unrealistic rates paired with "no experience" (catches ALL niches)
+  /\bno\s+(?:experience|skills?)\s+(?:needed|required)\b.{0,80}\$\s*(?:[5-9]\d|[1-9]\d{2,})\s*(?:\/|-|per)\s*(?:hr|hour)\b/i,
+  /\$\s*(?:[5-9]\d|[1-9]\d{2,})\s*(?:\/|-|per)\s*(?:hr|hour)\b.{0,80}\bno\s+(?:experience|skills?)\s+(?:needed|required)\b/i,
+  // "No experience" + absurdly high weekly/monthly pay (any role)
+  /\bno\s+(?:experience|skills?)\s+(?:needed|required)\b.{0,80}\$\s*(?:[5-9]\d{2}|[1-9]\d{3,})\s*(?:\/|per)\s*(?:week|month|day)\b/i,
+  // Multi-role spam lists ("hiring 7 roles" with rates attached)
+  /(?:1\.\s*.+\n?){5,}.*\$\s*\d+\s*(?:\/|-|per)\s*(?:hr|hour)/i,
+];
+
+function isScamPost(title, body) {
+  const text = `${title} ${body}`;
+  return SCAM_BODY_PATTERNS.some((rx) => rx.test(text));
+}
+
 // ── Full-Time Job Listing Detection ──────────────────────────────────────────
 const JOB_LISTING_PATTERNS = [
   // Employment type signals
@@ -1011,6 +1067,19 @@ const STRONG_JOB_PATTERNS = [
   /\bannual salary\b/i,
   /\bequity package\b/i,
   /\bstock options\b/i,
+  // Physical / in-person / trade jobs — NOT freelance remote gigs
+  /\b(?:plumber|electrician|landscaper|handyman|handymen|mechanic|janitor|custodian|housekeeper)s?\b/i,
+  /\b(?:cashier|barista|waitress|waiter|hostess|bartender|busser|dishwasher)s?\b/i,
+  /\b(?:driver|warehouse|forklift|maintenance\s+technician)s?\b/i,
+  /\b(?:tour\s+guide|booth\s+assistant|merchandiser|surrogate|pet\s+sitter?|dog\s+walk)s?\b/i,
+  /\bhiring\s+immediately\b/i,
+  /\bstart\s+this\s+week\b/i,
+  /\bin[- ]person\s+interview\b/i,
+  /\bmust\s+have\s+(?:your\s+own\s+)?(?:reliable\s+)?(?:transportation|vehicle|car|truck)\b/i,
+  /\b(?:commercial|residential)\s+(?:maintenance|cleaning|property)\b/i,
+  // "mobile" as physical service, not mobile app dev
+  /\bmobile\s+(?:detailing|grooming|car\s+wash|notary|mechanic|massage|pet|cleaning|bartend)/i,
+  /\b(?:detailing|grooming|car\s+wash|notary|massage|cleaning)\s+(?:service|business|company)/i,
 ];
 
 /** Detect full-time job listings that aren't freelance gigs */
@@ -1323,8 +1392,10 @@ function matchAndScore(posts, lowerKws) {
     if (titleNorm.length > 15 && seen.has("t:" + titleNorm)) continue;
     if (titleNorm.length > 15) seen.add("t:" + titleNorm);
 
-    // ── Skip junk (mod posts, rules, meta) ──
+    // ── Skip junk (mod posts, rules, meta, scam/spam) ──
     if (isJunk(p.title || "")) continue;
+    // Body-level scam check — catches posts with normal titles but scam bodies
+    if (isScamPost(p.title || "", p.selftext || "")) continue;
 
     // ── Skip deleted / removed ──
     if (p.selftext === "[removed]" || p.selftext === "[deleted]") continue;
@@ -1473,9 +1544,52 @@ function matchAndScore(posts, lowerKws) {
     if (isThreadsPost) score = Math.min(100, score + 8);
 
     // ── Skip low-relevance posts (spammy pitches that barely match) ──
-    // Raised from 10 → 22: a score of 10 let through anything with a single keyword
-    // mention and zero hiring signals, producing unrelated results for broad niches.
     if (score < 22) continue;
+
+    // ── Quality floor: score <50 + no budget + no contact signal = skip ──
+    // These are posts that mention a keyword once but have no real hiring intent.
+    if (score < 50) {
+      const text50 = (p.title || "") + " " + (p.selftext || "");
+      const hasBudget = /\$\s?\d/.test(text50);
+      const hasContactSignal =
+        /\b(?:DM\s+(?:me|for|if)|message\s+me|email\s+(?:me|us|to)|contact\s+(?:me|us)|send\s+(?:a\s+)?(?:message|email|DM)|reach\s+out|WhatsApp|Telegram|Discord)\b/i.test(
+          text50,
+        );
+      if (!hasBudget && !hasContactSignal) continue;
+    }
+
+    // ── Stricter X/Threads score gate ──
+    // X and Threads produce much more noise than Reddit/CL.
+    // Require higher score for body-only matches on these platforms.
+    if ((isXPost || isThreadsPost) && titleHits === 0 && score < 45) continue;
+    if ((isXPost || isThreadsPost) && score < 35) continue;
+
+    // ── Multi-role hiring post detection (5+ roles = corporate job listing) ──
+    const multiRolePatterns = [
+      /virtual assistant/i,
+      /data entry/i,
+      /social media/i,
+      /graphic design/i,
+      /video edit/i,
+      /web develop/i,
+      /customer (?:support|service)/i,
+      /content writ/i,
+      /copywrite?r?/i,
+      /\bSEO\b/i,
+      /project manag/i,
+      /photo/i,
+      /translat/i,
+      /software engineer/i,
+      /UI\/UX/i,
+      /sales/i,
+      /account/i,
+      /bookkeep/i,
+      /\bVA\b/i,
+      /motion graphic/i,
+    ];
+    const postText = (p.title || "") + " " + (p.selftext || "");
+    const roleHits = multiRolePatterns.filter((rx) => rx.test(postText)).length;
+    if (roleHits >= 5) continue;
 
     // ── Expansion-only match gate ──
     // If NONE of the user's original keyword words appear in the matched terms,
@@ -1589,6 +1703,12 @@ function matchAndScore(posts, lowerKws) {
       p._source_platform || "Reddit",
     );
 
+    // ── Default-filter FTJ posts ──
+    // Full-time job listings are almost never what remote freelancers want.
+    // They are flagged and excluded from results by default.
+    // The client-side "Freelance Only" toggle can show them if turned off.
+    if (_is_full_time_job) continue;
+
     results.push({
       id: postId,
       reddit_post_id: p.name || p.id,
@@ -1629,3 +1749,6 @@ function matchAndScore(posts, lowerKws) {
   // ── Enrich with Gold Lead scores ──
   return enrichWithGoldScores(results, lowerKws);
 }
+
+// ── Temporary export for terminal testing (remove after verification) ──
+export { matchAndScore as _testMatchAndScore };
