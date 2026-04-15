@@ -8,10 +8,14 @@ export default function UpgradeBanner({ gigCount = 0, onUpgrade }) {
       <div className="max-w-6xl mx-auto px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
         <p className="text-sm text-white font-medium text-center sm:text-left">
           <Bell className="w-4 h-4 inline-block text-[#00F0B5] mr-1.5 -mt-0.5" />
-          <span className="text-[#00F0B5] font-bold">{gigCount} gigs</span>{" "}
-          matching your skills were posted in the last 24 hours. You're only
-          seeing 1.{" "}
-          <span className="text-gray-400">Upgrade to unlock all of them.</span>
+          <span className="text-[#00F0B5] font-bold">
+            {gigCount} freelance gigs
+          </span>{" "}
+          match your skills right now — including Gold Leads with real budgets.
+          You're only seeing 1.{" "}
+          <span className="text-gray-400">
+            Start your free trial to unlock all of them.
+          </span>
         </p>
         <button
           onClick={onUpgrade}

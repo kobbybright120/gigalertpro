@@ -231,6 +231,23 @@ export function scoreGoldLead(gig, userKeywords = []) {
     if (kwInBoth) intentScore = Math.min(40, intentScore + 10);
   }
 
+  // Bonus: strong hiring language even without exact keyword match
+  const STRONG_HIRING_PHRASES = [
+    "looking for a",
+    "need a",
+    "hiring a",
+    "want a",
+    "searching for a",
+    "seeking a",
+    "require a",
+    "need help with",
+    "looking to hire",
+  ];
+  const hasStrongHiringSignal = STRONG_HIRING_PHRASES.some((s) =>
+    fullText.includes(s),
+  );
+  if (hasStrongHiringSignal) intentScore = Math.max(intentScore, 15);
+
   // ── PENALTY: keyword is one item in a long role-list (5+ roles) ──
   const roleCount = countRoleMentions(fullText);
   if (roleCount >= 5) {
@@ -267,6 +284,10 @@ export function scoreGoldLead(gig, userKeywords = []) {
       budgetScore -= 40;
       reasons.push("Very low budget (≤$5)");
     }
+  } else if (hasStrongHiringSignal) {
+    // No budget mentioned but strong hiring signal — likely a real gig
+    budgetScore = 10;
+    reasons.push("No budget but strong hiring language");
   }
 
   // Penalty for explicit low-budget / unpaid signals
@@ -326,7 +347,7 @@ export function scoreGoldLead(gig, userKeywords = []) {
   const category = gig.category || detectGoldCategory(fullText);
   const extractedBudget = budgetStr || "Not Specified";
   const cleanSummary = generateCleanSummary(gig.title, gig.body_preview);
-  const isGold = qualityScore > 80;
+  const isGold = qualityScore > 65;
 
   return {
     quality_score: qualityScore,

@@ -105,6 +105,13 @@ export default function UpgradeModal({ open, onClose, gigCount = 0 }) {
           </p>
         </div>
 
+        {/* Free trial notice */}
+        <div className="mb-6 p-3.5 rounded-xl bg-[#00F0B5]/[0.06] border border-[#00F0B5]/15 text-center">
+          <p className="text-sm text-[#00F0B5] font-semibold">
+            Try any plan free for 7 days — cancel anytime, no charge.
+          </p>
+        </div>
+
         {/* Plan cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {plans.map((plan) => (

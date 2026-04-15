@@ -960,6 +960,71 @@ function isJunk(title) {
   return JUNK_PATTERNS.some((rx) => rx.test(title));
 }
 
+// ── Full-Time Job Listing Detection ──────────────────────────────────────────
+const JOB_LISTING_PATTERNS = [
+  // Employment type signals
+  /\bfull[- ]time\b/i,
+  /\bfull time position\b/i,
+  /\bpermanent (position|role)\b/i,
+  /\bemployment type\b/i,
+  /\bjoin our (team|company)\b/i,
+  /\bwe are hiring\b/i,
+  /\bwe're hiring\b/i,
+  // Application process signals
+  /\bsend (your )?(?:cv|resume)\b/i,
+  /\bsubmit (your )?(?:cv|resume)\b/i,
+  /\bshortlisted candidates\b/i,
+  /\binterview process\b/i,
+  /\bdate of interview\b/i,
+  /\bapply (?:now|here|via|on) (?:indeed|linkedin|glassdoor)\b/i,
+  /\bregister (?:now|here|your interest)\b/i,
+  // Location-specific office jobs
+  /\b(?:based in|office in|onsite|on-site|in-office)\b/i,
+  /\bmust relocate\b/i,
+  /\brelocation (?:required|package|assistance)\b/i,
+  // Salary/benefits signals typical of jobs not gigs
+  /\bsalary range\b/i,
+  /\bannual salary\b/i,
+  /\bhealth (?:insurance|benefits)\b/i,
+  /\bpaid time off\b/i,
+  /\b401k\b/i,
+  /\bequity package\b/i,
+  /\bstock options\b/i,
+  // Multi-role hiring posts
+  /\bhiring (?:for )?\d+ roles\b/i,
+  /\bhiring (?:for )?multiple roles\b/i,
+  /\bopen (?:positions|roles|vacancies)\b/i,
+  // Qualification-heavy posts
+  /\bbachelor'?s degree (?:required|preferred)\b/i,
+  /\bminimum \d+ years (?:of )?experience\b/i,
+  /\byears? of experience required\b/i,
+  /\bqualification:/i,
+  /\bexperience:/i,
+  /\baed \d+/i,
+];
+
+const STRONG_JOB_PATTERNS = [
+  /\bsend (your )?(?:cv|resume)\b/i,
+  /\bshortlisted candidates\b/i,
+  /\bdate of interview\b/i,
+  /\bmust relocate\b/i,
+  /\bannual salary\b/i,
+  /\bequity package\b/i,
+  /\bstock options\b/i,
+];
+
+/** Detect full-time job listings that aren't freelance gigs */
+function isFullTimeJob(title, body, sourcePlatform) {
+  const text = `${title} ${body}`.toLowerCase();
+  const isStrictSource = /^(x|threads)$/i.test(sourcePlatform || "");
+
+  if (isStrictSource) {
+    return JOB_LISTING_PATTERNS.some((rx) => rx.test(text));
+  }
+  // For Reddit / Craigslist, only flag with the strongest signals
+  return STRONG_JOB_PATTERNS.some((rx) => rx.test(text));
+}
+
 /** Compute a 0-100 relevance score for a post */
 function computeScore(
   post,
@@ -1517,6 +1582,13 @@ function matchAndScore(posts, lowerKws) {
       finalBody = cleanText(p.selftext || "").slice(0, 400);
     }
 
+    // ── Flag full-time job listings (hidden by default, shown via toggle) ──
+    const _is_full_time_job = isFullTimeJob(
+      finalTitle,
+      finalBody,
+      p._source_platform || "Reddit",
+    );
+
     results.push({
       id: postId,
       reddit_post_id: p.name || p.id,
@@ -1542,6 +1614,7 @@ function matchAndScore(posts, lowerKws) {
       flair: p.link_flair_text || null,
       source_platform: p._source_platform || "Reddit",
       location: p.location || null,
+      _is_full_time_job,
     });
   }
 

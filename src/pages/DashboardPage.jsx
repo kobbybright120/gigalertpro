@@ -98,11 +98,19 @@ export default function DashboardPage() {
     fetchCount();
   }, [isLocked, keywords, lockedGigCount]);
 
-  // Generate a sample proposal for the first gig when locked
-  const bestGig =
-    alerts.length > 0
-      ? [...alerts].sort((a, b) => (b.score || 0) - (a.score || 0))[0]
-      : null;
+  // Pick the best gig to show free users: Gold Leads first, then highest score
+  const bestGig = (() => {
+    if (!alerts.length) return null;
+    const eligible = alerts.filter((a) => !a._is_full_time_job);
+    const gold = eligible.filter((a) => a.is_gold);
+    if (gold.length)
+      return gold.sort(
+        (a, b) => (b.quality_score || 0) - (a.quality_score || 0),
+      )[0];
+    if (eligible.length)
+      return eligible.sort((a, b) => (b.score || 0) - (a.score || 0))[0];
+    return alerts.sort((a, b) => (b.score || 0) - (a.score || 0))[0];
+  })();
 
   const sampleProposalText = useMemo(() => {
     if (!isLocked || !bestGig) return "";
