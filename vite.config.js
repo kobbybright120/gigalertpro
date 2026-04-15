@@ -66,6 +66,7 @@ function upstashApiPlugin() {
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss(), upstashApiPlugin()],
+  envPrefix: ["VITE_", "TURNSTILE_SITE_KEY"],
   server: {
     proxy: {
       "/reddit-api": {

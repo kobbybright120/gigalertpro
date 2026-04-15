@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { ArrowRight } from "lucide-react";
+
+const TURNSTILE_SITE_KEY = import.meta.env.TURNSTILE_SITE_KEY;
 
 export default function AuthPage() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -10,8 +12,102 @@ export default function AuthPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState("");
   const { signIn, signUp, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
+  const turnstileRef = useRef(null);
+  const widgetIdRef = useRef(null);
+
+  // Render Turnstile widget
+  const renderWidget = useCallback(() => {
+    if (!TURNSTILE_SITE_KEY || !turnstileRef.current || !window.turnstile)
+      return;
+    // Remove existing widget if any
+    if (widgetIdRef.current !== null) {
+      try {
+        window.turnstile.remove(widgetIdRef.current);
+      } catch {}
+      widgetIdRef.current = null;
+    }
+    widgetIdRef.current = window.turnstile.render(turnstileRef.current, {
+      sitekey: TURNSTILE_SITE_KEY,
+      theme: "dark",
+      callback: (token) => setTurnstileToken(token),
+      "expired-callback": () => setTurnstileToken(""),
+      "error-callback": () => setTurnstileToken(""),
+    });
+  }, []);
+
+  // Load Turnstile script and render widget
+  useEffect(() => {
+    if (!TURNSTILE_SITE_KEY) return;
+
+    // If script already loaded, just render
+    if (window.turnstile) {
+      renderWidget();
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src =
+      "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+    script.defer = true;
+    script.onload = () => renderWidget();
+    document.head.appendChild(script);
+
+    return () => {
+      if (widgetIdRef.current !== null) {
+        try {
+          window.turnstile.remove(widgetIdRef.current);
+        } catch {}
+      }
+    };
+  }, [renderWidget]);
+
+  // Re-render widget when switching between sign-in / sign-up
+  useEffect(() => {
+    if (window.turnstile && TURNSTILE_SITE_KEY) {
+      setTurnstileToken("");
+      // Small delay so the DOM container is stable
+      const t = setTimeout(renderWidget, 100);
+      return () => clearTimeout(t);
+    }
+  }, [isSignUp, renderWidget]);
+
+  async function verifyTurnstile() {
+    if (!TURNSTILE_SITE_KEY) return true; // Skip if not configured
+    if (!turnstileToken) {
+      setError("Please complete the security check.");
+      return false;
+    }
+    try {
+      const res = await fetch("/api/verify-turnstile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: turnstileToken }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        setError("Security check failed. Please try again.");
+        resetTurnstile();
+        return false;
+      }
+      return true;
+    } catch {
+      setError("Could not verify security check. Please try again.");
+      resetTurnstile();
+      return false;
+    }
+  }
+
+  function resetTurnstile() {
+    setTurnstileToken("");
+    if (widgetIdRef.current !== null && window.turnstile) {
+      try {
+        window.turnstile.reset(widgetIdRef.current);
+      } catch {}
+    }
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -29,10 +125,19 @@ export default function AuthPage() {
     }
 
     setSubmitting(true);
+
+    // Verify Turnstile before auth
+    const verified = await verifyTurnstile();
+    if (!verified) {
+      setSubmitting(false);
+      return;
+    }
+
     const result = isSignUp
       ? await signUp(email, password)
       : await signIn(email, password);
     setSubmitting(false);
+    resetTurnstile();
 
     if (result.success) {
       if (isSignUp && result.confirmEmail) {
@@ -118,9 +223,15 @@ export default function AuthPage() {
                 placeholder="••••••••"
               />
             </div>
+
+            {/* Turnstile widget */}
+            {TURNSTILE_SITE_KEY && (
+              <div ref={turnstileRef} className="flex justify-center" />
+            )}
+
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || (TURNSTILE_SITE_KEY && !turnstileToken)}
               className="group w-full py-3 bg-[#00F0B5] text-[#020617] font-bold rounded-xl hover:bg-[#00dba5] hover:shadow-[0_0_24px_rgba(0,240,181,0.25)] transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {submitting
@@ -148,10 +259,13 @@ export default function AuthPage() {
             type="button"
             onClick={async () => {
               setError("");
+              const verified = await verifyTurnstile();
+              if (!verified) return;
               const result = await signInWithGoogle();
               if (!result.success) setError(result.error);
             }}
-            className="w-full flex items-center justify-center gap-3 py-3 border border-white/[0.08] rounded-xl hover:bg-white/[0.04] hover:border-white/[0.12] transition-all duration-200"
+            disabled={TURNSTILE_SITE_KEY && !turnstileToken}
+            className="w-full flex items-center justify-center gap-3 py-3 border border-white/[0.08] rounded-xl hover:bg-white/[0.04] hover:border-white/[0.12] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path
