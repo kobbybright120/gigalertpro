@@ -358,8 +358,9 @@ const REMOTEOK_TAGS = [
   "transcription",
 ];
 
-// Max age: 14 days — broader window for more results
+// Max age: 14 days for main API, 60 days for tag searches (they return older archive)
 const REMOTEOK_MAX_AGE_SEC = 14 * 86400;
+const REMOTEOK_TAG_MAX_AGE_SEC = 60 * 86400;
 
 // Reject permanent full-time roles — we only want contract/freelance/part-time
 const PERMANENT_REJECTION_PATTERNS = [
@@ -394,7 +395,7 @@ async function fetchRemoteOK() {
   const nowSec = Math.floor(Date.now() / 1000);
 
   // Helper: parse a RemoteOK JSON API response into posts
-  function parseJobs(jobs) {
+  function parseJobs(jobs, maxAgeSec = REMOTEOK_MAX_AGE_SEC) {
     const posts = [];
     for (const j of jobs) {
       const title = stripHtml(j.position || j.title || "");
@@ -412,7 +413,7 @@ async function fetchRemoteOK() {
         : j.date
           ? Math.floor(new Date(j.date).getTime() / 1000)
           : nowSec;
-      if (nowSec - createdUtc > REMOTEOK_MAX_AGE_SEC) continue;
+      if (nowSec - createdUtc > maxAgeSec) continue;
 
       // Build rich description: full HTML description + tags for matching
       const rawDesc = stripHtml(j.description || "");
@@ -478,42 +479,41 @@ async function fetchRemoteOK() {
 
   // ── Step 2: Search ALL niche tags (like X/Threads do for search queries) ──
   // Each ?tag= query returns different jobs not in the main feed.
-  // Process in batches to avoid rate-limiting.
-  const BATCH_SIZE = 5;
+  // Sequential requests with delay to avoid rate-limiting (batch approach gets 429'd).
   let tagTotal = 0;
+  let tagErrors = 0;
 
-  for (let i = 0; i < REMOTEOK_TAGS.length; i += BATCH_SIZE) {
-    const batch = REMOTEOK_TAGS.slice(i, i + BATCH_SIZE);
-    const batchResults = await Promise.allSettled(
-      batch.map(async (tag) => {
-        await sleep(REQUEST_DELAY_MS * (Math.random() * 0.5 + 0.75)); // jitter
-        const resp = await fetchWithRetry(
-          `${REMOTEOK_API_URL}?tag=${encodeURIComponent(tag)}`,
-          { headers: { Accept: "application/json" } },
-        );
-        if (!resp || !resp.ok) return 0;
-        const data = await resp.json();
-        const jobs = Array.isArray(data) ? data.slice(1) : [];
-        const posts = parseJobs(jobs);
-        allPosts.push(...posts);
-        return posts.length;
-      }),
-    );
-
-    for (let k = 0; k < batch.length; k++) {
-      const r = batchResults[k];
-      const count = r.status === "fulfilled" ? r.value : 0;
-      if (count > 0) tagTotal += count;
+  for (let i = 0; i < REMOTEOK_TAGS.length; i++) {
+    const tag = REMOTEOK_TAGS[i];
+    try {
+      await sleep(REQUEST_DELAY_MS);
+      const resp = await fetchWithRetry(
+        `${REMOTEOK_API_URL}?tag=${encodeURIComponent(tag)}`,
+        { headers: { Accept: "application/json" } },
+      );
+      if (!resp || !resp.ok) {
+        tagErrors++;
+        continue;
+      }
+      const data = await resp.json();
+      const jobs = Array.isArray(data) ? data.slice(1) : [];
+      const posts = parseJobs(jobs, REMOTEOK_TAG_MAX_AGE_SEC);
+      allPosts.push(...posts);
+      if (posts.length > 0) tagTotal += posts.length;
+    } catch {
+      tagErrors++;
     }
 
-    // Brief pause between batches to be polite
-    if (i + BATCH_SIZE < REMOTEOK_TAGS.length) {
-      await sleep(REQUEST_DELAY_MS * 2);
+    // Progress log every 20 tags
+    if ((i + 1) % 20 === 0) {
+      console.log(
+        `[jobboards] RemoteOK tags: ${i + 1}/${REMOTEOK_TAGS.length} done (${allPosts.length} unique so far)`,
+      );
     }
   }
 
   console.log(
-    `[jobboards] RemoteOK tag searches: ${tagTotal} new from ${REMOTEOK_TAGS.length} tags`,
+    `[jobboards] RemoteOK tag searches: ${tagTotal} new from ${REMOTEOK_TAGS.length} tags (${tagErrors} errors)`,
   );
   console.log(`[jobboards] RemoteOK total: ${allPosts.length} unique posts`);
   return allPosts;
