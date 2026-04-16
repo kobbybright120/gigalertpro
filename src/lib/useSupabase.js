@@ -309,13 +309,37 @@ export function useGigAlerts(keywordList, { isPaid = true } = {}) {
                   ? "threads"
                   : "reddit",
         }));
-        supabase
-          .from("gig_alerts")
-          .upsert(rows, { onConflict: "reddit_post_id" })
-          .then(({ error }) => {
-            if (error)
-              console.warn("[GigAlertPro] gig_alerts upsert:", error.message);
-          });
+
+        // Upsert in small batches so one bad row doesn't kill the whole insert
+        const BATCH = 10;
+        for (let i = 0; i < rows.length; i += BATCH) {
+          const batch = rows.slice(i, i + BATCH);
+          supabase
+            .from("gig_alerts")
+            .upsert(batch, { onConflict: "reddit_post_id" })
+            .then(({ error }) => {
+              if (error) {
+                console.warn(
+                  "[GigAlertPro] gig_alerts upsert batch error:",
+                  error.message,
+                );
+                // Fallback: try each row individually to isolate the bad one
+                for (const row of batch) {
+                  supabase
+                    .from("gig_alerts")
+                    .upsert([row], { onConflict: "reddit_post_id" })
+                    .then(({ error: e2 }) => {
+                      if (e2)
+                        console.warn(
+                          "[GigAlertPro] bad row:",
+                          row.reddit_post_id,
+                          e2.message,
+                        );
+                    });
+                }
+              }
+            });
+        }
       }
 
       if (pollingRef.current) {
