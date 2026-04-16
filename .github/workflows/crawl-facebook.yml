@@ -28,3 +28,11 @@ jobs:
           FB_EMAIL: ${{ secrets.FB_EMAIL }}
           FB_PASSWORD: ${{ secrets.FB_PASSWORD }}
         run: node scripts/crawl-facebook.js
+      - name: Upload error screenshot
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fb-error-screenshot
+          path: fb-error-screenshot.png
+          if-no-files-found: ignore
+          retention-days: 3

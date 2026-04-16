@@ -244,16 +244,17 @@ async function loginToFacebook(page) {
   }
 
   console.log("Performing fresh Facebook login...");
-  await page.goto("https://www.facebook.com/", {
-    waitUntil: "networkidle",
+  await page.goto("https://www.facebook.com/login/", {
+    waitUntil: "domcontentloaded",
     timeout: 30000,
   });
+  await sleep(3000);
 
   // Accept cookies dialog if present
   try {
     const cookieBtn = page
       .locator(
-        'button[data-cookiebanner="accept_button"], button:has-text("Allow all cookies"), button:has-text("Accept All"), button:has-text("Allow essential and optional cookies")',
+        'button[data-cookiebanner="accept_button"], button:has-text("Allow all cookies"), button:has-text("Accept All"), button:has-text("Allow essential and optional cookies"), button:has-text("Accept"), [data-testid="cookie-policy-manage-dialog-accept-button"]',
       )
       .first();
     if (await cookieBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
@@ -264,18 +265,31 @@ async function loginToFacebook(page) {
     /* no cookie banner */
   }
 
-  // Fill login form
-  await page.fill('input[name="email"], #email', FB_EMAIL);
+  // Fill login form — try multiple selector strategies
+  const emailInput = page.locator('input[name="email"], #email, input#email, input[type="text"]').first();
+  await emailInput.waitFor({ state: "visible", timeout: 10000 });
+  await emailInput.fill(FB_EMAIL);
   await randomDelay(500, 1000);
-  await page.fill('input[name="pass"], #pass', FB_PASSWORD);
+
+  const passInput = page.locator('input[name="pass"], #pass, input#pass, input[type="password"]').first();
+  await passInput.waitFor({ state: "visible", timeout: 10000 });
+  await passInput.fill(FB_PASSWORD);
   await randomDelay(300, 700);
-  await page.click(
-    'button[name="login"], button[data-testid="royal_login_button"], button[type="submit"]',
-  );
+
+  // Click login — try multiple selectors, fall back to Enter key
+  const loginBtn = page.locator(
+    'button[name="login"], button[data-testid="royal_login_button"], button[type="submit"], #loginbutton, input[type="submit"], button:has-text("Log In"), button:has-text("Log in")',
+  ).first();
+  try {
+    await loginBtn.click({ timeout: 5000 });
+  } catch {
+    console.log("Login button not found by selector, pressing Enter instead...");
+    await passInput.press("Enter");
+  }
 
   // Wait for navigation after login
   await page
-    .waitForNavigation({ waitUntil: "networkidle", timeout: 30000 })
+    .waitForURL((url) => !url.href.includes("/login"), { timeout: 30000 })
     .catch(() => {});
   await sleep(3000);
 
@@ -715,6 +729,13 @@ async function main() {
       }
     }
   } catch (err) {
+    try {
+      await page.screenshot({ path: "fb-error-screenshot.png", fullPage: false });
+      console.log("Screenshot saved to fb-error-screenshot.png");
+      console.log("Page URL at failure:", page.url());
+      const title = await page.title().catch(() => "unknown");
+      console.log("Page title at failure:", title);
+    } catch { /* ignore screenshot errors */ }
     await browser.close().catch(() => {});
     console.error("Facebook crawler failed:", err.message || err);
     process.exit(1);
