@@ -312,14 +312,22 @@ async function loginToFacebook(page) {
       !!document.querySelector('[role="navigation"]') ||
       !!document.querySelector('[aria-label="Your profile"]') ||
       !!document.querySelector('[data-pagelet="LeftRail"]') ||
-      document.title.includes("Facebook")
+      !!document.querySelector('[aria-label="Create a post"]') ||
+      !!document.querySelector('[aria-label="Search Facebook"]') ||
+      !!document.querySelector('[data-pagelet="RightRail"]')
     );
   });
 
-  if (!isLoggedIn && url.includes("login")) {
-    throw new Error(
-      "Facebook login failed — still on login page. Check credentials.",
-    );
+  if (!isLoggedIn) {
+    const currentUrl = page.url();
+    console.log("  [debug] Login check failed. URL:", currentUrl);
+    await page.screenshot({ path: "fb-login-debug.png", fullPage: false });
+    if (currentUrl.includes("login") || currentUrl.includes("checkpoint")) {
+      throw new Error(
+        "Facebook login failed — still on login/checkpoint page. Check credentials.",
+      );
+    }
+    console.log("  [warn] Could not verify login via DOM, but URL looks OK — continuing...");
   }
 
   console.log("Login successful");
@@ -330,9 +338,27 @@ async function loginToFacebook(page) {
 async function extractPosts(page) {
   return page.evaluate(() => {
     const out = [];
-    const articles = document.querySelectorAll('div[role="article"]');
+    // Try multiple container selectors — Facebook changes these frequently
+    let containers = document.querySelectorAll('div[role="article"]');
+    if (containers.length === 0) {
+      containers = document.querySelectorAll('div[data-pagelet^="FeedUnit_"]');
+    }
+    if (containers.length === 0) {
+      // Fallback: grab direct children of the feed
+      const feed = document.querySelector('div[role="feed"]');
+      if (feed) {
+        containers = feed.querySelectorAll(":scope > div");
+      }
+    }
+    if (containers.length === 0) {
+      // Last resort: grab any significant text blocks in main content
+      const main = document.querySelector('div[role="main"]');
+      if (main) {
+        containers = main.querySelectorAll('div[data-ad-preview], div[class]:has(div[dir="auto"])');
+      }
+    }
 
-    for (const article of Array.from(articles).slice(0, 20)) {
+    for (const article of Array.from(containers).slice(0, 25)) {
       try {
         // Post text — find the longest text block
         const textDivs = article.querySelectorAll('div[dir="auto"]');
@@ -511,14 +537,30 @@ async function main() {
           timeout: 20000,
         });
 
-        // Wait for articles or a "no results" state
+        // Wait for any content container to appear
         await page
-          .waitForSelector('div[role="article"], div[role="feed"], div[role="main"]', {
+          .waitForSelector('div[role="article"], div[role="feed"], div[role="main"], div[data-pagelet^="FeedUnit_"]', {
             timeout: 15000,
           })
           .catch(() => {});
 
-        await sleep(2000 + Math.random() * 1000);
+        await sleep(3000);
+
+        // Aggressive scrolling — scroll down and wait for new content to render
+        let prevHeight = 0;
+        for (let s = 0; s < 5; s++) {
+          await page.keyboard.press("PageDown");
+          await sleep(800);
+          await page.evaluate(() => window.scrollBy(0, 800));
+          await sleep(1200 + Math.random() * 800);
+          const newHeight = await page.evaluate(() => document.body.scrollHeight);
+          if (newHeight === prevHeight && s > 1) break;
+          prevHeight = newHeight;
+        }
+
+        // Scroll back to top so we can capture all loaded posts
+        await page.evaluate(() => window.scrollTo(0, 0));
+        await sleep(500);
 
         // Debug: on first search, log page state and take screenshot
         if (i === 0) {
@@ -526,33 +568,29 @@ async function main() {
           const debugInfo = await page.evaluate(() => {
             const articles = document.querySelectorAll('div[role="article"]');
             const feed = document.querySelectorAll('div[role="feed"]');
+            const feedUnits = document.querySelectorAll('div[data-pagelet^="FeedUnit_"]');
             const main = document.querySelectorAll('div[role="main"]');
             const allDivs = document.querySelectorAll("div[role]");
             const roles = [...new Set(Array.from(allDivs).map(d => d.getAttribute("role")))];
+            const feedChildren = feed.length > 0 ? feed[0].querySelectorAll(":scope > div").length : 0;
             return {
               articleCount: articles.length,
               feedCount: feed.length,
+              feedChildren,
+              feedUnitCount: feedUnits.length,
               mainCount: main.length,
               roles: roles.slice(0, 20),
               title: document.title,
               bodyText: document.body?.innerText?.slice(0, 500) || "empty",
             };
           });
-          console.log("  [debug] Articles found:", debugInfo.articleCount);
-          console.log("  [debug] Feed divs:", debugInfo.feedCount);
-          console.log("  [debug] Main divs:", debugInfo.mainCount);
+          console.log("  [debug] Articles:", debugInfo.articleCount, "| Feed divs:", debugInfo.feedCount, "| Feed children:", debugInfo.feedChildren);
+          console.log("  [debug] FeedUnit pagelets:", debugInfo.feedUnitCount, "| Main divs:", debugInfo.mainCount);
           console.log("  [debug] Roles on page:", debugInfo.roles.join(", "));
           console.log("  [debug] Page title:", debugInfo.title);
           console.log("  [debug] Body text preview:", debugInfo.bodyText.slice(0, 300));
           await page.screenshot({ path: "fb-search-debug.png", fullPage: false });
           console.log("  [debug] Screenshot saved to fb-search-debug.png");
-        }
-
-        // Scroll to load more posts
-        for (let s = 0; s < 3; s++) {
-          const scrollDist = 600 + Math.floor(Math.random() * 400);
-          await page.evaluate((d) => window.scrollBy(0, d), scrollDist);
-          await randomDelay(800, 1500);
         }
 
         const posts = await extractPosts(page);

@@ -36,5 +36,6 @@ jobs:
           path: |
             fb-error-screenshot.png
             fb-search-debug.png
+            fb-login-debug.png
           if-no-files-found: ignore
           retention-days: 3
