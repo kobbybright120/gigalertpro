@@ -513,12 +513,40 @@ async function main() {
 
         // Wait for articles or a "no results" state
         await page
-          .waitForSelector('div[role="article"], div[role="feed"]', {
+          .waitForSelector('div[role="article"], div[role="feed"], div[role="main"]', {
             timeout: 15000,
           })
           .catch(() => {});
 
-        await sleep(1500 + Math.random() * 1000);
+        await sleep(2000 + Math.random() * 1000);
+
+        // Debug: on first search, log page state and take screenshot
+        if (i === 0) {
+          console.log("  [debug] URL:", page.url());
+          const debugInfo = await page.evaluate(() => {
+            const articles = document.querySelectorAll('div[role="article"]');
+            const feed = document.querySelectorAll('div[role="feed"]');
+            const main = document.querySelectorAll('div[role="main"]');
+            const allDivs = document.querySelectorAll("div[role]");
+            const roles = [...new Set(Array.from(allDivs).map(d => d.getAttribute("role")))];
+            return {
+              articleCount: articles.length,
+              feedCount: feed.length,
+              mainCount: main.length,
+              roles: roles.slice(0, 20),
+              title: document.title,
+              bodyText: document.body?.innerText?.slice(0, 500) || "empty",
+            };
+          });
+          console.log("  [debug] Articles found:", debugInfo.articleCount);
+          console.log("  [debug] Feed divs:", debugInfo.feedCount);
+          console.log("  [debug] Main divs:", debugInfo.mainCount);
+          console.log("  [debug] Roles on page:", debugInfo.roles.join(", "));
+          console.log("  [debug] Page title:", debugInfo.title);
+          console.log("  [debug] Body text preview:", debugInfo.bodyText.slice(0, 300));
+          await page.screenshot({ path: "fb-search-debug.png", fullPage: false });
+          console.log("  [debug] Screenshot saved to fb-search-debug.png");
+        }
 
         // Scroll to load more posts
         for (let s = 0; s < 3; s++) {
