@@ -284,7 +284,9 @@ async function fetchRemoteOK() {
         headers: { Accept: "application/rss+xml, text/xml, */*" },
       });
       if (!resp || !resp.ok) {
-        console.warn(`[jobboards] RemoteOK ${feedUrl}: HTTP ${resp?.status || "null"}`);
+        console.warn(
+          `[jobboards] RemoteOK ${feedUrl}: HTTP ${resp?.status || "null"}`,
+        );
         await sleep(REQUEST_DELAY_MS);
         continue;
       }
@@ -368,12 +370,16 @@ async function fetchWellfound() {
   try {
     const raw = await redisGet(WELLFOUND_REDIS_KEY);
     if (!raw) {
-      console.log("[jobboards] Wellfound: no data in Redis (crawler hasn't run yet)");
+      console.log(
+        "[jobboards] Wellfound: no data in Redis (crawler hasn't run yet)",
+      );
       return [];
     }
     const data = JSON.parse(raw);
     const posts = data.posts || [];
-    console.log(`[jobboards] Wellfound: ${posts.length} posts from Redis cache`);
+    console.log(
+      `[jobboards] Wellfound: ${posts.length} posts from Redis cache`,
+    );
     return posts;
   } catch (err) {
     console.warn("[jobboards] Wellfound Redis read error:", err.message);
@@ -397,7 +403,9 @@ async function fetchWorkingNomads() {
       },
     );
     if (!resp || !resp.ok) {
-      console.warn(`[jobboards] WorkingNomads API: HTTP ${resp?.status || "null"}`);
+      console.warn(
+        `[jobboards] WorkingNomads API: HTTP ${resp?.status || "null"}`,
+      );
       return allPosts;
     }
     const jobs = await resp.json();
@@ -444,7 +452,9 @@ async function fetchWorkingNomads() {
       });
     }
 
-    console.log(`[jobboards] WorkingNomads: ${allPosts.length} posts from API (${jobs.length} total)`);
+    console.log(
+      `[jobboards] WorkingNomads: ${allPosts.length} posts from API (${jobs.length} total)`,
+    );
   } catch (err) {
     console.warn("[jobboards] WorkingNomads error:", err.message);
   }
@@ -540,7 +550,9 @@ async function fetchOpenQuant() {
       });
     }
 
-    console.log(`[jobboards] OpenQuant: ${posts.length} posts from __NEXT_DATA__ (${jobs.length} total)`);
+    console.log(
+      `[jobboards] OpenQuant: ${posts.length} posts from __NEXT_DATA__ (${jobs.length} total)`,
+    );
   } catch (err) {
     console.warn("[jobboards] OpenQuant error:", err.message);
   }

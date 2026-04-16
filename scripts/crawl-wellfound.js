@@ -27,7 +27,10 @@ const REDIS_TTL = 10800; // 3 hours
 // ── Redis helpers ────────────────────────────────────────────────────────────
 
 function cleanEnv(val) {
-  return (val || "").trim().replace(/^["']+|["']+$/g, "").replace(/\/+$/, "");
+  return (val || "")
+    .trim()
+    .replace(/^["']+|["']+$/g, "")
+    .replace(/\/+$/, "");
 }
 
 async function redisSet(key, value, ttlSeconds) {
@@ -77,10 +80,10 @@ async function crawl() {
 
   try {
     // Navigate to contract/remote jobs
-    await page.goto(
-      "https://wellfound.com/jobs?remote=true&jobType=contract",
-      { waitUntil: "networkidle", timeout: 30000 },
-    );
+    await page.goto("https://wellfound.com/jobs?remote=true&jobType=contract", {
+      waitUntil: "networkidle",
+      timeout: 30000,
+    });
 
     // Wait for page to render
     await sleep(3000);
@@ -124,11 +127,17 @@ async function crawl() {
         seen.add(href);
 
         // Walk up to find the card container
-        const card = link.closest('[class*="job"], [class*="listing"], [class*="card"], div') || link;
+        const card =
+          link.closest(
+            '[class*="job"], [class*="listing"], [class*="card"], div',
+          ) || link;
 
         // Extract title
-        const titleEl = card.querySelector("h2, h3, h4, [class*='title'], [class*='name']");
-        const title = titleEl?.textContent?.trim() || link.textContent?.trim() || "";
+        const titleEl = card.querySelector(
+          "h2, h3, h4, [class*='title'], [class*='name']",
+        );
+        const title =
+          titleEl?.textContent?.trim() || link.textContent?.trim() || "";
         if (!title || title.length < 3) continue;
 
         // Extract company
@@ -150,10 +159,8 @@ async function crawl() {
         const location = locEl?.textContent?.trim() || "";
 
         // Full card text for description
-        const fullText = card.textContent
-          ?.replace(/\s+/g, " ")
-          .trim()
-          .slice(0, 2000) || "";
+        const fullText =
+          card.textContent?.replace(/\s+/g, " ").trim().slice(0, 2000) || "";
 
         results.push({
           title,
@@ -182,7 +189,9 @@ async function crawl() {
               "",
             salary: "",
             location: "",
-            description: card.textContent?.replace(/\s+/g, " ").trim().slice(0, 2000) || "",
+            description:
+              card.textContent?.replace(/\s+/g, " ").trim().slice(0, 2000) ||
+              "",
             url: link?.href || "https://wellfound.com/jobs",
           });
         }
@@ -232,7 +241,9 @@ async function crawl() {
   });
 
   await redisSet(REDIS_KEY, payload, REDIS_TTL);
-  console.log(`[wellfound] ✅ Stored ${posts.length} posts in Redis (TTL: ${REDIS_TTL}s)`);
+  console.log(
+    `[wellfound] ✅ Stored ${posts.length} posts in Redis (TTL: ${REDIS_TTL}s)`,
+  );
 }
 
 crawl().catch((err) => {
