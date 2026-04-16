@@ -358,9 +358,7 @@ async function fetchRemoteOK() {
 const WELLFOUND_REDIS_KEY = "gigalertpro:wellfound:latest";
 
 function parseWellfoundNextData(html) {
-  const m = html.match(
-    /<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/,
-  );
+  const m = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
   if (!m) return [];
   const data = JSON.parse(m[1]);
   const apollo = data?.props?.pageProps?.apolloState?.data;
@@ -378,8 +376,7 @@ function parseWellfoundNextData(html) {
     const jid = val.id;
     if (!jid) continue;
     const slug = val.slug || "";
-    const company =
-      val.startup?.__ref ? startups[val.startup.__ref] || "" : "";
+    const company = val.startup?.__ref ? startups[val.startup.__ref] || "" : "";
     const location =
       (val.locationNames || []).join(", ") || (val.remote ? "Remote" : "");
     const id = `wellfound_${jid}_${slug}`;
@@ -388,7 +385,10 @@ function parseWellfoundNextData(html) {
       id,
       name: id,
       title: val.title || "",
-      selftext: `${val.title || ""} at ${company}. ${val.compensation || ""} ${location}`.trim().slice(0, 2000),
+      selftext:
+        `${val.title || ""} at ${company}. ${val.compensation || ""} ${location}`
+          .trim()
+          .slice(0, 2000),
       author: company || "Wellfound",
       author_name: company || "Wellfound",
       permalink: `https://wellfound.com/jobs/${jid}-${slug}`,
