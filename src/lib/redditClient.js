@@ -2188,8 +2188,7 @@ export async function fetchJobBoardGigs(keywords) {
         return combined.includes(kw);
       }
       const escaped = kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      const needsExactBoundary =
-        kw.length <= 3 || EXACT_MATCH_REQUIRED.has(kw);
+      const needsExactBoundary = kw.length <= 3 || EXACT_MATCH_REQUIRED.has(kw);
       const rx = new RegExp(
         `\\b${escaped}${needsExactBoundary ? "\\b" : ""}`,
         "i",
@@ -2233,8 +2232,7 @@ export async function fetchJobBoardGigs(keywords) {
       reddit_created: p.created_utc
         ? new Date(p.created_utc * 1000).toISOString()
         : new Date().toISOString(),
-      matched_keywords:
-        displayKeywords.length > 0 ? displayKeywords : matched,
+      matched_keywords: displayKeywords.length > 0 ? displayKeywords : matched,
       score,
       category: category.label,
       category_icon: category.icon,
