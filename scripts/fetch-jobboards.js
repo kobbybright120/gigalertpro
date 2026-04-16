@@ -32,7 +32,7 @@ const SEEN_KEY = "gigalertpro:seen:jobboards";
 const SEEN_TTL = 86400; // 24 hours
 
 const REQUEST_DELAY_MS = 600;
-const FETCH_TIMEOUT_MS = 8000;
+const FETCH_TIMEOUT_MS = 15000;
 const MAX_RETRIES = 3;
 
 const CHROME_UA =
@@ -234,14 +234,57 @@ const REMOTEOK_FEEDS = [
   "https://remoteok.com/remote-marketing-jobs.rss",
 ];
 
+// Max age: 7 days — anything older is too stale for freelancers
+const REMOTEOK_MAX_AGE_SEC = 7 * 86400;
+
+// Reject permanent full-time roles — we only want contract/freelance/part-time
+const PERMANENT_REJECTION_PATTERNS = [
+  /\bfull[- ]?time employee\b/i,
+  /\bpermanent position\b/i,
+  /\bbenefits package\b/i,
+  /\bhealth insurance\b/i,
+  /\b401\(?k\)?\b/i,
+  /\bequity\b/i,
+  /\bstock options?\b/i,
+  /\bvesting\b/i,
+  /\bPTO\b/,
+  /\bdental\b.*\bvision\b/i,
+];
+
+// Positive signals — at least one must match (or title itself implies contract)
+const CONTRACT_SIGNALS = [
+  /\b(contract|freelance|part[- ]?time|consulting|consultant|contractor|temporary|temp|gig|per[- ]?diem)\b/i,
+  /\b(project[- ]?based|fixed[- ]?term|hourly|retainer|remote[- ]?contract)\b/i,
+];
+
+function isContractRole(title, body) {
+  const combined = (title + " " + body).toLowerCase();
+
+  // Hard reject if permanent employment language is present
+  for (const rx of PERMANENT_REJECTION_PATTERNS) {
+    if (rx.test(combined)) return false;
+  }
+
+  // Accept if any contract/freelance signal is present
+  for (const rx of CONTRACT_SIGNALS) {
+    if (rx.test(combined)) return true;
+  }
+
+  // Default: reject (most RemoteOK listings are full-time permanent roles)
+  return false;
+}
+
 async function fetchRemoteOK() {
   const allPosts = [];
+  const nowSec = Math.floor(Date.now() / 1000);
+
   for (const feedUrl of REMOTEOK_FEEDS) {
     try {
       const resp = await fetchWithRetry(feedUrl, {
         headers: { Accept: "application/rss+xml, text/xml, */*" },
       });
       if (!resp || !resp.ok) {
+        console.warn(`[jobboards] RemoteOK ${feedUrl}: HTTP ${resp?.status || "null"}`);
         await sleep(REQUEST_DELAY_MS);
         continue;
       }
@@ -249,6 +292,10 @@ async function fetchRemoteOK() {
 
       const itemRegex = /<item>([\s\S]*?)<\/item>/gi;
       let match;
+      let feedCount = 0;
+      let skippedStale = 0;
+      let skippedPermanent = 0;
+
       while ((match = itemRegex.exec(xml)) !== null) {
         const entry = match[1];
         const title = stripHtml(xmlText(entry, "title"));
@@ -260,6 +307,21 @@ async function fetchRemoteOK() {
 
         if (!title || !link) continue;
 
+        // Freshness filter: skip posts older than 7 days
+        const createdUtc = pubDate
+          ? Math.floor(new Date(pubDate).getTime() / 1000)
+          : nowSec;
+        if (nowSec - createdUtc > REMOTEOK_MAX_AGE_SEC) {
+          skippedStale++;
+          continue;
+        }
+
+        // Contract/freelance filter: reject permanent full-time roles
+        if (!isContractRole(title, description)) {
+          skippedPermanent++;
+          continue;
+        }
+
         const id = `remoteok_${link.replace(/[^a-z0-9]/gi, "_").slice(-60)}`;
         allPosts.push({
           id,
@@ -270,23 +332,22 @@ async function fetchRemoteOK() {
           author_name: company || "RemoteOK",
           permalink: link,
           subreddit: null,
-          created_utc: pubDate
-            ? Math.floor(new Date(pubDate).getTime() / 1000)
-            : Math.floor(Date.now() / 1000),
+          created_utc: createdUtc,
           num_comments: 0,
           ups: 0,
           link_flair_text: "RemoteOK",
           compensation: salary,
           company: company,
-          employment_type: null,
+          employment_type: "contract",
           location: "Remote",
           _sub: "remoteok",
           source: "remoteok",
           source_platform: "RemoteOK",
         });
+        feedCount++;
       }
       console.log(
-        `[jobboards] RemoteOK ${feedUrl.split("/").pop()}: ${allPosts.length} posts`,
+        `[jobboards] RemoteOK ${feedUrl.split("/").pop()}: ${feedCount} kept, ${skippedStale} stale, ${skippedPermanent} permanent skipped`,
       );
     } catch (err) {
       console.warn(`[jobboards] RemoteOK error (${feedUrl}):`, err.message);
@@ -297,209 +358,101 @@ async function fetchRemoteOK() {
 }
 
 // ── Source 2: Wellfound (AngelList) ──────────────────────────────────────────
+// Wellfound is a React SPA behind Cloudflare — requires Playwright.
+// A separate script (scripts/crawl-wellfound.js) writes to gigalertpro:wellfound:latest.
+// This function just reads that Redis key to merge into the combined feed.
+
+const WELLFOUND_REDIS_KEY = "gigalertpro:wellfound:latest";
 
 async function fetchWellfound() {
-  const posts = [];
   try {
-    const resp = await fetchWithRetry("https://wellfound.com/jobs", {
-      headers: { Accept: "text/html" },
-    });
-    if (!resp || !resp.ok) return posts;
-    const html = await resp.text();
-
-    // Extract job listings from the page HTML
-    // Wellfound renders job cards with structured data
-    const jobRegex =
-      /<div[^>]*class="[^"]*styles_jobListing[^"]*"[^>]*>([\s\S]*?)<\/div>\s*<\/div>\s*<\/div>/gi;
-
-    // Try to find JSON-LD structured data first (more reliable)
-    const jsonLdRegex =
-      /<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/gi;
-    let jsonMatch;
-    while ((jsonMatch = jsonLdRegex.exec(html)) !== null) {
-      try {
-        const data = JSON.parse(jsonMatch[1]);
-        const jobs =
-          data["@type"] === "ItemList"
-            ? data.itemListElement || []
-            : data["@type"] === "JobPosting"
-              ? [data]
-              : [];
-        for (const job of jobs) {
-          const item = job.item || job;
-          if (item["@type"] !== "JobPosting") continue;
-
-          const title = item.title || "";
-          const desc = stripHtml(item.description || "");
-          const company = item.hiringOrganization?.name || "Wellfound";
-          const url = item.url || "https://wellfound.com/jobs";
-          const datePosted = item.datePosted || "";
-          const salary = item.baseSalary?.value?.value
-            ? `$${item.baseSalary.value.value}`
-            : item.baseSalary?.value?.minValue &&
-                item.baseSalary?.value?.maxValue
-              ? `$${item.baseSalary.value.minValue}-$${item.baseSalary.value.maxValue}`
-              : null;
-
-          // Filter: only remote/freelance/contract roles
-          const combined = (title + " " + desc).toLowerCase();
-          const isRelevant =
-            /\b(freelance|contract|part[- ]?time|remote|consultant)\b/.test(
-              combined,
-            );
-          if (!isRelevant) continue;
-
-          const id = `wellfound_${url.replace(/[^a-z0-9]/gi, "_").slice(-60)}`;
-          posts.push({
-            id,
-            name: id,
-            title,
-            selftext: desc.slice(0, 2000),
-            author: company,
-            author_name: company,
-            permalink: url,
-            subreddit: null,
-            created_utc: datePosted
-              ? Math.floor(new Date(datePosted).getTime() / 1000)
-              : Math.floor(Date.now() / 1000),
-            num_comments: 0,
-            ups: 0,
-            link_flair_text: "Wellfound",
-            compensation: salary,
-            company: company,
-            employment_type: "contract",
-            location: "Remote",
-            _sub: "wellfound",
-            source: "wellfound",
-            source_platform: "Wellfound",
-          });
-        }
-      } catch {
-        /* skip malformed JSON-LD */
-      }
+    const raw = await redisGet(WELLFOUND_REDIS_KEY);
+    if (!raw) {
+      console.log("[jobboards] Wellfound: no data in Redis (crawler hasn't run yet)");
+      return [];
     }
-
-    // Fallback: scrape basic job listing links from the page
-    if (posts.length === 0) {
-      const linkRegex = /<a[^>]*href="(\/jobs\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
-      let linkMatch;
-      const seen = new Set();
-      while ((linkMatch = linkRegex.exec(html)) !== null && posts.length < 50) {
-        const href = linkMatch[1];
-        if (seen.has(href)) continue;
-        seen.add(href);
-
-        const innerText = stripHtml(linkMatch[2]);
-        if (!innerText || innerText.length < 5) continue;
-
-        const id = `wellfound_${href.replace(/[^a-z0-9]/gi, "_").slice(-60)}`;
-        posts.push({
-          id,
-          name: id,
-          title: innerText.slice(0, 200),
-          selftext: "",
-          author: "Wellfound",
-          author_name: "Wellfound",
-          permalink: `https://wellfound.com${href}`,
-          subreddit: null,
-          created_utc: Math.floor(Date.now() / 1000),
-          num_comments: 0,
-          ups: 0,
-          link_flair_text: "Wellfound",
-          compensation: null,
-          company: null,
-          employment_type: null,
-          location: null,
-          _sub: "wellfound",
-          source: "wellfound",
-          source_platform: "Wellfound",
-        });
-      }
-    }
-
-    console.log(`[jobboards] Wellfound: ${posts.length} posts`);
+    const data = JSON.parse(raw);
+    const posts = data.posts || [];
+    console.log(`[jobboards] Wellfound: ${posts.length} posts from Redis cache`);
+    return posts;
   } catch (err) {
-    console.warn("[jobboards] Wellfound error:", err.message);
+    console.warn("[jobboards] Wellfound Redis read error:", err.message);
+    return [];
   }
-  return posts;
 }
 
-// ── Source 3: WorkingNomads RSS ──────────────────────────────────────────────
-
-const WORKINGNOMADS_FEEDS = [
-  "https://www.workingnomads.com/jobs?category=development&format=rss",
-  "https://www.workingnomads.com/jobs?category=design&format=rss",
-  "https://www.workingnomads.com/jobs?category=writing&format=rss",
-];
+// ── Source 3: WorkingNomads JSON API ─────────────────────────────────────────
+// RSS feeds return HTML (Angular app). The JSON API works reliably.
 
 async function fetchWorkingNomads() {
   const allPosts = [];
-  for (const feedUrl of WORKINGNOMADS_FEEDS) {
-    try {
-      const resp = await fetchWithRetry(feedUrl, {
-        headers: { Accept: "application/rss+xml, text/xml, */*" },
-      });
-      if (!resp || !resp.ok) {
-        await sleep(REQUEST_DELAY_MS);
-        continue;
-      }
-      const xml = await resp.text();
-
-      const itemRegex = /<item>([\s\S]*?)<\/item>/gi;
-      let match;
-      while ((match = itemRegex.exec(xml)) !== null) {
-        const entry = match[1];
-        const title = stripHtml(xmlText(entry, "title"));
-        const link = stripHtml(xmlText(entry, "link"));
-        const description = stripHtml(xmlText(entry, "description"));
-        const pubDate = xmlText(entry, "pubDate");
-        const company =
-          stripHtml(
-            xmlText(entry, "company") || xmlText(entry, "dc:creator"),
-          ) || null;
-
-        if (!title || !link) continue;
-
-        const id = `workingnomads_${link.replace(/[^a-z0-9]/gi, "_").slice(-60)}`;
-        allPosts.push({
-          id,
-          name: id,
-          title,
-          selftext: description.slice(0, 2000),
-          author: company || "WorkingNomads",
-          author_name: company || "WorkingNomads",
-          permalink: link,
-          subreddit: null,
-          created_utc: pubDate
-            ? Math.floor(new Date(pubDate).getTime() / 1000)
-            : Math.floor(Date.now() / 1000),
-          num_comments: 0,
-          ups: 0,
-          link_flair_text: "WorkingNomads",
-          compensation: null,
-          company: company,
-          employment_type: null,
-          location: "Remote",
-          _sub: "workingnomads",
-          source: "workingnomads",
-          source_platform: "WorkingNomads",
-        });
-      }
-      console.log(
-        `[jobboards] WorkingNomads ${feedUrl.split("category=")[1]?.split("&")[0]}: ${allPosts.length} posts`,
-      );
-    } catch (err) {
-      console.warn(
-        `[jobboards] WorkingNomads error (${feedUrl}):`,
-        err.message,
-      );
+  try {
+    const resp = await fetchWithRetry(
+      "https://www.workingnomads.com/api/exposed_jobs/",
+      {
+        headers: {
+          Accept: "application/json",
+          "User-Agent": CHROME_UA,
+        },
+      },
+    );
+    if (!resp || !resp.ok) {
+      console.warn(`[jobboards] WorkingNomads API: HTTP ${resp?.status || "null"}`);
+      return allPosts;
     }
-    await sleep(REQUEST_DELAY_MS);
+    const jobs = await resp.json();
+    if (!Array.isArray(jobs)) {
+      console.warn("[jobboards] WorkingNomads API: unexpected response format");
+      return allPosts;
+    }
+
+    for (const job of jobs) {
+      const title = (job.title || "").trim();
+      const link = (job.url || "").trim();
+      const description = stripHtml(job.description || "");
+      const company = (job.company_name || "").trim() || null;
+      const category = (job.category_name || "").trim();
+      const pubDate = job.pub_date || "";
+      const location = (job.location || "Remote").trim();
+      const tags = job.tags || "";
+
+      if (!title || !link) continue;
+
+      const id = `workingnomads_${link.replace(/[^a-z0-9]/gi, "_").slice(-60)}`;
+      allPosts.push({
+        id,
+        name: id,
+        title,
+        selftext: description.slice(0, 2000),
+        author: company || "WorkingNomads",
+        author_name: company || "WorkingNomads",
+        permalink: link,
+        subreddit: null,
+        created_utc: pubDate
+          ? Math.floor(new Date(pubDate).getTime() / 1000)
+          : Math.floor(Date.now() / 1000),
+        num_comments: 0,
+        ups: 0,
+        link_flair_text: "WorkingNomads",
+        compensation: null,
+        company: company,
+        employment_type: null,
+        location: location,
+        _sub: "workingnomads",
+        source: "workingnomads",
+        source_platform: "WorkingNomads",
+      });
+    }
+
+    console.log(`[jobboards] WorkingNomads: ${allPosts.length} posts from API (${jobs.length} total)`);
+  } catch (err) {
+    console.warn("[jobboards] WorkingNomads error:", err.message);
   }
   return allPosts;
 }
 
 // ── Source 4: OpenQuant ──────────────────────────────────────────────────────
+// OpenQuant is a Next.js app — job data is embedded in __NEXT_DATA__ JSON.
 
 async function fetchOpenQuant() {
   const posts = [];
@@ -507,101 +460,87 @@ async function fetchOpenQuant() {
     const resp = await fetchWithRetry("https://openquant.co/jobs", {
       headers: { Accept: "text/html" },
     });
-    if (!resp || !resp.ok) return posts;
+    if (!resp || !resp.ok) {
+      console.warn(`[jobboards] OpenQuant: HTTP ${resp?.status || "null"}`);
+      return posts;
+    }
     const html = await resp.text();
 
-    // Try JSON-LD first
-    const jsonLdRegex =
-      /<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/gi;
-    let jsonMatch;
-    while ((jsonMatch = jsonLdRegex.exec(html)) !== null) {
-      try {
-        const data = JSON.parse(jsonMatch[1]);
-        const jobs =
-          data["@type"] === "ItemList"
-            ? data.itemListElement || []
-            : Array.isArray(data)
-              ? data
-              : [data];
-        for (const job of jobs) {
-          const item = job.item || job;
-          if (item["@type"] !== "JobPosting") continue;
+    // Extract __NEXT_DATA__ JSON
+    const nextDataIdx = html.indexOf("__NEXT_DATA__");
+    if (nextDataIdx === -1) {
+      console.warn("[jobboards] OpenQuant: no __NEXT_DATA__ found");
+      return posts;
+    }
+    const jsonStart = html.indexOf(">", nextDataIdx) + 1;
+    const jsonEnd = html.indexOf("</script>", jsonStart);
+    const nextData = JSON.parse(html.slice(jsonStart, jsonEnd));
 
-          const title = item.title || "";
-          const desc = stripHtml(item.description || "");
-          const company = item.hiringOrganization?.name || "OpenQuant";
-          const url = item.url || "https://openquant.co/jobs";
-          const datePosted = item.datePosted || "";
-
-          const id = `openquant_${url.replace(/[^a-z0-9]/gi, "_").slice(-60)}`;
-          posts.push({
-            id,
-            name: id,
-            title,
-            selftext: desc.slice(0, 2000),
-            author: company,
-            author_name: company,
-            permalink: url,
-            subreddit: null,
-            created_utc: datePosted
-              ? Math.floor(new Date(datePosted).getTime() / 1000)
-              : Math.floor(Date.now() / 1000),
-            num_comments: 0,
-            ups: 0,
-            link_flair_text: "OpenQuant",
-            compensation: null,
-            company: company,
-            employment_type: null,
-            location: null,
-            _sub: "openquant",
-            source: "openquant",
-            source_platform: "OpenQuant",
-          });
-        }
-      } catch {
-        /* skip malformed JSON-LD */
-      }
+    const jobs = nextData?.props?.pageProps?.data || [];
+    if (!Array.isArray(jobs) || jobs.length === 0) {
+      console.warn("[jobboards] OpenQuant: no jobs in __NEXT_DATA__");
+      return posts;
     }
 
-    // Fallback: scrape job links
-    if (posts.length === 0) {
-      const linkRegex = /<a[^>]*href="(\/jobs?\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
-      let linkMatch;
-      const seen = new Set();
-      while ((linkMatch = linkRegex.exec(html)) !== null && posts.length < 50) {
-        const href = linkMatch[1];
-        if (seen.has(href)) continue;
-        seen.add(href);
+    for (const job of jobs) {
+      const title = (job.Position || "").trim();
+      const company = (job.CompanyName || "OpenQuant").trim();
+      const positionType = (job.PositionType || "").trim();
+      const seniority = (job.Seniority || "").trim();
+      const location = (job.Location || "").trim();
+      const country = (job.Country || "").trim();
+      const appUrl = (job.ApplicationUrl || "").trim();
+      const datePosted = (job.PostedDate || "").trim();
+      const skills = (job.Skills || "").trim();
+      const minSalary = job.MinSalary;
+      const maxSalary = job.MaxSalary;
+      const salaryEstimated = job.SalaryEstimated;
 
-        const innerText = stripHtml(linkMatch[2]);
-        if (!innerText || innerText.length < 5) continue;
+      if (!title) continue;
 
-        const id = `openquant_${href.replace(/[^a-z0-9]/gi, "_").slice(-60)}`;
-        posts.push({
-          id,
-          name: id,
-          title: innerText.slice(0, 200),
-          selftext: "",
-          author: "OpenQuant",
-          author_name: "OpenQuant",
-          permalink: `https://openquant.co${href}`,
-          subreddit: null,
-          created_utc: Math.floor(Date.now() / 1000),
-          num_comments: 0,
-          ups: 0,
-          link_flair_text: "OpenQuant",
-          compensation: null,
-          company: null,
-          employment_type: null,
-          location: null,
-          _sub: "openquant",
-          source: "openquant",
-          source_platform: "OpenQuant",
-        });
+      // Build description from available fields
+      const descParts = [];
+      if (positionType) descParts.push(`Role: ${positionType}`);
+      if (seniority) descParts.push(`Level: ${seniority}`);
+      if (skills) descParts.push(`Skills: ${skills}`);
+      if (location) descParts.push(`Location: ${location}`);
+      const description = descParts.join(" | ");
+
+      // Build salary string
+      let compensation = null;
+      if (minSalary && maxSalary) {
+        compensation = `$${minSalary.toLocaleString()}-$${maxSalary.toLocaleString()}${salaryEstimated ? " (est.)" : ""}`;
       }
+
+      const permalink = appUrl || `https://openquant.co/jobs`;
+      const id = `openquant_${(job.ID || permalink).replace(/[^a-z0-9]/gi, "_").slice(-60)}`;
+
+      posts.push({
+        id,
+        name: id,
+        title: `${title} at ${company}`,
+        selftext: description.slice(0, 2000),
+        author: company,
+        author_name: company,
+        permalink: permalink,
+        subreddit: null,
+        created_utc: datePosted
+          ? Math.floor(new Date(datePosted).getTime() / 1000)
+          : Math.floor(Date.now() / 1000),
+        num_comments: 0,
+        ups: 0,
+        link_flair_text: "OpenQuant",
+        compensation: compensation,
+        company: company,
+        employment_type: positionType || null,
+        location: location || country || null,
+        _sub: "openquant",
+        source: "openquant",
+        source_platform: "OpenQuant",
+      });
     }
 
-    console.log(`[jobboards] OpenQuant: ${posts.length} posts`);
+    console.log(`[jobboards] OpenQuant: ${posts.length} posts from __NEXT_DATA__ (${jobs.length} total)`);
   } catch (err) {
     console.warn("[jobboards] OpenQuant error:", err.message);
   }
