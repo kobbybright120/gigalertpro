@@ -338,7 +338,7 @@ export default function LandingPage() {
               <span className="relative inline-flex rounded-full h-2 w-2 bg-[#00F0B5]" />
             </span>
             <span className="text-sm text-[#00F0B5] font-medium tracking-wide">
-              Finding clients on Reddit, X, Threads & Craigslist right now
+              Finding clients on Reddit, X, Threads, Facebook & Craigslist right now
             </span>
           </div>
 
@@ -494,7 +494,7 @@ export default function LandingPage() {
                 icon: Globe,
                 title: "Multi-Platform Coverage",
                 description:
-                  "Reddit, X, Threads and Craigslist monitored simultaneously. Every match in one dashboard.",
+                  "Reddit, X, Threads, Facebook and Craigslist monitored simultaneously. Every match in one dashboard.",
                 accent: "from-orange-400 to-orange-500",
               },
               {
@@ -739,17 +739,17 @@ export default function LandingPage() {
             {[
               {
                 q: "How does GigAlertPro find clients for me?",
-                a: "GigAlertPro scans Reddit, X, Threads and Craigslist continuously 24/7. The moment a client posts looking for a freelancer matching your skills it appears in your dashboard and you get an instant alert. Clients post what they need every day on these platforms. Most freelancers just never know where to look. GigAlertPro does the finding for you automatically.",
+                a: "GigAlertPro scans Reddit, X, Threads, Facebook and Craigslist continuously 24/7. The moment a client posts looking for a freelancer matching your skills it appears in your dashboard and you get an instant alert. Clients post what they need every day on these platforms. Most freelancers just never know where to look. GigAlertPro does the finding for you automatically.",
                 defaultOpen: true,
               },
               {
                 q: "How is this different from Upwork or Fiverr?",
-                a: "Upwork and Fiverr are marketplaces where you compete with hundreds of freelancers for the same posted jobs. GigAlertPro finds clients who post what they need organically on Reddit, X, Threads and Craigslist. Places most freelancers never look. Those clients are not overwhelmed with proposals. They posted because they need help and they are waiting for the right person to reach out.",
+                a: "Upwork and Fiverr are marketplaces where you compete with hundreds of freelancers for the same posted jobs. GigAlertPro finds clients who post what they need organically on Reddit, X, Threads, Facebook and Craigslist. Places most freelancers never look. Those clients are not overwhelmed with proposals. They posted because they need help and they are waiting for the right person to reach out.",
                 defaultOpen: true,
               },
               {
                 q: "What platforms does GigAlertPro find clients on?",
-                a: "GigAlertPro scans Reddit including 34+ subreddits like r/forhire and r/freelance, X/Twitter, Threads and Craigslist. We are constantly adding new sources to make sure no client post goes unnoticed. All matching posts appear in one dashboard so you never have to manually check multiple platforms again.",
+                a: "GigAlertPro scans Reddit including 34+ subreddits like r/forhire and r/freelance, X/Twitter, Threads, Facebook and Craigslist. We are constantly adding new sources to make sure no client post goes unnoticed. All matching posts appear in one dashboard so you never have to manually check multiple platforms again.",
               },
               {
                 q: "What does the AI proposal writer do?",

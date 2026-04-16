@@ -17,6 +17,7 @@ const HANDLER_DEADLINE_MS = 8000;
 
 const REDIS_KEY = "gigalertpro:x:latest";
 const THREADS_REDIS_KEY = "gigalertpro:threads:latest";
+const FACEBOOK_REDIS_KEY = "gigalertpro:facebook:latest";
 
 // ── Nitter live-fallback config ──────────────────────────────────────────────
 // Keep this list SHORT — each query can take up to 5 s in the worst case.
@@ -322,15 +323,19 @@ export default async function handler(req, res) {
   try {
     // ── 1) Try Upstash Redis first (production path) ──
     // Read all platform keys in parallel
-    const [cached, threadsCached] = await Promise.all([
+    const [cached, threadsCached, facebookCached] = await Promise.all([
       redisGet(REDIS_KEY),
       redisGet(THREADS_REDIS_KEY),
+      redisGet(FACEBOOK_REDIS_KEY),
     ]);
 
-    if (cached || threadsCached) {
+    if (cached || threadsCached || facebookCached) {
       let mainData = cached ? JSON.parse(cached) : { posts: [] };
       let threadsData = threadsCached
         ? JSON.parse(threadsCached)
+        : { posts: [] };
+      let facebookData = facebookCached
+        ? JSON.parse(facebookCached)
         : { posts: [] };
 
       // Normalize Playwright-crawler posts to match expected schema
@@ -368,7 +373,7 @@ export default async function handler(req, res) {
       // Merge + dedup
       const seen = new Set();
       const merged = [];
-      for (const p of [...(mainData.posts || []), ...threadsPosts]) {
+      for (const p of [...(mainData.posts || []), ...threadsPosts, ...(facebookData.posts || [])]) {
         if (!seen.has(p.id)) {
           seen.add(p.id);
           merged.push(p);

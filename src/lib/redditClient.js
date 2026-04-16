@@ -1619,7 +1619,9 @@ async function fetchCommunityPostsFromProxy() {
             ? "X"
             : p._sub === "threads"
               ? "Threads"
-              : "Community",
+              : p._sub === "facebook"
+                ? "Facebook"
+                : "Community",
     }));
   } catch (err) {
     console.error("[GigAlertPro] Community API fetch failed:", err.message);

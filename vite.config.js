@@ -68,14 +68,18 @@ function upstashApiPlugin() {
           }
 
           try {
-            const [xRaw, threadsRaw] = await Promise.all([
+            const [xRaw, threadsRaw, facebookRaw] = await Promise.all([
               readUpstashKey("gigalertpro:x:latest"),
               readUpstashKey("gigalertpro:threads:latest"),
+              readUpstashKey("gigalertpro:facebook:latest"),
             ]);
 
             const xData = xRaw ? JSON.parse(xRaw) : { posts: [] };
             const threadsData = threadsRaw
               ? JSON.parse(threadsRaw)
+              : { posts: [] };
+            const facebookData = facebookRaw
+              ? JSON.parse(facebookRaw)
               : { posts: [] };
 
             // Normalize crawler posts (Threads format)
@@ -114,7 +118,7 @@ function upstashApiPlugin() {
 
             const seen = new Set();
             const merged = [];
-            for (const p of [...(xData.posts || []), ...threadsPosts]) {
+            for (const p of [...(xData.posts || []), ...threadsPosts, ...(facebookData.posts || [])]) {
               if (!seen.has(p.id)) {
                 seen.add(p.id);
                 merged.push(p);
