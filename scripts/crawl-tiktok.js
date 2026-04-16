@@ -161,6 +161,8 @@ async function crawlDDG() {
   const collected = [];
 
   for (const query of SEARCH_QUERIES) {
+    // Extract human-readable label from DDG query (strip site: prefix)
+    const queryLabel = query.replace(/site:\S+\s*/i, "").replace(/"/g, "").trim();
     try {
       console.log("Searching:", query);
       const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
@@ -196,6 +198,7 @@ async function crawlDDG() {
       });
 
       console.log(`  → ${results.length} TikTok results`);
+      for (const r of results) r._queryLabel = queryLabel;
       collected.push(...results);
 
       // Polite delay
@@ -246,6 +249,7 @@ async function main() {
           id,
           _sub: "tiktok",
           source: "tiktok-ddg",
+          link_flair_text: p._queryLabel || "TikTok",
           title: p.title.slice(0, 120),
           body_preview: (p.snippet || p.title).slice(0, 400),
           author: authorMatch ? authorMatch[1] : null,

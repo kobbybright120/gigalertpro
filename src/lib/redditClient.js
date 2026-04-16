@@ -1836,12 +1836,18 @@ function matchAndScore(posts, lowerKws) {
     const clExtra = isCLPost
       ? ((p.compensation || "") + " " + (p.location || "")).toLowerCase()
       : "";
+    // For TikTok/Instagram, match against DDG search query label (stored in flair)
+    const crawlerFlairLower =
+      isTikTokPost || isInstagramPost
+        ? (p.link_flair_text || "").toLowerCase()
+        : "";
     const combined =
       titleLower +
       " " +
       bodyLower +
       (flairLower ? " " + flairLower : "") +
-      (clExtra ? " " + clExtra : "");
+      (clExtra ? " " + clExtra : "") +
+      (crawlerFlairLower ? " " + crawlerFlairLower : "");
 
     // For Reddit: scan first 600 chars of body (where the actual job description is).
     // For Craigslist/X: scan full body — CL bodies ARE the gig description, X tweets are short.
@@ -1863,7 +1869,8 @@ function matchAndScore(posts, lowerKws) {
         const inBody =
           bodyLower.includes(kw) ||
           (flairLower ? flairLower.includes(kw) : false) ||
-          (clExtra ? clExtra.includes(kw) : false);
+          (clExtra ? clExtra.includes(kw) : false) ||
+          (crawlerFlairLower ? crawlerFlairLower.includes(kw) : false);
         if (inTitle) titleHits++;
         return inTitle || inBody;
       } else {
@@ -1891,6 +1898,7 @@ function matchAndScore(posts, lowerKws) {
         }
         const inFlair = flairLower ? rx.test(flairLower) : false;
         if (inFlair) return true;
+        if (crawlerFlairLower && rx.test(crawlerFlairLower)) return true;
         if (clExtra && rx.test(clExtra)) return true;
         return rx.test(bodyHead);
       }

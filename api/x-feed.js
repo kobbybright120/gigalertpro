@@ -278,7 +278,7 @@ export default async function handler(req, res) {
             : p.created_utc || Math.floor(Date.now() / 1000),
           num_comments: 0,
           ups: 0,
-          link_flair_text: platform,
+          link_flair_text: p.link_flair_text || platform,
           compensation: null,
           employment_type: null,
           location: null,
