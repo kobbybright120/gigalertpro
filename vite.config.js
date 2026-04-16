@@ -30,7 +30,6 @@ function upstashApiPlugin() {
       server.middlewares.use(async (req, res, next) => {
         const simpleKeyMap = {
           "/api/scan-reddit": "gigalertpro:latest",
-          "/api/jobboards-feed": "gigalertpro:jobboards:latest",
         };
 
         // Simple single-key endpoints
@@ -60,12 +59,31 @@ function upstashApiPlugin() {
         }
 
         // Multi-platform merge endpoint (mirrors production x-feed.js)
-        if (req.url === "/api/x-feed") {
+        const parsedUrl = new URL(req.url, "http://localhost");
+        if (parsedUrl.pathname === "/api/x-feed") {
           if (!upstashUrl || !upstashToken) {
             res.statusCode = 500;
             res.end(JSON.stringify({ error: "Upstash env vars not set" }));
             return;
           }
+
+          // Job boards sub-feed
+          if (parsedUrl.searchParams.get("feed") === "jobboards") {
+            try {
+              const raw = await readUpstashKey("gigalertpro:jobboards:latest");
+              res.setHeader("Content-Type", "application/json");
+              if (!raw) {
+                res.end(JSON.stringify({ posts: [], post_count: 0, feed: "jobboards", sources: {} }));
+              } else {
+                res.end(raw);
+              }
+            } catch (err) {
+              res.statusCode = 500;
+              res.end(JSON.stringify({ error: err.message }));
+            }
+            return;
+          }
+
           try {
             const [xRaw, threadsRaw] = await Promise.all([
               readUpstashKey("gigalertpro:x:latest"),

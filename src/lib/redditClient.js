@@ -2149,7 +2149,7 @@ export async function fetchJobBoardGigs(keywords) {
   const now = Date.now();
   if (!jobBoardCache.data || now - jobBoardCache.ts >= JB_FRESH_TTL) {
     try {
-      const resp = await fetchWithRetry("/api/jobboards-feed", {
+      const resp = await fetchWithRetry("/api/x-feed?feed=jobboards", {
         headers: { Accept: "application/json" },
       });
       if (resp && resp.ok) {
