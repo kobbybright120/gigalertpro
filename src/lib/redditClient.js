@@ -2165,10 +2165,9 @@ export async function fetchJobBoardGigs(keywords) {
 
   const posts = jobBoardCache.data || [];
 
-  // Expand keywords the same way community gigs do — catches synonyms & related terms
-  // e.g. "backend" → also matches "api", "server", "database", "node", "express", etc.
-  const originalSet = new Set(lowerKws);
+  // Expand keywords using the same synonym map as community gigs
   const expandedKws = expandKeywords(lowerKws);
+  const originalSet = new Set(lowerKws);
 
   // Keyword match + score
   const results = [];
@@ -2183,8 +2182,8 @@ export async function fetchJobBoardGigs(keywords) {
     const bodyLower = (p.selftext || "").toLowerCase();
     const combined = titleLower + " " + bodyLower;
 
-    // Match against expanded keyword set
-    const matchedExpanded = expandedKws.filter((kw) => {
+    // Match using expanded keywords (same logic as community gigs)
+    const matched = expandedKws.filter((kw) => {
       if (kw.includes(" ")) {
         return combined.includes(kw);
       }
@@ -2198,21 +2197,28 @@ export async function fetchJobBoardGigs(keywords) {
       return rx.test(combined);
     });
 
-    if (matchedExpanded.length === 0) continue;
+    if (matched.length === 0) continue;
 
-    // Map matched expanded keywords back to the user's original keywords for display
-    const matchedOriginal = [
-      ...new Set(matchedExpanded.filter((kw) => originalSet.has(kw))),
+    // Map matched expansions back to user's original keywords for display
+    const displayMatched = [
+      ...new Set(matched.filter((kw) => originalSet.has(kw))),
     ];
-    const displayMatched =
-      matchedOriginal.length > 0
-        ? matchedOriginal
+    const displayKeywords =
+      displayMatched.length > 0
+        ? displayMatched
         : lowerKws.filter((kw) => {
             const syns = KEYWORD_EXPANSIONS[kw] || [];
-            return syns.some((s) => matchedExpanded.includes(s));
+            return syns.some((s) => matched.includes(s));
           });
 
-    const score = p.score || 30;
+    // Boost score when user's original keywords match (vs only expansion matches)
+    let score = p.score || 30;
+    const titleHits = matched.filter((kw) => {
+      const escaped = kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      return new RegExp(`\\b${escaped}`, "i").test(titleLower);
+    }).length;
+    if (titleHits > 0) score = Math.min(100, score + titleHits * 8);
+    if (displayMatched.length > 0) score = Math.min(100, score + 5);
     const category = detectCategory(combined);
 
     results.push({
@@ -2228,7 +2234,7 @@ export async function fetchJobBoardGigs(keywords) {
         ? new Date(p.created_utc * 1000).toISOString()
         : new Date().toISOString(),
       matched_keywords:
-        displayMatched.length > 0 ? displayMatched : matchedExpanded,
+        displayKeywords.length > 0 ? displayKeywords : matched,
       score,
       category: category.label,
       category_icon: category.icon,
