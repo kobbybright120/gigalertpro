@@ -2133,6 +2133,7 @@ export { matchAndScore as _testMatchAndScore };
 // ── Job Board Feed ───────────────────────────────────────────────────────────
 
 const jobBoardCache = { data: null, ts: 0 };
+const remoteOKCache = { data: null, ts: 0 };
 const JB_FRESH_TTL = 2 * 60 * 1000; // 2 min
 
 /**
@@ -2145,25 +2146,43 @@ export async function fetchJobBoardGigs(keywords) {
   const lowerKws = keywords.map((k) => k.toLowerCase().trim()).filter(Boolean);
   if (lowerKws.length === 0) return [];
 
-  // Use cache if fresh
+  // Use cache if fresh — fetch both job boards and RemoteOK in parallel
   const now = Date.now();
   if (!jobBoardCache.data || now - jobBoardCache.ts >= JB_FRESH_TTL) {
     try {
-      const resp = await fetchWithRetry("/api/x-feed?feed=jobboards", {
-        headers: { Accept: "application/json" },
-      });
-      if (resp && resp.ok) {
-        const json = await resp.json();
+      const [jbResp, rokResp] = await Promise.all([
+        fetchWithRetry("/api/x-feed?feed=jobboards", {
+          headers: { Accept: "application/json" },
+        }),
+        fetchWithRetry("/api/remoteok-feed", {
+          headers: { Accept: "application/json" },
+        }),
+      ]);
+      if (jbResp && jbResp.ok) {
+        const json = await jbResp.json();
         jobBoardCache.data = json.posts || [];
         jobBoardCache.ts = Date.now();
       }
+      if (rokResp && rokResp.ok) {
+        const json = await rokResp.json();
+        remoteOKCache.data = json.posts || [];
+        remoteOKCache.ts = Date.now();
+      }
     } catch (err) {
       console.warn("[GigAlertPro] Job board feed fetch failed:", err.message);
-      if (!jobBoardCache.data) return [];
+      if (!jobBoardCache.data && !remoteOKCache.data) return [];
     }
   }
 
-  const posts = jobBoardCache.data || [];
+  // Merge both feeds and deduplicate by ID
+  const mergedMap = new Map();
+  for (const p of jobBoardCache.data || []) {
+    mergedMap.set(p.id || p.name, p);
+  }
+  for (const p of remoteOKCache.data || []) {
+    mergedMap.set(p.id || p.name, p);
+  }
+  const posts = [...mergedMap.values()];
 
   // Expand keywords using the same synonym map as community gigs
   const expandedKws = expandKeywords(lowerKws);
@@ -2257,4 +2276,6 @@ export function getJobBoardCacheTimestamp() {
 export function clearJobBoardCache() {
   jobBoardCache.data = null;
   jobBoardCache.ts = 0;
+  remoteOKCache.data = null;
+  remoteOKCache.ts = 0;
 }
