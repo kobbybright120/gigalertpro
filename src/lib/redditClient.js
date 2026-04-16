@@ -1835,9 +1835,7 @@ function matchAndScore(posts, lowerKws) {
     // For Reddit: scan first 600 chars of body (where the actual job description is).
     // For Craigslist/X: scan full body — CL bodies ARE the gig description, X tweets are short.
     const bodyHead =
-      isCLPost ||
-      isXPost ||
-      isThreadsPost
+      isCLPost || isXPost || isThreadsPost
         ? bodyLower
         : bodyLower.slice(0, 600);
 
@@ -1940,19 +1938,8 @@ function matchAndScore(posts, lowerKws) {
     // ── Stricter X/Threads/Instagram/TikTok/YouTube score gate ──
     // X and Threads produce much more noise than Reddit/CL.
     // Require higher score for body-only matches on these platforms.
-    if (
-      (isXPost ||
-        isThreadsPost) &&
-      titleHits === 0 &&
-      score < 45
-    )
-      continue;
-    if (
-      (isXPost ||
-        isThreadsPost) &&
-      score < 35
-    )
-      continue;
+    if ((isXPost || isThreadsPost) && titleHits === 0 && score < 45) continue;
+    if ((isXPost || isThreadsPost) && score < 35) continue;
 
     // ── Multi-role hiring post detection (5+ roles = corporate job listing) ──
     const multiRolePatterns = [

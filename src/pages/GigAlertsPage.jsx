@@ -415,8 +415,7 @@ export default function GigAlertsPage() {
                 Scanning Sources...
               </h3>
               <p className="text-gray-500 text-sm mt-1">
-                Searching Reddit, Craigslist, X & Threads for
-                matching gigs
+                Searching Reddit, Craigslist, X & Threads for matching gigs
               </p>
             </div>
             {[1, 2, 3].map((i) => (
@@ -449,8 +448,7 @@ export default function GigAlertsPage() {
             </h3>
             <p className="text-gray-500 text-sm max-w-md mx-auto">
               Type a keyword or skill above to start finding matching gigs from
-              Reddit, Craigslist, X & Threads. Be the first
-              to apply!
+              Reddit, Craigslist, X & Threads. Be the first to apply!
             </p>
           </div>
         ) : filtered.length > 0 ? (

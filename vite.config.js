@@ -112,10 +112,7 @@ function upstashApiPlugin() {
 
             const seen = new Set();
             const merged = [];
-            for (const p of [
-              ...(xData.posts || []),
-              ...threadsPosts,
-            ]) {
+            for (const p of [...(xData.posts || []), ...threadsPosts]) {
               if (!seen.has(p.id)) {
                 seen.add(p.id);
                 merged.push(p);

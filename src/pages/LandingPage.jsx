@@ -338,8 +338,8 @@ export default function LandingPage() {
               <span className="relative inline-flex rounded-full h-2 w-2 bg-[#00F0B5]" />
             </span>
             <span className="text-sm text-[#00F0B5] font-medium tracking-wide">
-              Finding clients for freelancers on Reddit, X, Threads &
-              Craigslist right now
+              Finding clients for freelancers on Reddit, X, Threads & Craigslist
+              right now
             </span>
           </div>
 
@@ -351,8 +351,8 @@ export default function LandingPage() {
 
           <p className="mt-7 text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
             Clients post what they need every day on Reddit, X, Threads and
-            Craigslist. GigAlertPro finds them automatically and
-            writes your proposal.
+            Craigslist. GigAlertPro finds them automatically and writes your
+            proposal.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mt-10 sm:mt-12 w-full">
@@ -431,8 +431,8 @@ export default function LandingPage() {
       <section className="relative border-y border-white/[0.05]">
         <div className="max-w-5xl mx-auto px-4 py-5 text-center">
           <p className="text-sm sm:text-base text-gray-400">
-            Right now a client is posting on Reddit, X, Threads or
-            Craigslist looking for someone with your exact skills.{" "}
+            Right now a client is posting on Reddit, X, Threads or Craigslist
+            looking for someone with your exact skills.{" "}
             <span className="text-white font-semibold">
               Without GigAlertPro you will never know they existed.
             </span>
@@ -622,8 +622,8 @@ export default function LandingPage() {
             </h2>
             <p className="mt-4 text-gray-400 text-lg max-w-xl mx-auto">
               Enter your skills and watch as GigAlertPro finds real clients
-              posting what they need across Reddit, X, Threads and
-              Craigslist automatically.
+              posting what they need across Reddit, X, Threads and Craigslist
+              automatically.
             </p>
           </div>
           <div
