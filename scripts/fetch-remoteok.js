@@ -28,7 +28,7 @@ const MAX_POSTS = 300;
 const SEEN_KEY = "gigalertpro:seen:remoteok";
 const SEEN_TTL = 86400; // 24 hours
 
-const MAX_AGE_SEC = 24 * 3600; // 24 hours — NON-NEGOTIABLE
+const MAX_AGE_SEC = 48 * 3600; // 48 hours
 
 const REQUEST_DELAY_MS = 600;
 const FETCH_TIMEOUT_MS = 15000;
@@ -217,7 +217,7 @@ function preScoreRemoteOKJob(job) {
   if (job._raw_tags && job._raw_tags.length >= 3) boost += 20;
 
   const hoursOld = (Date.now() / 1000 - (job.created_utc || 0)) / 3600;
-  if (hoursOld <= 24) boost += 15;
+  if (hoursOld <= 48) boost += 15;
 
   if (job.company && job.company.length > 0 && job.company !== "RemoteOK")
     boost += 10;
@@ -666,7 +666,7 @@ async function main() {
   console.log("  RemoteOK Fetch Results");
   console.log("════════════════════════════════════════════════════════════");
   console.log(`  Total jobs fetched:           ${metrics.totalFetched}`);
-  console.log(`  Rejected — older than 24h:    ${metrics.rejectedAge}`);
+  console.log(`  Rejected — older than 48h:    ${metrics.rejectedAge}`);
   console.log(`  Rejected — not freelance:     ${metrics.rejectedContract}`);
   console.log(`  Rejected — AI filter:         ${metrics.rejectedAI}`);
   console.log(`  Final jobs in Redis:          ${metrics.finalCount}`);

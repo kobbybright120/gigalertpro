@@ -41,8 +41,8 @@ export default async function handler(req, res) {
       const data = JSON.parse(cached);
       const posts = data.posts || [];
 
-      // Strict 24-hour serve-time freshness
-      const MAX_AGE_SECONDS = 24 * 3600;
+      // Strict 48-hour serve-time freshness
+      const MAX_AGE_SECONDS = 48 * 3600;
       const nowSec = Math.floor(Date.now() / 1000);
       const fresh = posts
         .filter(
