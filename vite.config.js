@@ -66,23 +66,17 @@ function upstashApiPlugin() {
             return;
           }
           try {
-            const [xRaw, threadsRaw, ytRaw, ttRaw, igRaw] = await Promise.all([
+            const [xRaw, threadsRaw] = await Promise.all([
               readUpstashKey("gigalertpro:x:latest"),
               readUpstashKey("gigalertpro:threads:latest"),
-              readUpstashKey("gigalertpro:youtube:latest"),
-              readUpstashKey("gigalertpro:tiktok:latest"),
-              readUpstashKey("gigalertpro:instagram:latest"),
             ]);
 
             const xData = xRaw ? JSON.parse(xRaw) : { posts: [] };
             const threadsData = threadsRaw
               ? JSON.parse(threadsRaw)
               : { posts: [] };
-            const ytData = ytRaw ? JSON.parse(ytRaw) : { posts: [] };
-            const ttData = ttRaw ? JSON.parse(ttRaw) : { posts: [] };
-            const igData = igRaw ? JSON.parse(igRaw) : { posts: [] };
 
-            // Normalize crawler posts (Threads/Instagram format)
+            // Normalize crawler posts (Threads format)
             function normalizeCrawlerPosts(
               data,
               platform,
@@ -115,33 +109,12 @@ function upstashApiPlugin() {
               "threads",
               "threads-playwright",
             );
-            const ytPosts = normalizeCrawlerPosts(
-              ytData,
-              "YouTube",
-              "youtube",
-              "youtube-invidious",
-            );
-            const ttPosts = normalizeCrawlerPosts(
-              ttData,
-              "TikTok",
-              "tiktok",
-              "tiktok-proxitok",
-            );
-            const igPosts = normalizeCrawlerPosts(
-              igData,
-              "Instagram",
-              "instagram",
-              "instagram-playwright",
-            );
 
             const seen = new Set();
             const merged = [];
             for (const p of [
               ...(xData.posts || []),
               ...threadsPosts,
-              ...ytPosts,
-              ...ttPosts,
-              ...igPosts,
             ]) {
               if (!seen.has(p.id)) {
                 seen.add(p.id);

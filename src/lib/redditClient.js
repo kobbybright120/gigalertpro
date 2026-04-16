@@ -1619,13 +1619,7 @@ async function fetchCommunityPostsFromProxy() {
             ? "X"
             : p._sub === "threads"
               ? "Threads"
-              : p._sub === "instagram"
-                ? "Instagram"
-                : p._sub === "tiktok"
-                  ? "TikTok"
-                  : p._sub === "youtube"
-                    ? "YouTube"
-                    : "Community",
+              : "Community",
     }));
   } catch (err) {
     console.error("[GigAlertPro] Community API fetch failed:", err.message);
@@ -1794,11 +1788,6 @@ function matchAndScore(posts, lowerKws) {
       p._sub === "craigslist" || p._source_platform === "Craigslist";
     const isThreadsPost =
       p._sub === "threads" || p._source_platform === "Threads";
-    const isInstagramPost =
-      p._sub === "instagram" || p._source_platform === "Instagram";
-    const isTikTokPost = p._sub === "tiktok" || p._source_platform === "TikTok";
-    const isYouTubePost =
-      p._sub === "youtube" || p._source_platform === "YouTube";
 
     // Decode common HTML entities so regex filters work on clean text
     const decodeEntities = (s) =>
@@ -1836,28 +1825,19 @@ function matchAndScore(posts, lowerKws) {
     const clExtra = isCLPost
       ? ((p.compensation || "") + " " + (p.location || "")).toLowerCase()
       : "";
-    // For TikTok/Instagram, match against DDG search query label (stored in flair)
-    const crawlerFlairLower =
-      isTikTokPost || isInstagramPost
-        ? (p.link_flair_text || "").toLowerCase()
-        : "";
     const combined =
       titleLower +
       " " +
       bodyLower +
       (flairLower ? " " + flairLower : "") +
-      (clExtra ? " " + clExtra : "") +
-      (crawlerFlairLower ? " " + crawlerFlairLower : "");
+      (clExtra ? " " + clExtra : "");
 
     // For Reddit: scan first 600 chars of body (where the actual job description is).
     // For Craigslist/X: scan full body — CL bodies ARE the gig description, X tweets are short.
     const bodyHead =
       isCLPost ||
       isXPost ||
-      isThreadsPost ||
-      isInstagramPost ||
-      isTikTokPost ||
-      isYouTubePost
+      isThreadsPost
         ? bodyLower
         : bodyLower.slice(0, 600);
 
@@ -1869,8 +1849,7 @@ function matchAndScore(posts, lowerKws) {
         const inBody =
           bodyLower.includes(kw) ||
           (flairLower ? flairLower.includes(kw) : false) ||
-          (clExtra ? clExtra.includes(kw) : false) ||
-          (crawlerFlairLower ? crawlerFlairLower.includes(kw) : false);
+          (clExtra ? clExtra.includes(kw) : false);
         if (inTitle) titleHits++;
         return inTitle || inBody;
       } else {
@@ -1898,7 +1877,6 @@ function matchAndScore(posts, lowerKws) {
         }
         const inFlair = flairLower ? rx.test(flairLower) : false;
         if (inFlair) return true;
-        if (crawlerFlairLower && rx.test(crawlerFlairLower)) return true;
         if (clExtra && rx.test(clExtra)) return true;
         return rx.test(bodyHead);
       }
@@ -1944,12 +1922,6 @@ function matchAndScore(posts, lowerKws) {
     // etc.) in the Playwright crawler, so keyword matches are higher signal.
     if (isThreadsPost) score = Math.min(100, score + 8);
 
-    // ── Instagram / TikTok / YouTube score boost ──
-    // Same reasoning — these posts come from gig-specific hashtag/search queries.
-    if (isInstagramPost) score = Math.min(100, score + 8);
-    if (isTikTokPost) score = Math.min(100, score + 8);
-    if (isYouTubePost) score = Math.min(100, score + 8);
-
     // ── Skip low-relevance posts (spammy pitches that barely match) ──
     if (score < 22) continue;
 
@@ -1970,20 +1942,14 @@ function matchAndScore(posts, lowerKws) {
     // Require higher score for body-only matches on these platforms.
     if (
       (isXPost ||
-        isThreadsPost ||
-        isInstagramPost ||
-        isTikTokPost ||
-        isYouTubePost) &&
+        isThreadsPost) &&
       titleHits === 0 &&
       score < 45
     )
       continue;
     if (
       (isXPost ||
-        isThreadsPost ||
-        isInstagramPost ||
-        isTikTokPost ||
-        isYouTubePost) &&
+        isThreadsPost) &&
       score < 35
     )
       continue;

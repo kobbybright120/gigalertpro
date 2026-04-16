@@ -338,8 +338,8 @@ export default function LandingPage() {
               <span className="relative inline-flex rounded-full h-2 w-2 bg-[#00F0B5]" />
             </span>
             <span className="text-sm text-[#00F0B5] font-medium tracking-wide">
-              Finding clients for freelancers on Reddit, X, Threads, Instagram &
-              TikTok right now
+              Finding clients for freelancers on Reddit, X, Threads &
+              Craigslist right now
             </span>
           </div>
 
@@ -350,8 +350,8 @@ export default function LandingPage() {
           </h1>
 
           <p className="mt-7 text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
-            Clients post what they need every day on Reddit, X, Threads,
-            Instagram and TikTok. GigAlertPro finds them automatically and
+            Clients post what they need every day on Reddit, X, Threads and
+            Craigslist. GigAlertPro finds them automatically and
             writes your proposal.
           </p>
 
@@ -431,8 +431,8 @@ export default function LandingPage() {
       <section className="relative border-y border-white/[0.05]">
         <div className="max-w-5xl mx-auto px-4 py-5 text-center">
           <p className="text-sm sm:text-base text-gray-400">
-            Right now a client is posting on Reddit, X, Threads, Instagram or
-            TikTok looking for someone with your exact skills.{" "}
+            Right now a client is posting on Reddit, X, Threads or
+            Craigslist looking for someone with your exact skills.{" "}
             <span className="text-white font-semibold">
               Without GigAlertPro you will never know they existed.
             </span>
@@ -495,7 +495,7 @@ export default function LandingPage() {
                 icon: Globe,
                 title: "Multi-Platform Coverage",
                 description:
-                  "Reddit, X, Threads, Instagram, TikTok and Craigslist monitored simultaneously. Every matching client post in one dashboard.",
+                  "Reddit, X, Threads and Craigslist monitored simultaneously. Every matching client post in one dashboard.",
                 accent: "from-orange-400 to-orange-500",
               },
               {
@@ -566,7 +566,7 @@ export default function LandingPage() {
                 step: "01",
                 emoji: "\ud83c\udfaf",
                 title: "Tell Us Your Skills",
-                desc: "Enter your skills. GigAlertPro immediately starts scanning Reddit, X, Threads, Instagram, TikTok and Craigslist for matching clients.",
+                desc: "Enter your skills. GigAlertPro immediately starts scanning Reddit, X, Threads and Craigslist for matching clients.",
               },
               {
                 step: "02",
@@ -622,8 +622,8 @@ export default function LandingPage() {
             </h2>
             <p className="mt-4 text-gray-400 text-lg max-w-xl mx-auto">
               Enter your skills and watch as GigAlertPro finds real clients
-              posting what they need across Reddit, X, Threads, Instagram,
-              TikTok and Craigslist automatically.
+              posting what they need across Reddit, X, Threads and
+              Craigslist automatically.
             </p>
           </div>
           <div
@@ -662,7 +662,7 @@ export default function LandingPage() {
 
               <div className="mt-10 space-y-5">
                 <BenefitItem text="Find clients already looking for your skills" />
-                <BenefitItem text="One dashboard covers Reddit, X, Threads, Instagram, TikTok & Craigslist" />
+                <BenefitItem text="One dashboard covers Reddit, X, Threads & Craigslist" />
                 <BenefitItem text="Skip low quality posts with quality scoring" />
                 <BenefitItem text="AI proposals written for each specific client" />
                 <BenefitItem text="Stop wasting hours searching manually" />
@@ -740,17 +740,17 @@ export default function LandingPage() {
             {[
               {
                 q: "How does GigAlertPro find clients for me?",
-                a: "GigAlertPro scans Reddit, X, Threads, Instagram, TikTok and Craigslist continuously 24/7. The moment a client posts looking for a freelancer matching your skills it appears in your dashboard and you get an instant alert. Clients post what they need every day on these platforms. Most freelancers just never know where to look. GigAlertPro does the finding for you automatically.",
+                a: "GigAlertPro scans Reddit, X, Threads and Craigslist continuously 24/7. The moment a client posts looking for a freelancer matching your skills it appears in your dashboard and you get an instant alert. Clients post what they need every day on these platforms. Most freelancers just never know where to look. GigAlertPro does the finding for you automatically.",
                 defaultOpen: true,
               },
               {
                 q: "How is this different from Upwork or Fiverr?",
-                a: "Upwork and Fiverr are marketplaces where you compete with hundreds of freelancers for the same posted jobs. GigAlertPro finds clients who post what they need organically on Reddit, X, Threads, Instagram, TikTok and Craigslist. Places most freelancers never look. Those clients are not overwhelmed with proposals. They posted because they need help and they are waiting for the right person to reach out.",
+                a: "Upwork and Fiverr are marketplaces where you compete with hundreds of freelancers for the same posted jobs. GigAlertPro finds clients who post what they need organically on Reddit, X, Threads and Craigslist. Places most freelancers never look. Those clients are not overwhelmed with proposals. They posted because they need help and they are waiting for the right person to reach out.",
                 defaultOpen: true,
               },
               {
                 q: "What platforms does GigAlertPro find clients on?",
-                a: "GigAlertPro scans Reddit including 34+ subreddits like r/forhire and r/freelance, X/Twitter, Threads, Instagram, TikTok and Craigslist. We are constantly adding new sources to make sure no client post goes unnoticed. All matching posts appear in one dashboard so you never have to manually check multiple platforms again.",
+                a: "GigAlertPro scans Reddit including 34+ subreddits like r/forhire and r/freelance, X/Twitter, Threads and Craigslist. We are constantly adding new sources to make sure no client post goes unnoticed. All matching posts appear in one dashboard so you never have to manually check multiple platforms again.",
               },
               {
                 q: "What does the AI proposal writer do?",
@@ -1327,7 +1327,7 @@ function PricingSection({ priceRef, priceVis, handleCheckout }) {
           popular: false,
           features: [
             { text: "25 daily alerts" },
-            { text: "Reddit, X, Threads, Instagram & TikTok" },
+            { text: "Reddit, X, Threads & Craigslist" },
             { text: "5 keyword trackers" },
             { text: "Gig quality scoring" },
             { text: "10 AI proposals per day" },
@@ -1373,7 +1373,7 @@ function PricingSection({ priceRef, priceVis, handleCheckout }) {
           popular: false,
           features: [
             { text: "25 daily alerts" },
-            { text: "Reddit, X, Threads, Instagram & TikTok" },
+            { text: "Reddit, X, Threads & Craigslist" },
             { text: "5 keyword trackers" },
             { text: "Gig quality scoring" },
             { text: "10 AI proposals per day" },
