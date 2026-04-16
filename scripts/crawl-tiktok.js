@@ -162,7 +162,10 @@ async function crawlDDG() {
 
   for (const query of SEARCH_QUERIES) {
     // Extract human-readable label from DDG query (strip site: prefix)
-    const queryLabel = query.replace(/site:\S+\s*/i, "").replace(/"/g, "").trim();
+    const queryLabel = query
+      .replace(/site:\S+\s*/i, "")
+      .replace(/"/g, "")
+      .trim();
     try {
       console.log("Searching:", query);
       const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
