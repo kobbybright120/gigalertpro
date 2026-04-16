@@ -226,19 +226,50 @@ function scorePost(post) {
 }
 
 // ── Source 1: RemoteOK JSON API ──────────────────────────────────────────────
-// The JSON API at /api returns ALL recent jobs with full descriptions + tags,
-// far richer than the RSS feeds which truncate descriptions.
+// The JSON API at /api returns only ~96 recent jobs, BUT ?tag= queries return
+// completely different jobs per tag (e.g. ?tag=react has 45 jobs NOT in /api).
+// We search ALL niches like we do for X, Threads, and Reddit.
 
 const REMOTEOK_API_URL = "https://remoteok.com/api";
 
-// Also fetch category-specific feeds for broader coverage
-const REMOTEOK_FEEDS = [
-  "https://remoteok.com/remote-copywriting-jobs.rss",
-  "https://remoteok.com/remote-customer-support-jobs.rss",
-  "https://remoteok.com/remote-finance-jobs.rss",
-  "https://remoteok.com/remote-product-jobs.rss",
-  "https://remoteok.com/remote-sales-jobs.rss",
-  "https://remoteok.com/remote-data-jobs.rss",
+// All niche tags to search — mirrors the breadth of X/Threads search queries
+const REMOTEOK_TAGS = [
+  // Development & Tech
+  "dev", "developer", "software", "engineer", "engineering",
+  "frontend", "front-end", "backend", "back-end", "full-stack",
+  "javascript", "react", "angular", "node", "python", "php",
+  "ruby", "java", "golang", "go", "rust", "swift",
+  "mobile", "ios", "android", "flutter",
+  "wordpress", "shopify", "webflow", "web",
+  "devops", "cloud", "aws", "docker", "kubernetes",
+  "blockchain", "crypto", "web3", "solidity",
+  "machine-learning", "ai", "data-science", "data",
+  "embedded", "serverless", "api", "sql", "nosql",
+  "qa", "testing", "security", "infosec", "sysadmin",
+  // Design & Creative
+  "design", "designer", "ui", "ux", "graphic-design",
+  "illustrator", "3d", "animation", "motion-graphics",
+  "video", "video-editing", "photographer",
+  // Writing & Content
+  "writing", "writer", "copywriting", "content",
+  "editor", "seo", "blogging", "technical-writing",
+  // Marketing & Sales
+  "marketing", "digital-marketing", "growth",
+  "social-media", "ads", "ppc", "email-marketing",
+  "sales", "lead-generation", "affiliate",
+  // Business & Admin
+  "virtual-assistant", "customer-support", "support",
+  "project-management", "product", "operations",
+  "finance", "accounting", "bookkeeping",
+  "hr", "recruiting", "recruitment",
+  // Audio & Voice
+  "voice", "voiceover", "audio", "podcast", "music",
+  // Misc
+  "game", "gaming", "education", "training",
+  "legal", "medical", "healthcare",
+  "consulting", "analyst", "analytics",
+  "ecommerce", "e-commerce", "saas",
+  "translator", "transcription",
 ];
 
 // Max age: 14 days — broader window for more results
@@ -272,177 +303,133 @@ function isContractRole(title, body) {
 }
 
 async function fetchRemoteOK() {
-  const allPosts = [];
   const seen = new Set();
+  const allPosts = [];
   const nowSec = Math.floor(Date.now() / 1000);
 
-  // ── Primary: JSON API (full descriptions + tags) ──────────────────────────
+  // Helper: parse a RemoteOK JSON API response into posts
+  function parseJobs(jobs) {
+    const posts = [];
+    for (const j of jobs) {
+      const title = stripHtml(j.position || j.title || "");
+      const link = j.url || j.apply_url || "";
+      if (!title || !link) continue;
+
+      const id = j.id
+        ? `remoteok_${j.id}`
+        : `remoteok_${link.replace(/[^a-z0-9]/gi, "_").slice(-60)}`;
+      if (seen.has(id)) continue;
+      seen.add(id);
+
+      const createdUtc = j.epoch
+        ? Number(j.epoch)
+        : j.date
+          ? Math.floor(new Date(j.date).getTime() / 1000)
+          : nowSec;
+      if (nowSec - createdUtc > REMOTEOK_MAX_AGE_SEC) continue;
+
+      // Build rich description: full HTML description + tags for matching
+      const rawDesc = stripHtml(j.description || "");
+      const tagsStr = Array.isArray(j.tags) ? j.tags.join(", ") : "";
+      const fullDesc = tagsStr ? `${rawDesc}\n\nTags: ${tagsStr}` : rawDesc;
+
+      if (!isContractRole(title, fullDesc)) continue;
+
+      // Salary
+      let compensation = null;
+      if (j.salary_min > 0 || j.salary_max > 0) {
+        const fmt = (n) => `$${Number(n).toLocaleString("en-US")}`;
+        compensation =
+          j.salary_min > 0 && j.salary_max > 0
+            ? `${fmt(j.salary_min)}-${fmt(j.salary_max)}`
+            : j.salary_max > 0
+              ? `Up to ${fmt(j.salary_max)}`
+              : fmt(j.salary_min);
+      }
+
+      posts.push({
+        id,
+        name: id,
+        title,
+        selftext: fullDesc.slice(0, 4000),
+        author: j.company || "RemoteOK",
+        author_name: j.company || "RemoteOK",
+        permalink: link,
+        subreddit: null,
+        created_utc: createdUtc,
+        num_comments: 0,
+        ups: 0,
+        link_flair_text: "RemoteOK",
+        compensation,
+        company: j.company || null,
+        employment_type: "contract",
+        location: j.location || "Remote",
+        _sub: "remoteok",
+        source: "remoteok",
+        source_platform: "RemoteOK",
+      });
+    }
+    return posts;
+  }
+
+  // ── Step 1: Fetch main /api (baseline ~96 jobs) ───────────────────────────
   try {
     const resp = await fetchWithRetry(REMOTEOK_API_URL, {
       headers: { Accept: "application/json" },
     });
     if (resp && resp.ok) {
       const data = await resp.json();
-      // First element is metadata/legal notice, skip it
       const jobs = Array.isArray(data) ? data.slice(1) : [];
-      let kept = 0;
-      let skippedStale = 0;
-      let skippedPermanent = 0;
-
-      for (const j of jobs) {
-        const title = stripHtml(j.position || j.title || "");
-        const link = j.url || j.apply_url || "";
-        if (!title || !link) continue;
-
-        const createdUtc = j.epoch
-          ? Number(j.epoch)
-          : j.date
-            ? Math.floor(new Date(j.date).getTime() / 1000)
-            : nowSec;
-        if (nowSec - createdUtc > REMOTEOK_MAX_AGE_SEC) {
-          skippedStale++;
-          continue;
-        }
-
-        // Build rich description: full HTML description + tags for matching
-        const rawDesc = stripHtml(j.description || "");
-        const tagsStr = Array.isArray(j.tags) ? j.tags.join(", ") : "";
-        const fullDesc = tagsStr
-          ? `${rawDesc}\n\nTags: ${tagsStr}`
-          : rawDesc;
-
-        if (!isContractRole(title, fullDesc)) {
-          skippedPermanent++;
-          continue;
-        }
-
-        // Salary
-        let compensation = null;
-        if (j.salary_min > 0 || j.salary_max > 0) {
-          const fmt = (n) => `$${Number(n).toLocaleString("en-US")}`;
-          compensation =
-            j.salary_min > 0 && j.salary_max > 0
-              ? `${fmt(j.salary_min)}-${fmt(j.salary_max)}`
-              : j.salary_max > 0
-                ? `Up to ${fmt(j.salary_max)}`
-                : fmt(j.salary_min);
-        }
-
-        const id = j.id
-          ? `remoteok_${j.id}`
-          : `remoteok_${link.replace(/[^a-z0-9]/gi, "_").slice(-60)}`;
-        if (seen.has(id)) continue;
-        seen.add(id);
-
-        allPosts.push({
-          id,
-          name: id,
-          title,
-          selftext: fullDesc.slice(0, 4000),
-          author: j.company || "RemoteOK",
-          author_name: j.company || "RemoteOK",
-          permalink: link,
-          subreddit: null,
-          created_utc: createdUtc,
-          num_comments: 0,
-          ups: 0,
-          link_flair_text: "RemoteOK",
-          compensation,
-          company: j.company || null,
-          employment_type: "contract",
-          location: j.location || "Remote",
-          _sub: "remoteok",
-          source: "remoteok",
-          source_platform: "RemoteOK",
-        });
-        kept++;
-      }
+      const posts = parseJobs(jobs);
+      allPosts.push(...posts);
       console.log(
-        `[jobboards] RemoteOK JSON API: ${kept} kept, ${skippedStale} stale, ${skippedPermanent} permanent skipped (${jobs.length} total)`,
-      );
-    } else {
-      console.warn(
-        `[jobboards] RemoteOK JSON API: HTTP ${resp?.status || "null"}, falling back to RSS`,
+        `[jobboards] RemoteOK /api: ${posts.length} kept (${jobs.length} raw)`,
       );
     }
   } catch (err) {
-    console.warn(
-      `[jobboards] RemoteOK JSON API error: ${err.message}, falling back to RSS`,
-    );
+    console.warn(`[jobboards] RemoteOK /api error: ${err.message}`);
   }
 
-  // ── Secondary: RSS feeds for extra categories not in main API ─────────────
-  for (const feedUrl of REMOTEOK_FEEDS) {
-    try {
-      await sleep(REQUEST_DELAY_MS);
-      const resp = await fetchWithRetry(feedUrl, {
-        headers: { Accept: "application/rss+xml, text/xml, */*" },
-      });
-      if (!resp || !resp.ok) {
-        console.warn(
-          `[jobboards] RemoteOK ${feedUrl}: HTTP ${resp?.status || "null"}`,
+  // ── Step 2: Search ALL niche tags (like X/Threads do for search queries) ──
+  // Each ?tag= query returns different jobs not in the main feed.
+  // Process in batches to avoid rate-limiting.
+  const BATCH_SIZE = 5;
+  let tagTotal = 0;
+
+  for (let i = 0; i < REMOTEOK_TAGS.length; i += BATCH_SIZE) {
+    const batch = REMOTEOK_TAGS.slice(i, i + BATCH_SIZE);
+    const batchResults = await Promise.allSettled(
+      batch.map(async (tag) => {
+        await sleep(REQUEST_DELAY_MS * (Math.random() * 0.5 + 0.75)); // jitter
+        const resp = await fetchWithRetry(
+          `${REMOTEOK_API_URL}?tag=${encodeURIComponent(tag)}`,
+          { headers: { Accept: "application/json" } },
         );
-        continue;
-      }
-      const xml = await resp.text();
+        if (!resp || !resp.ok) return 0;
+        const data = await resp.json();
+        const jobs = Array.isArray(data) ? data.slice(1) : [];
+        const posts = parseJobs(jobs);
+        allPosts.push(...posts);
+        return posts.length;
+      }),
+    );
 
-      const itemRegex = /<item>([\s\S]*?)<\/item>/gi;
-      let match;
-      let feedCount = 0;
+    for (let k = 0; k < batch.length; k++) {
+      const r = batchResults[k];
+      const count = r.status === "fulfilled" ? r.value : 0;
+      if (count > 0) tagTotal += count;
+    }
 
-      while ((match = itemRegex.exec(xml)) !== null) {
-        const entry = match[1];
-        const title = stripHtml(xmlText(entry, "title"));
-        const link = stripHtml(xmlText(entry, "link"));
-        const description = stripHtml(xmlText(entry, "description"));
-        const pubDate = xmlText(entry, "pubDate");
-        const company = stripHtml(xmlText(entry, "company")) || null;
-        const salary = stripHtml(xmlText(entry, "salary")) || null;
-
-        if (!title || !link) continue;
-
-        const createdUtc = pubDate
-          ? Math.floor(new Date(pubDate).getTime() / 1000)
-          : nowSec;
-        if (nowSec - createdUtc > REMOTEOK_MAX_AGE_SEC) continue;
-        if (!isContractRole(title, description)) continue;
-
-        const id = `remoteok_${link.replace(/[^a-z0-9]/gi, "_").slice(-60)}`;
-        if (seen.has(id)) continue;
-        seen.add(id);
-
-        allPosts.push({
-          id,
-          name: id,
-          title,
-          selftext: description.slice(0, 4000),
-          author: company || "RemoteOK",
-          author_name: company || "RemoteOK",
-          permalink: link,
-          subreddit: null,
-          created_utc: createdUtc,
-          num_comments: 0,
-          ups: 0,
-          link_flair_text: "RemoteOK",
-          compensation: salary,
-          company: company,
-          employment_type: "contract",
-          location: "Remote",
-          _sub: "remoteok",
-          source: "remoteok",
-          source_platform: "RemoteOK",
-        });
-        feedCount++;
-      }
-      console.log(
-        `[jobboards] RemoteOK RSS ${feedUrl.split("/").pop()}: ${feedCount} new`,
-      );
-    } catch (err) {
-      console.warn(`[jobboards] RemoteOK RSS error (${feedUrl}):`, err.message);
+    // Brief pause between batches to be polite
+    if (i + BATCH_SIZE < REMOTEOK_TAGS.length) {
+      await sleep(REQUEST_DELAY_MS * 2);
     }
   }
 
-  console.log(`[jobboards] RemoteOK total: ${allPosts.length} posts`);
+  console.log(
+    `[jobboards] RemoteOK tag searches: ${tagTotal} new from ${REMOTEOK_TAGS.length} tags`,
+  );
+  console.log(`[jobboards] RemoteOK total: ${allPosts.length} unique posts`);
   return allPosts;
 }
 
