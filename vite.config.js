@@ -73,7 +73,14 @@ function upstashApiPlugin() {
               const raw = await readUpstashKey("gigalertpro:jobboards:latest");
               res.setHeader("Content-Type", "application/json");
               if (!raw) {
-                res.end(JSON.stringify({ posts: [], post_count: 0, feed: "jobboards", sources: {} }));
+                res.end(
+                  JSON.stringify({
+                    posts: [],
+                    post_count: 0,
+                    feed: "jobboards",
+                    sources: {},
+                  }),
+                );
               } else {
                 res.end(raw);
               }
