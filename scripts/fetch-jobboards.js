@@ -626,6 +626,19 @@ async function main() {
     }
   }
 
+  // Safety net: if the post cache expired (3h TTL) but the seen-set still
+  // remembers all IDs (24h TTL), we'd store 0 posts.  Re-classify so the
+  // feed is never empty while sources still return data.
+  if (classifiedNew.length === 0 && existingData.length === 0 && unique.length > 0) {
+    console.log(
+      `[jobboards] Cache expired but seen-set active — re-classifying ${unique.length} posts`,
+    );
+    classifiedNew = await classifyAndFilter(unique);
+    console.log(
+      `[jobboards] Re-classification: ${classifiedNew.length} real gigs from ${unique.length} posts`,
+    );
+  }
+
   // Combine: new classified + existing cached
   const mergedMap = new Map();
   for (const p of existingData) mergedMap.set(p.id, p);
