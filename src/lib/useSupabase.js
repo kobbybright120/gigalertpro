@@ -282,26 +282,32 @@ export function useGigAlerts(keywordList, { isPaid = true } = {}) {
       // Persist each result to Supabase in the background (fire-and-forget)
       if (liveResults.length > 0) {
         const rows = liveResults.map((r) => ({
-          reddit_post_id: r.reddit_post_id || r.id,
-          title: r.title || "Untitled",
-          body_preview: (r.body_preview || "").slice(0, 500),
-          url: r.url || "",
-          subreddit: r.subreddit || "",
-          budget: r.budget || null,
-          author: r.author || null,
+          reddit_post_id: String(r.reddit_post_id || r.id || ""),
+          title: String(r.title || "Untitled"),
+          body_preview: String(r.body_preview || "").slice(0, 500),
+          url: String(r.url || ""),
+          subreddit: String(r.subreddit || ""),
+          budget: r.budget ? String(r.budget) : null,
+          author: r.author ? String(r.author) : null,
           reddit_created: r.reddit_created || new Date().toISOString(),
-          matched_keywords: r.matched_keywords || r.keywords || [],
-          score: r.score ?? 0,
-          comment_count: r.comment_count ?? 0,
-          upvotes: r.upvotes ?? 0,
-          flair: r.flair || null,
-          category: r.category || null,
+          matched_keywords: Array.isArray(r.matched_keywords)
+            ? r.matched_keywords.map(String)
+            : Array.isArray(r.keywords)
+              ? r.keywords.map(String)
+              : [],
+          score: Math.round(Number(r.score) || 0),
+          comment_count: Math.round(Number(r.comment_count) || 0),
+          upvotes: Math.round(Number(r.upvotes) || 0),
+          flair: r.flair ? String(r.flair) : null,
+          category: r.category ? String(r.category) : null,
           source:
             r.source_platform === "X"
               ? "x"
               : r.source_platform === "Craigslist"
                 ? "craigslist"
-                : "reddit",
+                : r.source_platform === "Threads"
+                  ? "threads"
+                  : "reddit",
         }));
         supabase
           .from("gig_alerts")
