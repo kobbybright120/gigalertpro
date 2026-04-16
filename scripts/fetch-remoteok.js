@@ -3,11 +3,13 @@
 // GigAlertPro — RemoteOK Dedicated Scanner
 //
 // Fetches freelance/contract gig posts from RemoteOK JSON API.
-// STRICT 24-HOUR freshness — rejects any job older than 24 hours.
+// 48-HOUR freshness window — rejects any job older than 48 hours.
 //
 // AI FILTER: Uses GPT-4o-mini to keep only genuine freelance/contract roles.
 // RemoteOK-specific gold lead scoring boost (bypasses keyword-intent gate).
 // Stores results in Upstash Redis under its own key.
+//
+// Tags are fetched in parallel batches of 10 for efficiency.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { classifyAndFilter } from "./gig-classifier.js";
@@ -30,7 +32,8 @@ const SEEN_TTL = 86400; // 24 hours
 
 const MAX_AGE_SEC = 48 * 3600; // 48 hours
 
-const REQUEST_DELAY_MS = 600;
+const BATCH_SIZE = 10;
+const BATCH_DELAY_MS = 1000;
 const FETCH_TIMEOUT_MS = 15000;
 const MAX_RETRIES = 3;
 
@@ -237,130 +240,345 @@ function preScoreRemoteOKJob(job) {
 
 const REMOTEOK_API_URL = "https://remoteok.com/api";
 
-const REMOTEOK_TAGS = [
-  // Development & Tech
-  "dev",
-  "developer",
-  "software",
-  "engineer",
-  "engineering",
-  "frontend",
-  "front-end",
-  "backend",
-  "back-end",
-  "full-stack",
-  "javascript",
-  "react",
-  "angular",
-  "node",
-  "python",
-  "php",
-  "ruby",
-  "java",
-  "golang",
-  "go",
-  "rust",
-  "swift",
-  "mobile",
-  "ios",
-  "android",
-  "flutter",
-  "wordpress",
-  "shopify",
-  "webflow",
-  "web",
-  "devops",
-  "cloud",
-  "aws",
-  "docker",
-  "kubernetes",
-  "blockchain",
-  "crypto",
-  "web3",
-  "solidity",
-  "machine-learning",
-  "ai",
-  "data-science",
-  "data",
-  "embedded",
-  "serverless",
-  "api",
-  "sql",
-  "nosql",
-  "qa",
-  "testing",
-  "security",
-  "infosec",
-  "sysadmin",
-  // Design & Creative
-  "design",
-  "designer",
-  "ui",
-  "ux",
-  "graphic-design",
-  "illustrator",
-  "3d",
-  "animation",
-  "motion-graphics",
-  "video",
-  "video-editing",
-  "photographer",
-  // Writing & Content
-  "writing",
-  "writer",
-  "copywriting",
-  "content",
-  "editor",
-  "seo",
-  "blogging",
-  "technical-writing",
-  // Marketing & Sales
-  "marketing",
-  "digital-marketing",
-  "growth",
-  "social-media",
-  "ads",
-  "ppc",
-  "email-marketing",
-  "sales",
-  "lead-generation",
-  "affiliate",
-  // Business & Admin
-  "virtual-assistant",
-  "customer-support",
-  "support",
-  "project-management",
-  "product",
-  "operations",
-  "finance",
-  "accounting",
-  "bookkeeping",
-  "hr",
-  "recruiting",
-  "recruitment",
-  // Audio & Voice
-  "voice",
-  "voiceover",
-  "audio",
-  "podcast",
-  "music",
-  // Misc
-  "game",
-  "gaming",
-  "education",
-  "training",
-  "legal",
-  "medical",
-  "healthcare",
-  "consulting",
-  "analyst",
-  "analytics",
-  "ecommerce",
-  "e-commerce",
-  "saas",
-  "translator",
-  "transcription",
-];
+// Tags organized by niche — each tag maps to its niche for reporting
+const TAG_NICHES = {
+  // ── Design & Creative ─────────────────────────────────────────────────────
+  "graphic-design": "Design",
+  "graphic-designer": "Design",
+  "logo-design": "Design",
+  "brand-design": "Design",
+  branding: "Design",
+  illustration: "Design",
+  illustrator: "Design",
+  "motion-graphics": "Design",
+  "motion-design": "Design",
+  animation: "Design",
+  animator: "Design",
+  "3d": "Design",
+  "3d-artist": "Design",
+  blender: "Design",
+  figma: "Design",
+  photoshop: "Design",
+  canva: "Design",
+  thumbnail: "Design",
+  banner: "Design",
+  poster: "Design",
+  flyer: "Design",
+  infographic: "Design",
+  ui: "Design",
+  ux: "Design",
+  "ui-ux": "Design",
+  "product-design": "Design",
+  "web-design": "Design",
+  "creative-director": "Design",
+  "art-director": "Design",
+  "visual-design": "Design",
+  design: "Design",
+  designer: "Design",
+
+  // ── Video & Content ───────────────────────────────────────────────────────
+  video: "Video & Content",
+  "video-editing": "Video & Content",
+  "video-editor": "Video & Content",
+  youtube: "Video & Content",
+  "youtube-editor": "Video & Content",
+  tiktok: "Video & Content",
+  "tiktok-editor": "Video & Content",
+  reels: "Video & Content",
+  "short-form-video": "Video & Content",
+  "podcast-editing": "Video & Content",
+  "content-creation": "Video & Content",
+  "content-creator": "Video & Content",
+  ugc: "Video & Content",
+  "user-generated-content": "Video & Content",
+  videography: "Video & Content",
+  cinematography: "Video & Content",
+  screenwriting: "Video & Content",
+  storytelling: "Video & Content",
+
+  // ── Writing & Copy ────────────────────────────────────────────────────────
+  copywriting: "Writing",
+  copywriter: "Writing",
+  "content-writing": "Writing",
+  "content-writer": "Writing",
+  blog: "Writing",
+  blogging: "Writing",
+  ghostwriting: "Writing",
+  ghostwriter: "Writing",
+  "technical-writing": "Writing",
+  "technical-writer": "Writing",
+  "seo-writing": "Writing",
+  "article-writing": "Writing",
+  "email-copywriting": "Writing",
+  "sales-copy": "Writing",
+  "landing-page-copy": "Writing",
+  scriptwriting: "Writing",
+  proofreading: "Writing",
+  editing: "Writing",
+  "resume-writing": "Writing",
+  writing: "Writing",
+  writer: "Writing",
+  content: "Writing",
+  editor: "Writing",
+
+  // ── Marketing & Social Media ──────────────────────────────────────────────
+  "social-media": "Marketing",
+  "social-media-manager": "Marketing",
+  "social-media-marketing": "Marketing",
+  instagram: "Marketing",
+  facebook: "Marketing",
+  twitter: "Marketing",
+  linkedin: "Marketing",
+  "tiktok-marketing": "Marketing",
+  "community-management": "Marketing",
+  "community-manager": "Marketing",
+  "email-marketing": "Marketing",
+  "email-marketing-specialist": "Marketing",
+  seo: "Marketing",
+  "seo-specialist": "Marketing",
+  "google-ads": "Marketing",
+  "facebook-ads": "Marketing",
+  ppc: "Marketing",
+  "paid-ads": "Marketing",
+  "digital-marketing": "Marketing",
+  "digital-marketer": "Marketing",
+  "growth-hacking": "Marketing",
+  growth: "Marketing",
+  "influencer-marketing": "Marketing",
+  "affiliate-marketing": "Marketing",
+  "brand-strategy": "Marketing",
+  marketing: "Marketing",
+  ads: "Marketing",
+  affiliate: "Marketing",
+
+  // ── Development & Tech ────────────────────────────────────────────────────
+  "web-development": "Development",
+  "web-developer": "Development",
+  frontend: "Development",
+  "frontend-developer": "Development",
+  "front-end": "Development",
+  backend: "Development",
+  "backend-developer": "Development",
+  "back-end": "Development",
+  "full-stack": "Development",
+  fullstack: "Development",
+  javascript: "Development",
+  react: "Development",
+  reactjs: "Development",
+  nextjs: "Development",
+  vue: "Development",
+  angular: "Development",
+  nodejs: "Development",
+  node: "Development",
+  python: "Development",
+  django: "Development",
+  flask: "Development",
+  php: "Development",
+  laravel: "Development",
+  wordpress: "Development",
+  shopify: "Development",
+  webflow: "Development",
+  wix: "Development",
+  ruby: "Development",
+  rails: "Development",
+  java: "Development",
+  kotlin: "Development",
+  swift: "Development",
+  ios: "Development",
+  android: "Development",
+  flutter: "Development",
+  mobile: "Development",
+  "mobile-app": "Development",
+  "react-native": "Development",
+  devops: "Development",
+  aws: "Development",
+  cloud: "Development",
+  docker: "Development",
+  kubernetes: "Development",
+  blockchain: "Development",
+  web3: "Development",
+  solidity: "Development",
+  "smart-contracts": "Development",
+  crypto: "Development",
+  defi: "Development",
+  nft: "Development",
+  "machine-learning": "Development",
+  ai: "Development",
+  "artificial-intelligence": "Development",
+  "data-science": "Development",
+  "data-scientist": "Development",
+  "data-analyst": "Development",
+  "data-engineer": "Development",
+  automation: "Development",
+  chatbot: "Development",
+  llm: "Development",
+  gpt: "Development",
+  "prompt-engineering": "Development",
+  "no-code": "Development",
+  nocode: "Development",
+  bubble: "Development",
+  zapier: "Development",
+  n8n: "Development",
+  airtable: "Development",
+  "game-dev": "Development",
+  "game-developer": "Development",
+  unity: "Development",
+  unreal: "Development",
+  godot: "Development",
+  cybersecurity: "Development",
+  security: "Development",
+  infosec: "Development",
+  sql: "Development",
+  database: "Development",
+  postgresql: "Development",
+  mongodb: "Development",
+  dev: "Development",
+  developer: "Development",
+  software: "Development",
+  engineer: "Development",
+  engineering: "Development",
+  web: "Development",
+  data: "Development",
+  embedded: "Development",
+  serverless: "Development",
+  api: "Development",
+  nosql: "Development",
+  qa: "Development",
+  testing: "Development",
+  sysadmin: "Development",
+  golang: "Development",
+  go: "Development",
+  rust: "Development",
+  game: "Development",
+  gaming: "Development",
+
+  // ── Specialized Tech — Fintech/Quant ──────────────────────────────────────
+  quant: "Fintech",
+  quantitative: "Fintech",
+  "algorithmic-trading": "Fintech",
+  "algo-trading": "Fintech",
+  "trading-infrastructure": "Fintech",
+  fintech: "Fintech",
+  hft: "Fintech",
+  "high-frequency-trading": "Fintech",
+  "trading-systems": "Fintech",
+  "quant-developer": "Fintech",
+  "quantitative-developer": "Fintech",
+  "trading-bot": "Fintech",
+  "crypto-trading": "Fintech",
+  "defi-developer": "Fintech",
+
+  // ── Business & Admin ──────────────────────────────────────────────────────
+  "virtual-assistant": "Business & Admin",
+  va: "Business & Admin",
+  "data-entry": "Business & Admin",
+  "project-management": "Business & Admin",
+  "project-manager": "Business & Admin",
+  "customer-support": "Business & Admin",
+  "customer-service": "Business & Admin",
+  "executive-assistant": "Business & Admin",
+  bookkeeping: "Business & Admin",
+  bookkeeper: "Business & Admin",
+  accounting: "Business & Admin",
+  accountant: "Business & Admin",
+  operations: "Business & Admin",
+  "business-operations": "Business & Admin",
+  research: "Business & Admin",
+  "market-research": "Business & Admin",
+  hr: "Business & Admin",
+  recruiting: "Business & Admin",
+  recruitment: "Business & Admin",
+  "talent-acquisition": "Business & Admin",
+  consulting: "Business & Admin",
+  support: "Business & Admin",
+  product: "Business & Admin",
+  finance: "Business & Admin",
+  education: "Business & Admin",
+  training: "Business & Admin",
+  legal: "Business & Admin",
+  medical: "Business & Admin",
+  healthcare: "Business & Admin",
+  analyst: "Business & Admin",
+  analytics: "Business & Admin",
+  saas: "Business & Admin",
+
+  // ── Sales ─────────────────────────────────────────────────────────────────
+  sales: "Sales",
+  "sales-rep": "Sales",
+  "lead-generation": "Sales",
+  leads: "Sales",
+  "cold-calling": "Sales",
+  "appointment-setting": "Sales",
+  outreach: "Sales",
+  "business-development": "Sales",
+  crm: "Sales",
+  "account-management": "Sales",
+
+  // ── Audio & Music ─────────────────────────────────────────────────────────
+  "music-production": "Audio & Music",
+  "music-producer": "Audio & Music",
+  "audio-engineering": "Audio & Music",
+  "audio-engineer": "Audio & Music",
+  "sound-design": "Audio & Music",
+  "sound-designer": "Audio & Music",
+  mixing: "Audio & Music",
+  mastering: "Audio & Music",
+  voiceover: "Audio & Music",
+  "voice-over": "Audio & Music",
+  "voice-acting": "Audio & Music",
+  "podcast-production": "Audio & Music",
+  jingle: "Audio & Music",
+  voice: "Audio & Music",
+  audio: "Audio & Music",
+  podcast: "Audio & Music",
+  music: "Audio & Music",
+
+  // ── Photography ───────────────────────────────────────────────────────────
+  photography: "Photography",
+  photographer: "Photography",
+  "photo-editing": "Photography",
+  "photo-editor": "Photography",
+  retouching: "Photography",
+  lightroom: "Photography",
+  "product-photography": "Photography",
+  headshots: "Photography",
+  portrait: "Photography",
+
+  // ── Translation & Language ────────────────────────────────────────────────
+  translation: "Translation",
+  translator: "Translation",
+  localization: "Translation",
+  transcription: "Translation",
+  transcriptionist: "Translation",
+  subtitles: "Translation",
+  captions: "Translation",
+  interpretation: "Translation",
+  multilingual: "Translation",
+
+  // ── 3D & CAD ──────────────────────────────────────────────────────────────
+  "3d-modeling": "3D & CAD",
+  maya: "3D & CAD",
+  cinema4d: "3D & CAD",
+  cad: "3D & CAD",
+  autocad: "3D & CAD",
+  solidworks: "3D & CAD",
+  "architectural-visualization": "3D & CAD",
+  "product-rendering": "3D & CAD",
+
+  // ── E-commerce ────────────────────────────────────────────────────────────
+  ecommerce: "E-commerce",
+  "e-commerce": "E-commerce",
+  woocommerce: "E-commerce",
+  amazon: "E-commerce",
+  fba: "E-commerce",
+  etsy: "E-commerce",
+  dropshipping: "E-commerce",
+  "product-listing": "E-commerce",
+  "amazon-seller": "E-commerce",
+  ebay: "E-commerce",
+};
+
+const ALL_TAGS = Object.keys(TAG_NICHES);
 
 const PERMANENT_REJECTION_PATTERNS = [
   /\bfull[- ]?time employee\b/i,
@@ -385,6 +603,65 @@ function isContractRole(title, body) {
   return true;
 }
 
+// ── Niche classification for reporting ──────────────────────────────────────
+
+function classifyNiche(post) {
+  const title = (post.title || "").toLowerCase();
+  const body = (post.selftext || "").toLowerCase();
+  const tags = (post._raw_tags || []).map((t) => t.toLowerCase());
+  const combined = title + " " + body + " " + tags.join(" ");
+
+  // Check tags first for precise niche match
+  for (const tag of tags) {
+    if (TAG_NICHES[tag]) return TAG_NICHES[tag];
+  }
+
+  // Fallback: keyword detection
+  if (/\b(design|figma|ui|ux|graphic|illustrat|logo|brand)\b/.test(combined))
+    return "Design";
+  if (/\b(video|youtube|tiktok|reels|cinemat|ugc)\b/.test(combined))
+    return "Video & Content";
+  if (
+    /\b(writ|copy|blog|ghost|proofread|editor|editing|content writ)\b/.test(
+      combined,
+    )
+  )
+    return "Writing";
+  if (
+    /\b(market|seo|social media|ads|ppc|growth|influencer|affiliate)\b/.test(
+      combined,
+    )
+  )
+    return "Marketing";
+  if (
+    /\b(develop|engineer|software|react|python|javascript|code|devops|backend|frontend|full.?stack)\b/.test(
+      combined,
+    )
+  )
+    return "Development";
+  if (/\b(quant|fintech|trading|algo|hft)\b/.test(combined)) return "Fintech";
+  if (
+    /\b(virtual assistant|data entry|bookkeep|account|admin|project manage|customer support)\b/.test(
+      combined,
+    )
+  )
+    return "Business & Admin";
+  if (/\b(sales|lead gen|cold call|outreach|crm)\b/.test(combined))
+    return "Sales";
+  if (/\b(audio|music|sound|voiceover|voice|podcast|mixing|master)\b/.test(combined))
+    return "Audio & Music";
+  if (/\b(photo|lightroom|retouch|headshot|portrait)\b/.test(combined))
+    return "Photography";
+  if (/\b(translat|locali|transcri|subtitle|caption|multilingual)\b/.test(combined))
+    return "Translation";
+  if (/\b(3d model|cad|autocad|solidworks|maya|cinema4d|render)\b/.test(combined))
+    return "3D & CAD";
+  if (/\b(ecommerce|shopify|woocommerce|amazon|etsy|dropship|ebay)\b/.test(combined))
+    return "E-commerce";
+
+  return "Other";
+}
+
 // ── Metrics tracking ─────────────────────────────────────────────────────────
 
 const metrics = {
@@ -395,6 +672,7 @@ const metrics = {
   finalCount: 0,
   goldLeads: 0,
   niches: new Set(),
+  nicheCounts: {},
   oldestHoursAgo: 0,
 };
 
@@ -425,7 +703,6 @@ async function fetchRemoteOK() {
           ? Math.floor(new Date(j.date).getTime() / 1000)
           : nowSec;
 
-      // STRICT 24-hour freshness — reject anything older
       if (nowSec - createdUtc > MAX_AGE_SEC) {
         metrics.rejectedAge++;
         continue;
@@ -441,7 +718,6 @@ async function fetchRemoteOK() {
         continue;
       }
 
-      // Track niches from tags
       for (const tag of rawTags) {
         metrics.niches.add(tag.toLowerCase());
       }
@@ -499,40 +775,52 @@ async function fetchRemoteOK() {
     console.warn(`[remoteok] /api error: ${err.message}`);
   }
 
-  // Step 2: Search all niche tags
+  // Step 2: Fetch all tags in parallel batches of 10
   let tagTotal = 0;
   let tagErrors = 0;
+  const totalBatches = Math.ceil(ALL_TAGS.length / BATCH_SIZE);
 
-  for (let i = 0; i < REMOTEOK_TAGS.length; i++) {
-    const tag = REMOTEOK_TAGS[i];
-    try {
-      await sleep(REQUEST_DELAY_MS);
-      const resp = await fetchWithRetry(
-        `${REMOTEOK_API_URL}?tag=${encodeURIComponent(tag)}`,
-        { headers: { Accept: "application/json" } },
-      );
-      if (!resp || !resp.ok) {
-        tagErrors++;
-        continue;
-      }
-      const data = await resp.json();
-      const jobs = Array.isArray(data) ? data.slice(1) : [];
-      const posts = parseJobs(jobs);
+  for (let b = 0; b < totalBatches; b++) {
+    const batch = ALL_TAGS.slice(b * BATCH_SIZE, (b + 1) * BATCH_SIZE);
+
+    const results = await Promise.all(
+      batch.map(async (tag) => {
+        try {
+          const resp = await fetchWithRetry(
+            `${REMOTEOK_API_URL}?tag=${encodeURIComponent(tag)}`,
+            { headers: { Accept: "application/json" } },
+          );
+          if (!resp || !resp.ok) {
+            tagErrors++;
+            return [];
+          }
+          const data = await resp.json();
+          const jobs = Array.isArray(data) ? data.slice(1) : [];
+          return parseJobs(jobs);
+        } catch {
+          tagErrors++;
+          return [];
+        }
+      }),
+    );
+
+    for (const posts of results) {
       allPosts.push(...posts);
       if (posts.length > 0) tagTotal += posts.length;
-    } catch {
-      tagErrors++;
     }
 
-    if ((i + 1) % 20 === 0) {
+    const done = Math.min((b + 1) * BATCH_SIZE, ALL_TAGS.length);
+    if (done % 50 === 0 || b === totalBatches - 1) {
       console.log(
-        `[remoteok] Tags: ${i + 1}/${REMOTEOK_TAGS.length} done (${allPosts.length} unique so far)`,
+        `[remoteok] Tags: ${done}/${ALL_TAGS.length} done (${allPosts.length} unique so far)`,
       );
     }
+
+    if (b < totalBatches - 1) await sleep(BATCH_DELAY_MS);
   }
 
   console.log(
-    `[remoteok] Tag searches: ${tagTotal} new from ${REMOTEOK_TAGS.length} tags (${tagErrors} errors)`,
+    `[remoteok] Tag searches: ${tagTotal} new from ${ALL_TAGS.length} tags (${tagErrors} errors)`,
   );
   console.log(`[remoteok] Total: ${allPosts.length} unique posts`);
 
@@ -544,6 +832,7 @@ async function fetchRemoteOK() {
 
 async function main() {
   console.log("[remoteok] Starting RemoteOK scan...");
+  console.log(`[remoteok] ${ALL_TAGS.length} tags across 12 niches`);
 
   const seenIds = await redisSmembers(SEEN_KEY);
   console.log(`[remoteok] ${seenIds.size} previously seen post IDs loaded`);
@@ -624,7 +913,7 @@ async function main() {
     mergedMap.set(p.id, p);
   }
 
-  // Drop posts older than 24 hours (strict)
+  // Drop posts older than 48 hours
   const nowSec = Math.floor(Date.now() / 1000);
   let final = [...mergedMap.values()].filter(
     (p) => !p.created_utc || nowSec - p.created_utc < MAX_AGE_SEC,
@@ -636,6 +925,13 @@ async function main() {
 
   metrics.finalCount = final.length;
   metrics.goldLeads = final.filter((p) => p.is_gold).length;
+
+  // Classify each post into a niche for reporting
+  for (const p of final) {
+    const niche = classifyNiche(p);
+    p._niche = niche;
+    metrics.nicheCounts[niche] = (metrics.nicheCounts[niche] || 0) + 1;
+  }
 
   // Find oldest job in results
   if (final.length > 0) {
@@ -677,6 +973,36 @@ async function main() {
   );
   console.log("════════════════════════════════════════════════════════════\n");
 
+  // Niche breakdown table
+  const allNicheNames = [
+    "Development",
+    "Design",
+    "Video & Content",
+    "Writing",
+    "Marketing",
+    "Business & Admin",
+    "Sales",
+    "Audio & Music",
+    "Photography",
+    "Translation",
+    "Fintech",
+    "3D & CAD",
+    "E-commerce",
+    "Other",
+  ];
+  console.log("  Niche Breakdown:");
+  console.log("  ─────────────────────────────────────");
+  let totalNiche = 0;
+  for (const niche of allNicheNames) {
+    const count = metrics.nicheCounts[niche] || 0;
+    totalNiche += count;
+    const pad = niche.padEnd(22);
+    console.log(`  ${pad} ${count}`);
+  }
+  console.log("  ─────────────────────────────────────");
+  console.log(`  ${"Total".padEnd(22)} ${totalNiche}`);
+  console.log("");
+
   // Show 10 sample jobs
   const samples = final.slice(0, 10);
   if (samples.length > 0) {
@@ -689,6 +1015,7 @@ async function main() {
       const tags = (s._raw_tags || []).slice(0, 5).join(", ");
       console.log(`  Title:    ${s.title}`);
       console.log(`  Company:  ${s.company || "N/A"}`);
+      console.log(`  Niche:    ${s._niche || "Unknown"}`);
       console.log(`  Posted:   ${hoursAgo}h ago`);
       console.log(`  Salary:   ${s.compensation || "N/A"}`);
       console.log(`  Tags:     ${tags || "N/A"}`);
@@ -698,7 +1025,7 @@ async function main() {
       console.log("─".repeat(80));
     }
   } else {
-    console.log("No fresh jobs found within 24 hours.");
+    console.log("No fresh jobs found within 48 hours.");
   }
 }
 
