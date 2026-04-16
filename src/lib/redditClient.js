@@ -2165,6 +2165,11 @@ export async function fetchJobBoardGigs(keywords) {
 
   const posts = jobBoardCache.data || [];
 
+  // Expand keywords the same way community gigs do — catches synonyms & related terms
+  // e.g. "backend" → also matches "api", "server", "database", "node", "express", etc.
+  const originalSet = new Set(lowerKws);
+  const expandedKws = expandKeywords(lowerKws);
+
   // Keyword match + score
   const results = [];
   const seen = new Set();
@@ -2178,17 +2183,34 @@ export async function fetchJobBoardGigs(keywords) {
     const bodyLower = (p.selftext || "").toLowerCase();
     const combined = titleLower + " " + bodyLower;
 
-    // Match keywords
-    const matched = lowerKws.filter((kw) => {
+    // Match against expanded keyword set
+    const matchedExpanded = expandedKws.filter((kw) => {
       if (kw.includes(" ")) {
         return combined.includes(kw);
       }
       const escaped = kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      const rx = new RegExp(`\\b${escaped}`, "i");
+      const needsExactBoundary =
+        kw.length <= 3 || EXACT_MATCH_REQUIRED.has(kw);
+      const rx = new RegExp(
+        `\\b${escaped}${needsExactBoundary ? "\\b" : ""}`,
+        "i",
+      );
       return rx.test(combined);
     });
 
-    if (matched.length === 0) continue;
+    if (matchedExpanded.length === 0) continue;
+
+    // Map matched expanded keywords back to the user's original keywords for display
+    const matchedOriginal = [
+      ...new Set(matchedExpanded.filter((kw) => originalSet.has(kw))),
+    ];
+    const displayMatched =
+      matchedOriginal.length > 0
+        ? matchedOriginal
+        : lowerKws.filter((kw) => {
+            const syns = KEYWORD_EXPANSIONS[kw] || [];
+            return syns.some((s) => matchedExpanded.includes(s));
+          });
 
     const score = p.score || 30;
     const category = detectCategory(combined);
@@ -2205,7 +2227,8 @@ export async function fetchJobBoardGigs(keywords) {
       reddit_created: p.created_utc
         ? new Date(p.created_utc * 1000).toISOString()
         : new Date().toISOString(),
-      matched_keywords: matched,
+      matched_keywords:
+        displayMatched.length > 0 ? displayMatched : matchedExpanded,
       score,
       category: category.label,
       category_icon: category.icon,
