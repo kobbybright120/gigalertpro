@@ -17,6 +17,9 @@ const HANDLER_DEADLINE_MS = 8000;
 
 const REDIS_KEY = "gigalertpro:x:latest";
 const THREADS_REDIS_KEY = "gigalertpro:threads:latest";
+const YOUTUBE_REDIS_KEY = "gigalertpro:youtube:latest";
+const TIKTOK_REDIS_KEY = "gigalertpro:tiktok:latest";
+const INSTAGRAM_REDIS_KEY = "gigalertpro:instagram:latest";
 
 // ── Nitter live-fallback config ──────────────────────────────────────────────
 // Keep this list SHORT — each query can take up to 5 s in the worst case.
@@ -233,12 +236,27 @@ export default async function handler(req, res) {
   try {
     // ── 1) Try Upstash Redis first (production path) ──
     // Read all platform keys in parallel
-    const [cached, threadsCached] = await Promise.all([
+    const [
+      cached,
+      threadsCached,
+      youtubeCached,
+      tiktokCached,
+      instagramCached,
+    ] = await Promise.all([
       redisGet(REDIS_KEY),
       redisGet(THREADS_REDIS_KEY),
+      redisGet(YOUTUBE_REDIS_KEY),
+      redisGet(TIKTOK_REDIS_KEY),
+      redisGet(INSTAGRAM_REDIS_KEY),
     ]);
 
-    if (cached || threadsCached) {
+    if (
+      cached ||
+      threadsCached ||
+      youtubeCached ||
+      tiktokCached ||
+      instagramCached
+    ) {
       let mainData = cached ? JSON.parse(cached) : { posts: [] };
       let threadsData = threadsCached
         ? JSON.parse(threadsCached)
@@ -276,10 +294,44 @@ export default async function handler(req, res) {
         "threads-playwright",
       );
 
+      // Normalize YouTube, TikTok, Instagram crawler posts
+      let youtubeData = youtubeCached
+        ? JSON.parse(youtubeCached)
+        : { posts: [] };
+      let tiktokData = tiktokCached ? JSON.parse(tiktokCached) : { posts: [] };
+      let instagramData = instagramCached
+        ? JSON.parse(instagramCached)
+        : { posts: [] };
+
+      const youtubePosts = normalizeCrawlerPosts(
+        youtubeData,
+        "YouTube",
+        "youtube",
+        "youtube-invidious",
+      );
+      const tiktokPosts = normalizeCrawlerPosts(
+        tiktokData,
+        "TikTok",
+        "tiktok",
+        "tiktok-proxitok",
+      );
+      const instagramPosts = normalizeCrawlerPosts(
+        instagramData,
+        "Instagram",
+        "instagram",
+        "instagram-playwright",
+      );
+
       // Merge + dedup
       const seen = new Set();
       const merged = [];
-      for (const p of [...(mainData.posts || []), ...threadsPosts]) {
+      for (const p of [
+        ...(mainData.posts || []),
+        ...threadsPosts,
+        ...youtubePosts,
+        ...tiktokPosts,
+        ...instagramPosts,
+      ]) {
         if (!seen.has(p.id)) {
           seen.add(p.id);
           merged.push(p);
@@ -298,7 +350,7 @@ export default async function handler(req, res) {
       });
 
       console.log(
-        `[x-feed] Serving from Redis: ${(mainData.posts || []).length} main + ${threadsPosts.length} threads = ${merged.length} total`,
+        `[x-feed] Serving from Redis: ${(mainData.posts || []).length} main + ${threadsPosts.length} threads + ${youtubePosts.length} youtube + ${tiktokPosts.length} tiktok + ${instagramPosts.length} instagram = ${merged.length} total`,
       );
       res.setHeader(
         "Cache-Control",

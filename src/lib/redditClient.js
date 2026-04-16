@@ -1619,7 +1619,13 @@ async function fetchCommunityPostsFromProxy() {
             ? "X"
             : p._sub === "threads"
               ? "Threads"
-              : "Community",
+              : p._sub === "instagram"
+                ? "Instagram"
+                : p._sub === "tiktok"
+                  ? "TikTok"
+                  : p._sub === "youtube"
+                    ? "YouTube"
+                    : "Community",
     }));
   } catch (err) {
     console.error("[GigAlertPro] Community API fetch failed:", err.message);
@@ -1788,6 +1794,11 @@ function matchAndScore(posts, lowerKws) {
       p._sub === "craigslist" || p._source_platform === "Craigslist";
     const isThreadsPost =
       p._sub === "threads" || p._source_platform === "Threads";
+    const isInstagramPost =
+      p._sub === "instagram" || p._source_platform === "Instagram";
+    const isTikTokPost = p._sub === "tiktok" || p._source_platform === "TikTok";
+    const isYouTubePost =
+      p._sub === "youtube" || p._source_platform === "YouTube";
 
     // Decode common HTML entities so regex filters work on clean text
     const decodeEntities = (s) =>
@@ -1835,7 +1846,12 @@ function matchAndScore(posts, lowerKws) {
     // For Reddit: scan first 600 chars of body (where the actual job description is).
     // For Craigslist/X: scan full body — CL bodies ARE the gig description, X tweets are short.
     const bodyHead =
-      isCLPost || isXPost || isThreadsPost
+      isCLPost ||
+      isXPost ||
+      isThreadsPost ||
+      isInstagramPost ||
+      isTikTokPost ||
+      isYouTubePost
         ? bodyLower
         : bodyLower.slice(0, 600);
 
@@ -1920,6 +1936,12 @@ function matchAndScore(posts, lowerKws) {
     // etc.) in the Playwright crawler, so keyword matches are higher signal.
     if (isThreadsPost) score = Math.min(100, score + 8);
 
+    // ── Instagram / TikTok / YouTube score boost ──
+    // Same reasoning — these posts come from gig-specific hashtag/search queries.
+    if (isInstagramPost) score = Math.min(100, score + 8);
+    if (isTikTokPost) score = Math.min(100, score + 8);
+    if (isYouTubePost) score = Math.min(100, score + 8);
+
     // ── Skip low-relevance posts (spammy pitches that barely match) ──
     if (score < 22) continue;
 
@@ -1935,11 +1957,28 @@ function matchAndScore(posts, lowerKws) {
       if (!hasBudget && !hasContactSignal) continue;
     }
 
-    // ── Stricter X/Threads score gate ──
+    // ── Stricter X/Threads/Instagram/TikTok/YouTube score gate ──
     // X and Threads produce much more noise than Reddit/CL.
     // Require higher score for body-only matches on these platforms.
-    if ((isXPost || isThreadsPost) && titleHits === 0 && score < 45) continue;
-    if ((isXPost || isThreadsPost) && score < 35) continue;
+    if (
+      (isXPost ||
+        isThreadsPost ||
+        isInstagramPost ||
+        isTikTokPost ||
+        isYouTubePost) &&
+      titleHits === 0 &&
+      score < 45
+    )
+      continue;
+    if (
+      (isXPost ||
+        isThreadsPost ||
+        isInstagramPost ||
+        isTikTokPost ||
+        isYouTubePost) &&
+      score < 35
+    )
+      continue;
 
     // ── Multi-role hiring post detection (5+ roles = corporate job listing) ──
     const multiRolePatterns = [

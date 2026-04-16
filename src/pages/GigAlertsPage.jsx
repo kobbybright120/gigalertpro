@@ -163,6 +163,15 @@ export default function GigAlertsPage() {
   const threadsCount = alerts.filter(
     (a) => a.source_platform === "Threads",
   ).length;
+  const instagramCount = alerts.filter(
+    (a) => a.source_platform === "Instagram",
+  ).length;
+  const tiktokCount = alerts.filter(
+    (a) => a.source_platform === "TikTok",
+  ).length;
+  const youtubeCount = alerts.filter(
+    (a) => a.source_platform === "YouTube",
+  ).length;
 
   // Collect unique categories from current alerts
   const categorySet = new Set(alerts.map((a) => a.category).filter(Boolean));
@@ -189,7 +198,8 @@ export default function GigAlertsPage() {
             Gig Alerts
           </h1>
           <p className="text-gray-500 mt-1.5 text-sm">
-            Real-time gig matching across Reddit, Craigslist, X & Threads
+            Real-time gig matching across Reddit, Craigslist, X, Threads,
+            Instagram, TikTok & YouTube
           </p>
         </div>
         <span className="inline-flex items-center gap-2 px-4 py-2 glass-card rounded-full border border-[#00F0B5]/15 shrink-0">
@@ -300,6 +310,24 @@ export default function GigAlertsPage() {
                 key: "threads",
                 label: "Threads",
                 count: threadsCount,
+                locked: isLocked,
+              },
+              {
+                key: "instagram",
+                label: "📸 Instagram",
+                count: instagramCount,
+                locked: isLocked,
+              },
+              {
+                key: "tiktok",
+                label: "🎵 TikTok",
+                count: tiktokCount,
+                locked: isLocked,
+              },
+              {
+                key: "youtube",
+                label: "▶️ YouTube",
+                count: youtubeCount,
                 locked: isLocked,
               },
             ].map(({ key, label, count, locked, gold }) => (
@@ -415,7 +443,8 @@ export default function GigAlertsPage() {
                 Scanning Sources...
               </h3>
               <p className="text-gray-500 text-sm mt-1">
-                Searching Reddit, Craigslist, X & Threads for matching gigs
+                Searching Reddit, Craigslist, X, Threads, Instagram, TikTok &
+                YouTube for matching gigs
               </p>
             </div>
             {[1, 2, 3].map((i) => (
@@ -448,7 +477,8 @@ export default function GigAlertsPage() {
             </h3>
             <p className="text-gray-500 text-sm max-w-md mx-auto">
               Type a keyword or skill above to start finding matching gigs from
-              Reddit, Craigslist, X & Threads. Be the first to apply!
+              Reddit, Craigslist, X, Threads, Instagram, TikTok & YouTube. Be
+              the first to apply!
             </p>
           </div>
         ) : filtered.length > 0 ? (

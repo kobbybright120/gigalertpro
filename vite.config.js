@@ -28,36 +28,145 @@ function upstashApiPlugin() {
       upstashToken = (env.UPSTASH_REDIS_REST_TOKEN || "").replace(/["']/g, "");
 
       server.middlewares.use(async (req, res, next) => {
-        const keyMap = {
-          "/api/x-feed": "gigalertpro:x:latest",
+        const simpleKeyMap = {
           "/api/scan-reddit": "gigalertpro:latest",
         };
 
-        const redisKey = keyMap[req.url];
-        if (!redisKey) return next();
-
-        if (!upstashUrl || !upstashToken) {
-          res.statusCode = 500;
-          res.end(JSON.stringify({ error: "Upstash env vars not set" }));
+        // Simple single-key endpoints
+        const simpleKey = simpleKeyMap[req.url];
+        if (simpleKey) {
+          if (!upstashUrl || !upstashToken) {
+            res.statusCode = 500;
+            res.end(JSON.stringify({ error: "Upstash env vars not set" }));
+            return;
+          }
+          try {
+            const raw = await readUpstashKey(simpleKey);
+            if (!raw) {
+              res.setHeader("Content-Type", "application/json");
+              res.end(
+                JSON.stringify({ posts: [], post_count: 0, feed: "empty" }),
+              );
+              return;
+            }
+            res.setHeader("Content-Type", "application/json");
+            res.end(raw);
+          } catch (err) {
+            res.statusCode = 500;
+            res.end(JSON.stringify({ error: err.message }));
+          }
           return;
         }
 
-        try {
-          const raw = await readUpstashKey(redisKey);
-          if (!raw) {
-            res.setHeader("Content-Type", "application/json");
-            res.end(
-              JSON.stringify({ posts: [], post_count: 0, feed: "empty" }),
-            );
+        // Multi-platform merge endpoint (mirrors production x-feed.js)
+        if (req.url === "/api/x-feed") {
+          if (!upstashUrl || !upstashToken) {
+            res.statusCode = 500;
+            res.end(JSON.stringify({ error: "Upstash env vars not set" }));
             return;
           }
-          const payload = JSON.parse(raw);
-          res.setHeader("Content-Type", "application/json");
-          res.end(JSON.stringify(payload));
-        } catch (err) {
-          res.statusCode = 500;
-          res.end(JSON.stringify({ error: err.message }));
+          try {
+            const [xRaw, threadsRaw, ytRaw, ttRaw, igRaw] = await Promise.all([
+              readUpstashKey("gigalertpro:x:latest"),
+              readUpstashKey("gigalertpro:threads:latest"),
+              readUpstashKey("gigalertpro:youtube:latest"),
+              readUpstashKey("gigalertpro:tiktok:latest"),
+              readUpstashKey("gigalertpro:instagram:latest"),
+            ]);
+
+            const xData = xRaw ? JSON.parse(xRaw) : { posts: [] };
+            const threadsData = threadsRaw
+              ? JSON.parse(threadsRaw)
+              : { posts: [] };
+            const ytData = ytRaw ? JSON.parse(ytRaw) : { posts: [] };
+            const ttData = ttRaw ? JSON.parse(ttRaw) : { posts: [] };
+            const igData = igRaw ? JSON.parse(igRaw) : { posts: [] };
+
+            // Normalize crawler posts (Threads/Instagram format)
+            function normalizeCrawlerPosts(
+              data,
+              platform,
+              subKey,
+              sourceDefault,
+            ) {
+              return (data.posts || []).map((p) => ({
+                id: p.id || `${subKey}_${Date.now()}`,
+                name: p.id || `${subKey}_${Date.now()}`,
+                title: p.title || "",
+                selftext: p.body_preview || p.selftext || p.title || "",
+                author: (p.author || "unknown").replace(/^@/, ""),
+                author_name: p.author || platform,
+                permalink: p.url || p.permalink || "",
+                subreddit: null,
+                created_utc: p.posted_at
+                  ? Math.floor(new Date(p.posted_at).getTime() / 1000)
+                  : p.created_utc || Math.floor(Date.now() / 1000),
+                num_comments: 0,
+                ups: 0,
+                link_flair_text: platform,
+                _sub: p._sub || subKey,
+                source: p.source || sourceDefault,
+              }));
+            }
+
+            const threadsPosts = normalizeCrawlerPosts(
+              threadsData,
+              "Threads",
+              "threads",
+              "threads-playwright",
+            );
+            const ytPosts = normalizeCrawlerPosts(
+              ytData,
+              "YouTube",
+              "youtube",
+              "youtube-invidious",
+            );
+            const ttPosts = normalizeCrawlerPosts(
+              ttData,
+              "TikTok",
+              "tiktok",
+              "tiktok-proxitok",
+            );
+            const igPosts = normalizeCrawlerPosts(
+              igData,
+              "Instagram",
+              "instagram",
+              "instagram-playwright",
+            );
+
+            const seen = new Set();
+            const merged = [];
+            for (const p of [
+              ...(xData.posts || []),
+              ...threadsPosts,
+              ...ytPosts,
+              ...ttPosts,
+              ...igPosts,
+            ]) {
+              if (!seen.has(p.id)) {
+                seen.add(p.id);
+                merged.push(p);
+              }
+            }
+            merged.sort((a, b) => (b.created_utc || 0) - (a.created_utc || 0));
+
+            res.setHeader("Content-Type", "application/json");
+            res.end(
+              JSON.stringify({
+                posts: merged,
+                cached_at: xData.cached_at || new Date().toISOString(),
+                post_count: merged.length,
+                feed: "multi-platform",
+              }),
+            );
+          } catch (err) {
+            res.statusCode = 500;
+            res.end(JSON.stringify({ error: err.message }));
+          }
+          return;
         }
+
+        next();
       });
     },
   };
