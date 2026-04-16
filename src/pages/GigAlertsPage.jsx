@@ -12,8 +12,6 @@ import {
   Lock,
   Lightbulb,
   Crown,
-  Globe,
-  Briefcase,
 } from "lucide-react";
 import GigCard from "../components/GigCard";
 import ProposalModal from "../components/ProposalModal";
@@ -22,7 +20,6 @@ import { useLockedDashboard } from "../context/LockedDashboardContext";
 import {
   useKeywords,
   useGigAlerts,
-  useJobBoardAlerts,
   useProposals,
   useSavedGigs,
   useProfile,
@@ -49,7 +46,6 @@ function formatUpdated(ts, now) {
 export default function GigAlertsPage() {
   const navigate = useNavigate();
   const [input, setInput] = useState("");
-  const [sourceType, setSourceType] = useState("community"); // "community" | "jobboards"
   const [activeFilter, setActiveFilter] = useState("all");
   const [activeCategory, setActiveCategory] = useState("all");
   const [sortNewest, setSortNewest] = useState(false);
@@ -68,12 +64,6 @@ export default function GigAlertsPage() {
     lastUpdated,
     refetch,
   } = useGigAlerts(keywords, { isPaid: !isLocked });
-  const {
-    alerts: jobBoardAlerts,
-    loading: jbLoading,
-    lastUpdated: jbLastUpdated,
-    refetch: jbRefetch,
-  } = useJobBoardAlerts(keywords);
   const { saveProposal } = useProposals();
   const { savedIds, toggleSave } = useSavedGigs();
   const { reset: resetGigCount } = useNewGigCount();
@@ -89,11 +79,7 @@ export default function GigAlertsPage() {
 
   async function handleManualRefresh() {
     setIsRefreshing(true);
-    if (sourceType === "community") {
-      await refetch();
-    } else {
-      await jbRefetch();
-    }
+    await refetch();
     setNow(Date.now());
     setIsRefreshing(false);
   }
@@ -134,21 +120,8 @@ export default function GigAlertsPage() {
     navigate("/proposals");
   }
 
-  // Choose active dataset based on source type
-  const activeAlerts = sourceType === "community" ? alerts : jobBoardAlerts;
-  const isLoading = sourceType === "community" ? alertsLoading : jbLoading;
-  const activeLastUpdated =
-    sourceType === "community" ? lastUpdated : jbLastUpdated;
-
-  // Reset filter when switching source type
-  function switchSourceType(type) {
-    setSourceType(type);
-    setActiveFilter("all");
-    setActiveCategory("all");
-  }
-
   // Filter alerts by source + category + gold, then sort
-  let filtered = activeAlerts;
+  let filtered = alerts;
   if (activeFilter === "gold")
     filtered = filtered.filter((a) => a.is_gold === true);
   else if (activeFilter !== "all")
@@ -179,34 +152,20 @@ export default function GigAlertsPage() {
   });
 
   // Count by source + gold
-  const goldCount = activeAlerts.filter((a) => a.is_gold === true).length;
-  const redditCount = activeAlerts.filter(
+  const goldCount = alerts.filter((a) => a.is_gold === true).length;
+  const redditCount = alerts.filter(
     (a) => a.source_platform === "Reddit",
   ).length;
-  const craigslistCount = activeAlerts.filter(
+  const craigslistCount = alerts.filter(
     (a) => a.source_platform === "Craigslist",
   ).length;
-  const xCount = activeAlerts.filter((a) => a.source_platform === "X").length;
-  const threadsCount = activeAlerts.filter(
+  const xCount = alerts.filter((a) => a.source_platform === "X").length;
+  const threadsCount = alerts.filter(
     (a) => a.source_platform === "Threads",
-  ).length;
-  const remoteOKCount = activeAlerts.filter(
-    (a) => a.source_platform === "RemoteOK",
-  ).length;
-  const wellfoundCount = activeAlerts.filter(
-    (a) => a.source_platform === "Wellfound",
-  ).length;
-  const workingNomadsCount = activeAlerts.filter(
-    (a) => a.source_platform === "WorkingNomads",
-  ).length;
-  const openQuantCount = activeAlerts.filter(
-    (a) => a.source_platform === "OpenQuant",
   ).length;
 
   // Collect unique categories from current alerts
-  const categorySet = new Set(
-    activeAlerts.map((a) => a.category).filter(Boolean),
-  );
+  const categorySet = new Set(alerts.map((a) => a.category).filter(Boolean));
   const categories = [...categorySet].sort();
 
   return (
@@ -306,117 +265,50 @@ export default function GigAlertsPage() {
         )}
       </div>
 
-      {/* Source type toggle + Filter tabs + sort */}
+      {/* Filter tabs + sort */}
       <div className="space-y-3">
-        {/* Tier 1: Community / Job Boards toggle */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => switchSourceType("community")}
-            className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
-              sourceType === "community"
-                ? "bg-[#00F0B5]/[0.1] text-[#00F0B5] border border-[#00F0B5]/20"
-                : "text-gray-500 hover:text-gray-300 hover:bg-white/[0.03] border border-white/[0.06]"
-            }`}
-          >
-            <Globe className="w-4 h-4" />
-            Community
-          </button>
-          <button
-            onClick={() => switchSourceType("jobboards")}
-            className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
-              sourceType === "jobboards"
-                ? "bg-[#00F0B5]/[0.1] text-[#00F0B5] border border-[#00F0B5]/20"
-                : "text-gray-500 hover:text-gray-300 hover:bg-white/[0.03] border border-white/[0.06]"
-            }`}
-          >
-            <Briefcase className="w-4 h-4" />
-            Job Boards
-          </button>
-        </div>
-
-        {/* Tier 2: Platform filter tabs */}
+        {/* Platform filter tabs */}
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide pb-1">
-            {(sourceType === "community"
-              ? [
-                  {
-                    key: "all",
-                    label: "All",
-                    count: activeAlerts.length,
-                    locked: false,
-                  },
-                  {
-                    key: "gold",
-                    label: "⭐ Gold Leads",
-                    count: goldCount,
-                    locked: false,
-                    gold: true,
-                  },
-                  {
-                    key: "reddit",
-                    label: "Reddit",
-                    count: redditCount,
-                    locked: false,
-                  },
-                  {
-                    key: "craigslist",
-                    label: "Craigslist",
-                    count: craigslistCount,
-                    locked: false,
-                  },
-                  {
-                    key: "x",
-                    label: "𝕏 / Twitter",
-                    count: xCount,
-                    locked: isLocked,
-                  },
-                  {
-                    key: "threads",
-                    label: "Threads",
-                    count: threadsCount,
-                    locked: isLocked,
-                  },
-                ]
-              : [
-                  {
-                    key: "all",
-                    label: "All",
-                    count: activeAlerts.length,
-                    locked: false,
-                  },
-                  {
-                    key: "gold",
-                    label: "⭐ Gold Leads",
-                    count: goldCount,
-                    locked: false,
-                    gold: true,
-                  },
-                  {
-                    key: "remoteok",
-                    label: "RemoteOK",
-                    count: remoteOKCount,
-                    locked: false,
-                  },
-                  {
-                    key: "wellfound",
-                    label: "Wellfound",
-                    count: wellfoundCount,
-                    locked: false,
-                  },
-                  {
-                    key: "workingnomads",
-                    label: "WorkingNomads",
-                    count: workingNomadsCount,
-                    locked: false,
-                  },
-                  {
-                    key: "openquant",
-                    label: "OpenQuant",
-                    count: openQuantCount,
-                    locked: false,
-                  },
-                ]
-            ).map(({ key, label, count, locked, gold }) => (
+            {[
+              {
+                key: "all",
+                label: "All",
+                count: alerts.length,
+                locked: false,
+              },
+              {
+                key: "gold",
+                label: "⭐ Gold Leads",
+                count: goldCount,
+                locked: false,
+                gold: true,
+              },
+              {
+                key: "reddit",
+                label: "Reddit",
+                count: redditCount,
+                locked: false,
+              },
+              {
+                key: "craigslist",
+                label: "Craigslist",
+                count: craigslistCount,
+                locked: false,
+              },
+              {
+                key: "x",
+                label: "𝕏 / Twitter",
+                count: xCount,
+                locked: isLocked,
+              },
+              {
+                key: "threads",
+                label: "Threads",
+                count: threadsCount,
+                locked: isLocked,
+              },
+            ].map(({ key, label, count, locked, gold }) => (
               <button
                 key={key}
                 onClick={() => {
@@ -489,11 +381,11 @@ export default function GigAlertsPage() {
         )}
 
         {/* Last updated + refresh */}
-        {!isLoading && (
+        {!alertsLoading && (
           <div className="flex items-center gap-3">
-            {activeLastUpdated && (
+            {lastUpdated && (
               <span className="text-xs text-gray-600">
-                Updated {formatUpdated(activeLastUpdated, now)}
+                Updated {formatUpdated(lastUpdated, now)}
               </span>
             )}
             <button
@@ -513,7 +405,7 @@ export default function GigAlertsPage() {
 
       {/* Results */}
       <div className="grid gap-4">
-        {isLoading ? (
+        {alertsLoading ? (
           <div className="space-y-4">
             <div className="glass-card glow-green rounded-2xl p-8 text-center">
               <div className="relative w-14 h-14 mx-auto mb-4">

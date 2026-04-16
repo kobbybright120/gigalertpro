@@ -67,30 +67,6 @@ function upstashApiPlugin() {
             return;
           }
 
-          // Job boards sub-feed
-          if (parsedUrl.searchParams.get("feed") === "jobboards") {
-            try {
-              const raw = await readUpstashKey("gigalertpro:jobboards:latest");
-              res.setHeader("Content-Type", "application/json");
-              if (!raw) {
-                res.end(
-                  JSON.stringify({
-                    posts: [],
-                    post_count: 0,
-                    feed: "jobboards",
-                    sources: {},
-                  }),
-                );
-              } else {
-                res.end(raw);
-              }
-            } catch (err) {
-              res.statusCode = 500;
-              res.end(JSON.stringify({ error: err.message }));
-            }
-            return;
-          }
-
           try {
             const [xRaw, threadsRaw] = await Promise.all([
               readUpstashKey("gigalertpro:x:latest"),

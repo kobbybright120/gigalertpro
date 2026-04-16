@@ -17,7 +17,6 @@ const HANDLER_DEADLINE_MS = 8000;
 
 const REDIS_KEY = "gigalertpro:x:latest";
 const THREADS_REDIS_KEY = "gigalertpro:threads:latest";
-const JOBBOARDS_REDIS_KEY = "gigalertpro:jobboards:latest";
 
 // ── Nitter live-fallback config ──────────────────────────────────────────────
 // Keep this list SHORT — each query can take up to 5 s in the worst case.
@@ -321,49 +320,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    // ── Job Boards feed (query param: ?feed=jobboards) ──
-    const url = new URL(req.url, `http://${req.headers.host}`);
-    if (url.searchParams.get("feed") === "jobboards") {
-      const jbCached = await redisGet(JOBBOARDS_REDIS_KEY);
-      if (jbCached) {
-        const data = JSON.parse(jbCached);
-        const posts = data.posts || [];
-        const MAX_AGE_SECONDS = 30 * 86400;
-        const nowSec = Math.floor(Date.now() / 1000);
-        const fresh = posts
-          .filter(
-            (p) => !p.created_utc || nowSec - p.created_utc < MAX_AGE_SECONDS,
-          )
-          .sort((a, b) => (b.created_utc || 0) - (a.created_utc || 0));
-
-        console.log(
-          `[x-feed] Serving ${fresh.length} job board posts from Redis`,
-        );
-        res.setHeader(
-          "Cache-Control",
-          "public, s-maxage=60, stale-while-revalidate=60",
-        );
-        res.setHeader("Content-Type", "application/json");
-        return res.status(200).json({
-          posts: fresh,
-          cached_at: data.cached_at || new Date().toISOString(),
-          post_count: fresh.length,
-          feed: "jobboards",
-          sources: data.sources || {},
-        });
-      }
-      // No job board data yet
-      res.setHeader("Cache-Control", "public, s-maxage=30");
-      res.setHeader("Content-Type", "application/json");
-      return res.status(200).json({
-        posts: [],
-        cached_at: new Date().toISOString(),
-        post_count: 0,
-        feed: "jobboards",
-        sources: {},
-      });
-    }
-
     // ── 1) Try Upstash Redis first (production path) ──
     // Read all platform keys in parallel
     const [cached, threadsCached] = await Promise.all([
