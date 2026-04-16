@@ -80,8 +80,13 @@ export function useKeywords(plan) {
       .order("created_at", { ascending: true });
     if (error) {
       console.warn("[useKeywords] fetch error:", error.code, error.message);
-      // On 409 / PGRST conflict — session may be stale; retry once
-      if (error.code === "PGRST109" || error.message?.includes("409")) {
+      // On 409 conflict — refresh session and retry once
+      if (
+        error.status === 409 ||
+        error.code === "PGRST109" ||
+        error.message?.includes("409")
+      ) {
+        await supabase.auth.refreshSession();
         const { data: retryData } = await supabase
           .from("keywords")
           .select("id, keyword")

@@ -129,14 +129,17 @@ export default function OnboardingFlow({ onComplete }) {
   async function handleFinishOnboarding() {
     // Save skills as keywords
     if (!DISABLE_AUTH && user) {
-      // Insert keywords one by one, ignoring duplicates (409 = conflict = already exists)
+      // Insert keywords, ignoring duplicates via upsert
       for (const skill of skills) {
         try {
           await supabase
             .from("keywords")
-            .insert({ user_id: user.id, keyword: skill.toLowerCase() });
+            .upsert(
+              { user_id: user.id, keyword: skill.toLowerCase() },
+              { onConflict: "user_id,keyword", ignoreDuplicates: true },
+            );
         } catch {
-          // ignore — keyword likely already exists
+          // ignore
         }
       }
       // Mark onboarding complete via dedicated RPC (SECURITY DEFINER, bypasses RLS)

@@ -148,14 +148,21 @@ function upstashApiPlugin() {
                 merged.push(p);
               }
             }
-            merged.sort((a, b) => (b.created_utc || 0) - (a.created_utc || 0));
+
+            // Drop posts older than 30 days
+            const MAX_AGE_SEC = 30 * 86400;
+            const nowSec = Math.floor(Date.now() / 1000);
+            const fresh = merged.filter(
+              (p) => !p.created_utc || nowSec - p.created_utc < MAX_AGE_SEC,
+            );
+            fresh.sort((a, b) => (b.created_utc || 0) - (a.created_utc || 0));
 
             res.setHeader("Content-Type", "application/json");
             res.end(
               JSON.stringify({
-                posts: merged,
+                posts: fresh,
                 cached_at: xData.cached_at || new Date().toISOString(),
-                post_count: merged.length,
+                post_count: fresh.length,
                 feed: "multi-platform",
               }),
             );

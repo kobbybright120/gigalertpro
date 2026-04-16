@@ -307,13 +307,13 @@ export default async function handler(req, res) {
         youtubeData,
         "YouTube",
         "youtube",
-        "youtube-invidious",
+        "youtube-search",
       );
       const tiktokPosts = normalizeCrawlerPosts(
         tiktokData,
         "TikTok",
         "tiktok",
-        "tiktok-proxitok",
+        "tiktok-ddg",
       );
       const instagramPosts = normalizeCrawlerPosts(
         instagramData,
@@ -337,20 +337,28 @@ export default async function handler(req, res) {
           merged.push(p);
         }
       }
-      merged.sort((a, b) => (b.created_utc || 0) - (a.created_utc || 0));
+
+      // Drop posts older than 30 days (stale gigs are useless to freelancers)
+      const MAX_AGE_SECONDS = 30 * 86400;
+      const nowSec = Math.floor(Date.now() / 1000);
+      const fresh = merged.filter(
+        (p) => !p.created_utc || nowSec - p.created_utc < MAX_AGE_SECONDS,
+      );
+
+      fresh.sort((a, b) => (b.created_utc || 0) - (a.created_utc || 0));
 
       const result = JSON.stringify({
-        posts: merged,
+        posts: fresh,
         cached_at:
           mainData.cached_at ||
           threadsData.cached_at ||
           new Date().toISOString(),
-        post_count: merged.length,
+        post_count: fresh.length,
         feed: cached ? mainData.feed || "x-cached" : "multi-platform",
       });
 
       console.log(
-        `[x-feed] Serving from Redis: ${(mainData.posts || []).length} main + ${threadsPosts.length} threads + ${youtubePosts.length} youtube + ${tiktokPosts.length} tiktok + ${instagramPosts.length} instagram = ${merged.length} total`,
+        `[x-feed] Serving from Redis: ${(mainData.posts || []).length} main + ${threadsPosts.length} threads + ${youtubePosts.length} youtube + ${tiktokPosts.length} tiktok + ${instagramPosts.length} instagram = ${merged.length} total (${fresh.length} after age filter)`,
       );
       res.setHeader(
         "Cache-Control",

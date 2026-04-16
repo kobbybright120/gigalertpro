@@ -1,16 +1,16 @@
 import { chromium } from "playwright";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// GigAlertPro — Instagram Gig Crawler (DuckDuckGo Search)
+// GigAlertPro — TikTok Gig Crawler (DuckDuckGo Search)
 //
-// Finds Instagram gig/hiring posts via DuckDuckGo search (site:instagram.com).
-// Bypasses Instagram's login wall since DDG caches post text in snippets.
+// Finds TikTok gig/hiring posts via DuckDuckGo search (site:tiktok.com).
+// Bypasses TikTok's login wall since DDG caches post text in snippets.
 //
 // Stores results in Upstash Redis for the x-feed API to merge & serve.
 // Runs via GitHub Actions cron (every 2 hours).
 // ─────────────────────────────────────────────────────────────────────────────
 
-const REDIS_KEY = "gigalertpro:instagram:latest";
+const REDIS_KEY = "gigalertpro:tiktok:latest";
 const REDIS_TTL = 9000; // 2.5 hours
 
 // ── Gig-post filter ──────────────────────────────────────────────────────────
@@ -90,8 +90,10 @@ function encodeId(str) {
   }
 }
 
-// ── Date extraction from snippets ────────────────────────────────────────────
+// ── Date extraction from snippets ───────────────────────────────────────────
 // Instagram snippets: "36 comments - username on March 9, 2026: ..."
+// TikTok snippets: "TikTok video from User (@user): ..."
+// Also handles: "January 5, 2026", "Mar 9, 2026", "2026-04-10"
 function parseSnippetDate(snippet) {
   if (!snippet) return null;
   // Pattern: "on Month Day, Year"
@@ -111,34 +113,32 @@ function parseSnippetDate(snippet) {
   return null;
 }
 
+// Maximum age for posts — anything older is stale
+const MAX_AGE_DAYS = parseInt(process.env.TT_MAX_AGE_DAYS || "30", 10);
+const MAX_AGE_MS = MAX_AGE_DAYS * 86400 * 1000;
+
 // ── DDG search queries ──────────────────────────────────────────────────────
 const SEARCH_QUERIES = [
-  'site:instagram.com "hiring" "developer"',
-  'site:instagram.com "hiring" "designer"',
-  'site:instagram.com "hiring" "writer"',
-  'site:instagram.com "hiring" "video editor"',
-  'site:instagram.com "hiring" "freelancer"',
-  'site:instagram.com "hiring" "virtual assistant"',
-  'site:instagram.com "hiring" "social media manager"',
-  'site:instagram.com "hiring" "graphic designer"',
-  'site:instagram.com "hiring" "web developer"',
-  'site:instagram.com "hiring" "animator"',
-  'site:instagram.com "hiring" "illustrator"',
-  'site:instagram.com "hiring" "copywriter"',
-  'site:instagram.com "hiring" "marketer"',
-  'site:instagram.com "hiring" "photographer"',
-  'site:instagram.com "hiring" "motion graphics"',
-  'site:instagram.com "looking for" "freelancer"',
-  'site:instagram.com "looking for" "developer"',
-  'site:instagram.com "looking for" "designer"',
-  'site:instagram.com "we are hiring"',
-  'site:instagram.com "now hiring" freelance',
-  'site:instagram.com "need a" developer',
-  'site:instagram.com "need a" designer',
-  'site:instagram.com "need a" writer',
-  'site:instagram.com "UGC creator" hiring',
-  'site:instagram.com "Shopify developer"',
-  'site:instagram.com "WordPress developer" hiring',
+  'site:tiktok.com "hiring" "developer"',
+  'site:tiktok.com "hiring" "designer"',
+  'site:tiktok.com "hiring" "writer"',
+  'site:tiktok.com "hiring" "video editor"',
+  'site:tiktok.com "hiring" "freelancer"',
+  'site:tiktok.com "hiring" "virtual assistant"',
+  'site:tiktok.com "hiring" "social media"',
+  'site:tiktok.com "hiring" "graphic designer"',
+  'site:tiktok.com "hiring" "web developer"',
+  'site:tiktok.com "hiring" "animator"',
+  'site:tiktok.com "hiring" "illustrator"',
+  'site:tiktok.com "hiring" "copywriter"',
+  'site:tiktok.com "hiring" "marketer"',
+  'site:tiktok.com "looking for" "freelancer"',
+  'site:tiktok.com "looking for" "developer"',
+  'site:tiktok.com "looking for" "designer"',
+  'site:tiktok.com "we are hiring"',
+  'site:tiktok.com "now hiring" freelance',
+  'site:tiktok.com "need a" developer',
+  'site:tiktok.com "need a" designer',
 ];
 
 // ── Playwright DDG crawler ──────────────────────────────────────────────────
@@ -187,15 +187,15 @@ async function crawlDDG() {
             if (uddg) realUrl = decodeURIComponent(uddg);
           } catch {}
 
-          // Only keep actual Instagram post/reel links
-          if (!realUrl.includes("instagram.com")) continue;
+          // Only keep actual TikTok video/post links
+          if (!realUrl.includes("tiktok.com")) continue;
 
           out.push({ title, url: realUrl, snippet });
         }
         return out;
       });
 
-      console.log(`  → ${results.length} Instagram results`);
+      console.log(`  → ${results.length} TikTok results`);
       collected.push(...results);
 
       // Polite delay
@@ -214,7 +214,7 @@ async function crawlDDG() {
 async function main() {
   try {
     console.log(
-      `Running ${SEARCH_QUERIES.length} DDG searches for Instagram gigs...`,
+      `Running ${SEARCH_QUERIES.length} DDG searches for TikTok gigs...`,
     );
     const posts = await crawlDDG();
     console.log(`Total raw results: ${posts.length}`);
@@ -229,43 +229,26 @@ async function main() {
     // Deduplicate by URL
     const map = new Map();
     for (const p of gigs) {
-      // Normalize URL (remove query params)
+      // Normalize TikTok URL (remove query params)
       let cleanUrl = p.url;
       try {
         cleanUrl = new URL(p.url).origin + new URL(p.url).pathname;
       } catch {}
 
-      const id = "ig_" + encodeId(cleanUrl);
+      const id = "tt_" + encodeId(cleanUrl);
       if (!map.has(id)) {
-        // Try to extract author from snippet (e.g. "14 likes, 36 comments - username on ...")
-        let author = null;
-        const authorMatch = (p.snippet || "").match(
-          /comments?\s*-\s*(\S+)\s+on/i,
-        );
-        if (authorMatch) author = authorMatch[1];
-        if (!author) {
-          // Try URL pattern /username/ for profile pages
-          const urlMatch = cleanUrl.match(
-            /instagram\.com\/([a-zA-Z0-9_.]+)\/?$/,
-          );
-          if (
-            urlMatch &&
-            !["p", "reel", "explore", "popular"].includes(urlMatch[1])
-          ) {
-            author = urlMatch[1];
-          }
-        }
-
-        // Extract date from snippet or fall back to crawl time
+        // Extract author from URL pattern /@username/
+        const authorMatch = cleanUrl.match(/\/@([^/]+)/);
+        // Extract date from snippet or use crawl time
         const snippetDate = parseSnippetDate(p.snippet);
         const posted_at = snippetDate || new Date().toISOString();
         map.set(id, {
           id,
-          _sub: "instagram",
-          source: "instagram-ddg",
+          _sub: "tiktok",
+          source: "tiktok-ddg",
           title: p.title.slice(0, 120),
           body_preview: (p.snippet || p.title).slice(0, 400),
-          author,
+          author: authorMatch ? authorMatch[1] : null,
           posted_at,
           url: cleanUrl,
         });
@@ -273,7 +256,6 @@ async function main() {
     }
 
     // Filter out posts with extracted dates older than 30 days
-    const MAX_AGE_MS = 30 * 86400 * 1000;
     const now = Date.now();
     const deduped = Array.from(map.values());
     const results = deduped.filter((p) => {
@@ -289,14 +271,14 @@ async function main() {
       return true;
     });
     console.log(
-      `Age filter: ${results.length}/${deduped.length} kept (max ${MAX_AGE_MS / 86400000}d)`,
+      `Age filter: ${results.length}/${deduped.length} kept (max ${MAX_AGE_DAYS}d)`,
     );
 
     const payload = JSON.stringify({
       posts: results,
       post_count: results.length,
       cached_at: new Date().toISOString(),
-      feed: "instagram-playwright",
+      feed: "tiktok-playwright",
     });
 
     console.log(
@@ -305,7 +287,7 @@ async function main() {
 
     await redisSet(REDIS_KEY, payload, REDIS_TTL);
     console.log(
-      `Wrote ${results.length} Instagram posts to Upstash (key: ${REDIS_KEY})`,
+      `Wrote ${results.length} TikTok posts to Upstash (key: ${REDIS_KEY})`,
     );
   } catch (err) {
     console.error(err);
