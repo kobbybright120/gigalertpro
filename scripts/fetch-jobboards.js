@@ -251,12 +251,6 @@ const PERMANENT_REJECTION_PATTERNS = [
   /\bdental\b.*\bvision\b/i,
 ];
 
-// Positive signals — at least one must match (or title itself implies contract)
-const CONTRACT_SIGNALS = [
-  /\b(contract|freelance|part[- ]?time|consulting|consultant|contractor|temporary|temp|gig|per[- ]?diem)\b/i,
-  /\b(project[- ]?based|fixed[- ]?term|hourly|retainer|remote[- ]?contract)\b/i,
-];
-
 function isContractRole(title, body) {
   const combined = (title + " " + body).toLowerCase();
 
@@ -265,13 +259,9 @@ function isContractRole(title, body) {
     if (rx.test(combined)) return false;
   }
 
-  // Accept if any contract/freelance signal is present
-  for (const rx of CONTRACT_SIGNALS) {
-    if (rx.test(combined)) return true;
-  }
-
-  // Default: reject (most RemoteOK listings are full-time permanent roles)
-  return false;
+  // Default: accept — RemoteOK posts are remote jobs, relevant to freelancers.
+  // Only reject those with explicit permanent-employment markers above.
+  return true;
 }
 
 async function fetchRemoteOK() {
@@ -362,11 +352,92 @@ async function fetchRemoteOK() {
 // ── Source 2: Wellfound (AngelList) ──────────────────────────────────────────
 // Wellfound is a React SPA behind Cloudflare — requires Playwright.
 // A separate script (scripts/crawl-wellfound.js) writes to gigalertpro:wellfound:latest.
-// This function just reads that Redis key to merge into the combined feed.
+// This function tries __NEXT_DATA__ parsing first (no Playwright needed),
+// then falls back to the Redis cache written by the Playwright crawler.
 
 const WELLFOUND_REDIS_KEY = "gigalertpro:wellfound:latest";
 
+function parseWellfoundNextData(html) {
+  const m = html.match(
+    /<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/,
+  );
+  if (!m) return [];
+  const data = JSON.parse(m[1]);
+  const apollo = data?.props?.pageProps?.apolloState?.data;
+  if (!apollo) return [];
+
+  // Build Startup lookup
+  const startups = {};
+  for (const [key, val] of Object.entries(apollo)) {
+    if (key.startsWith("Startup:") && val.name) startups[key] = val.name;
+  }
+
+  const posts = [];
+  for (const [key, val] of Object.entries(apollo)) {
+    if (!key.startsWith("JobListing:")) continue;
+    const jid = val.id;
+    if (!jid) continue;
+    const slug = val.slug || "";
+    const company =
+      val.startup?.__ref ? startups[val.startup.__ref] || "" : "";
+    const location =
+      (val.locationNames || []).join(", ") || (val.remote ? "Remote" : "");
+    const id = `wellfound_${jid}_${slug}`;
+
+    posts.push({
+      id,
+      name: id,
+      title: val.title || "",
+      selftext: `${val.title || ""} at ${company}. ${val.compensation || ""} ${location}`.trim().slice(0, 2000),
+      author: company || "Wellfound",
+      author_name: company || "Wellfound",
+      permalink: `https://wellfound.com/jobs/${jid}-${slug}`,
+      subreddit: null,
+      created_utc: val.liveStartAt || Math.floor(Date.now() / 1000),
+      num_comments: 0,
+      ups: 0,
+      link_flair_text: "Wellfound",
+      compensation: val.compensation || null,
+      company: company || null,
+      employment_type: "contract",
+      location: location || "Remote",
+      _sub: "wellfound",
+      source: "wellfound",
+      source_platform: "Wellfound",
+    });
+  }
+  return posts;
+}
+
 async function fetchWellfound() {
+  // Strategy 1: Direct HTTP fetch + __NEXT_DATA__ parsing (fast, no Playwright)
+  try {
+    const resp = await fetchWithRetry(
+      "https://wellfound.com/jobs?remote=true&jobType=contract",
+    );
+    if (resp && resp.ok) {
+      const html = await resp.text();
+      const posts = parseWellfoundNextData(html);
+      if (posts.length > 0) {
+        console.log(
+          `[jobboards] Wellfound: ${posts.length} posts from __NEXT_DATA__`,
+        );
+        // Also update Redis so the data is available for other consumers
+        const payload = JSON.stringify({
+          posts,
+          cached_at: new Date().toISOString(),
+          post_count: posts.length,
+          feed: "wellfound",
+        });
+        await redisSet(WELLFOUND_REDIS_KEY, payload, 10800);
+        return posts;
+      }
+    }
+  } catch (err) {
+    console.warn("[jobboards] Wellfound HTTP fetch error:", err.message);
+  }
+
+  // Strategy 2: Fall back to Redis (populated by Playwright crawler)
   try {
     const raw = await redisGet(WELLFOUND_REDIS_KEY);
     if (!raw) {

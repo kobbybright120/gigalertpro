@@ -279,7 +279,8 @@ export function useGigAlerts(keywordList, { isPaid = true } = {}) {
       // Fetch live from Reddit via Vercel proxy (same as demo mode)
       const liveResults = await fetchRedditGigs(kws);
 
-      // Persist each result to Supabase in the background (fire-and-forget)
+      // Persist each result to Supabase via server-side endpoint (fire-and-forget).
+      // Uses service role key on the server — bypasses RLS JWT issues.
       if (liveResults.length > 0) {
         const rows = liveResults.map((r) => ({
           reddit_post_id: String(r.reddit_post_id || r.id || ""),
@@ -310,36 +311,13 @@ export function useGigAlerts(keywordList, { isPaid = true } = {}) {
                   : "reddit",
         }));
 
-        // Upsert in small batches so one bad row doesn't kill the whole insert
-        const BATCH = 10;
-        for (let i = 0; i < rows.length; i += BATCH) {
-          const batch = rows.slice(i, i + BATCH);
-          supabase
-            .from("gig_alerts")
-            .upsert(batch, { onConflict: "reddit_post_id" })
-            .then(({ error }) => {
-              if (error) {
-                console.warn(
-                  "[GigAlertPro] gig_alerts upsert batch error:",
-                  error.message,
-                );
-                // Fallback: try each row individually to isolate the bad one
-                for (const row of batch) {
-                  supabase
-                    .from("gig_alerts")
-                    .upsert([row], { onConflict: "reddit_post_id" })
-                    .then(({ error: e2 }) => {
-                      if (e2)
-                        console.warn(
-                          "[GigAlertPro] bad row:",
-                          row.reddit_post_id,
-                          e2.message,
-                        );
-                    });
-                }
-              }
-            });
-        }
+        fetch("/api/x-feed", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(rows),
+        }).catch((e) =>
+          console.warn("[GigAlertPro] server upsert failed:", e.message),
+        );
       }
 
       if (pollingRef.current) {

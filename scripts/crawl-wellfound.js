@@ -113,54 +113,79 @@ async function crawl() {
     await page.evaluate(() => window.scrollTo(0, 0));
     await sleep(1000);
 
-    // Extract job listings — try multiple selector strategies
+    // Extract job listings — try __NEXT_DATA__ first (most reliable), then DOM selectors
     const jobs = await page.evaluate(() => {
       const results = [];
-
-      // Strategy 1: Look for job card links with role URLs
-      const roleLinks = document.querySelectorAll('a[href*="/role/"]');
       const seen = new Set();
 
-      for (const link of roleLinks) {
-        const href = link.getAttribute("href");
-        if (!href || seen.has(href)) continue;
+      // Strategy 1: Parse __NEXT_DATA__ Apollo state (structured data)
+      try {
+        const scriptEl = document.getElementById('__NEXT_DATA__');
+        if (scriptEl) {
+          const data = JSON.parse(scriptEl.textContent);
+          const apollo = data?.props?.pageProps?.apolloState?.data;
+          if (apollo) {
+            // Build a lookup for Startup refs
+            const startups = {};
+            for (const [key, val] of Object.entries(apollo)) {
+              if (key.startsWith('Startup:') && val.name) {
+                startups[key] = val.name;
+              }
+            }
+
+            for (const [key, val] of Object.entries(apollo)) {
+              if (!key.startsWith('JobListing:')) continue;
+              const id = val.id;
+              if (!id || seen.has(id)) continue;
+              seen.add(id);
+
+              const slug = val.slug || '';
+              const url = `https://wellfound.com/jobs/${id}-${slug}`;
+              const company = val.startup?.__ref ? (startups[val.startup.__ref] || '') : '';
+              const location = (val.locationNames || []).join(', ') || (val.remote ? 'Remote' : '');
+
+              results.push({
+                title: val.title || '',
+                company,
+                salary: val.compensation || '',
+                location,
+                description: `${val.title || ''} at ${company}. ${val.compensation || ''} ${location}`.trim(),
+                url,
+              });
+            }
+          }
+        }
+      } catch { /* __NEXT_DATA__ parse failed — fall through to DOM */ }
+
+      if (results.length > 0) return results;
+
+      // Strategy 2: DOM selectors — look for /jobs/ links (not /role/)
+      const jobLinks = document.querySelectorAll('a[href*="/jobs/"]');
+      for (const link of jobLinks) {
+        const href = link.getAttribute('href');
+        if (!href || !/\/jobs\/\d+/.test(href) || seen.has(href)) continue;
         seen.add(href);
 
-        // Walk up to find the card container
-        const card =
-          link.closest(
-            '[class*="job"], [class*="listing"], [class*="card"], div',
-          ) || link;
+        const card = link.closest('div[class*="styles_result"]') ||
+                     link.closest('[class*="job"]') ||
+                     link.closest('[class*="listing"]') ||
+                     link.closest('[class*="card"]') ||
+                     link.parentElement?.parentElement || link;
 
-        // Extract title
-        const titleEl = card.querySelector(
-          "h2, h3, h4, [class*='title'], [class*='name']",
-        );
-        const title =
-          titleEl?.textContent?.trim() || link.textContent?.trim() || "";
+        const titleEl = card.querySelector('h2, h3, h4, [class*="title"], [class*="name"]');
+        const title = titleEl?.textContent?.trim() || link.textContent?.trim() || '';
         if (!title || title.length < 3) continue;
 
-        // Extract company
-        const companyEl = card.querySelector(
-          '[class*="company"], [class*="startup"], [class*="org"]',
-        );
-        const company = companyEl?.textContent?.trim() || "";
+        const companyEl = card.querySelector('[class*="company"], [class*="startup"]');
+        const company = companyEl?.textContent?.trim() || '';
 
-        // Extract salary/compensation
-        const salaryEl = card.querySelector(
-          '[class*="salary"], [class*="compensation"], [class*="pay"]',
-        );
-        const salary = salaryEl?.textContent?.trim() || "";
+        const salaryEl = card.querySelector('[class*="salary"], [class*="compensation"]');
+        const salary = salaryEl?.textContent?.trim() || '';
 
-        // Extract location
-        const locEl = card.querySelector(
-          '[class*="location"], [class*="remote"]',
-        );
-        const location = locEl?.textContent?.trim() || "";
+        const locEl = card.querySelector('[class*="location"], [class*="remote"]');
+        const location = locEl?.textContent?.trim() || '';
 
-        // Full card text for description
-        const fullText =
-          card.textContent?.replace(/\s+/g, " ").trim().slice(0, 2000) || "";
+        const fullText = card.textContent?.replace(/\s+/g, ' ').trim().slice(0, 2000) || '';
 
         results.push({
           title,
@@ -168,36 +193,12 @@ async function crawl() {
           salary,
           location,
           description: fullText,
-          url: href.startsWith("http") ? href : `https://wellfound.com${href}`,
+          url: href.startsWith('http') ? href : `https://wellfound.com${href}`,
         });
       }
 
-      // Strategy 2: If no role links found, try general job card selectors
-      if (results.length === 0) {
-        const cards = document.querySelectorAll(
-          '[data-test="job-listing"], [class*="JobListing"], [class*="jobCard"]',
-        );
-        for (const card of cards) {
-          const link = card.querySelector("a[href]");
-          const title =
-            card.querySelector("h2, h3, h4")?.textContent?.trim() || "";
-          if (!title) continue;
-          results.push({
-            title,
-            company:
-              card.querySelector('[class*="company"]')?.textContent?.trim() ||
-              "",
-            salary: "",
-            location: "",
-            description:
-              card.textContent?.replace(/\s+/g, " ").trim().slice(0, 2000) ||
-              "",
-            url: link?.href || "https://wellfound.com/jobs",
-          });
-        }
-      }
-
       return results;
+    });
     });
 
     console.log(`[wellfound] Extracted ${jobs.length} job listings`);

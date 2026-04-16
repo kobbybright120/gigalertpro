@@ -220,6 +220,46 @@ async function fetchNitterLive(deadline) {
   };
 }
 
+// ── Supabase service-role upsert (bypasses RLS) ─────────────────────────────
+
+async function upsertGigAlerts(rows) {
+  const supabaseUrl = process.env.VITE_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !serviceKey || !rows.length) return { ok: true, count: 0 };
+
+  const resp = await fetch(`${supabaseUrl}/rest/v1/gig_alerts`, {
+    method: "POST",
+    headers: {
+      apikey: serviceKey,
+      Authorization: `Bearer ${serviceKey}`,
+      "Content-Type": "application/json",
+      Prefer: "return=minimal,resolution=merge-duplicates",
+    },
+    body: JSON.stringify(rows),
+    signal: AbortSignal.timeout(8000),
+  });
+
+  if (resp.status < 400) return { ok: true, count: rows.length };
+
+  // Batch failed — try each row individually to isolate bad ones
+  const bad = [];
+  for (const row of rows) {
+    const r2 = await fetch(`${supabaseUrl}/rest/v1/gig_alerts`, {
+      method: "POST",
+      headers: {
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+        "Content-Type": "application/json",
+        Prefer: "return=minimal,resolution=merge-duplicates",
+      },
+      body: JSON.stringify([row]),
+      signal: AbortSignal.timeout(5000),
+    });
+    if (r2.status >= 400) bad.push(row.reddit_post_id);
+  }
+  return { ok: false, count: rows.length - bad.length, bad };
+}
+
 // ── Handler ──────────────────────────────────────────────────────────────────
 
 export default async function handler(req, res) {
@@ -227,9 +267,48 @@ export default async function handler(req, res) {
 
   // CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
   if (req.method === "OPTIONS") return res.status(204).end();
+
+  // ── POST: server-side upsert to gig_alerts (bypasses RLS) ──
+  if (req.method === "POST") {
+    try {
+      const rows = req.body;
+      if (!Array.isArray(rows) || rows.length === 0) {
+        return res.status(400).json({ error: "Expected non-empty array of rows" });
+      }
+      // Sanitise each row
+      const clean = rows.map((r) => ({
+        reddit_post_id: String(r.reddit_post_id || ""),
+        title: String(r.title || "Untitled"),
+        description: String(r.body_preview || r.description || "").slice(0, 500),
+        body_preview: String(r.body_preview || "").slice(0, 500),
+        url: String(r.url || ""),
+        subreddit: String(r.subreddit || ""),
+        budget: r.budget ? String(r.budget) : null,
+        author: r.author ? String(r.author) : null,
+        reddit_created: r.reddit_created || new Date().toISOString(),
+        matched_keywords: Array.isArray(r.matched_keywords) ? r.matched_keywords.map(String) : [],
+        score: Math.round(Number(r.score) || 0),
+        comment_count: Math.round(Number(r.comment_count) || 0),
+        upvotes: Math.round(Number(r.upvotes) || 0),
+        flair: r.flair ? String(r.flair) : null,
+        category: r.category ? String(r.category) : null,
+        source: r.source ? String(r.source) : "reddit",
+      })).filter((r) => r.reddit_post_id);
+
+      const result = await upsertGigAlerts(clean);
+      return res.status(result.ok ? 200 : 207).json(result);
+    } catch (err) {
+      console.error("[x-feed] POST upsert error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  if (req.method !== "GET") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
 
   try {
     // ── Job Boards feed (query param: ?feed=jobboards) ──
