@@ -11,11 +11,9 @@ export default function UpgradeBanner({ gigCount = 0, onUpgrade }) {
           <span className="text-[#00F0B5] font-bold">
             {gigCount} freelance gigs
           </span>{" "}
-          match your skills right now, including Gold Leads with real budgets.
-          You're only seeing 1.{" "}
-          <span className="text-gray-400">
-            Unlock all gigs from $12/month. Less than a coffee a day.
-          </span>
+          match your skills across communities and job boards. You're only
+          seeing 1.{" "}
+          <span className="text-gray-400">Unlock all from $12/month.</span>
         </p>
         <button
           onClick={onUpgrade}

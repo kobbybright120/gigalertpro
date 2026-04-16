@@ -1,7 +1,14 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { supabase } from "./supabase";
 import { useAuth } from "../context/AuthContext";
-import { fetchRedditGigs, clearCache, getCacheTimestamp } from "./redditClient";
+import {
+  fetchRedditGigs,
+  clearCache,
+  getCacheTimestamp,
+  fetchJobBoardGigs,
+  getJobBoardCacheTimestamp,
+  clearJobBoardCache,
+} from "./redditClient";
 import { notifyNewGigs, seedSeenIds } from "./gigNotifications";
 import { useNewGigCount } from "../context/NewGigCountContext";
 
@@ -433,6 +440,57 @@ export function useGigAlerts(keywordList, { isPaid = true } = {}) {
       stopPolling();
       document.removeEventListener("visibilitychange", handleVisibility);
     };
+  }, [fetchAlerts, keywordList]);
+
+  return { alerts, loading, lastUpdated, refetch: fetchAlerts };
+}
+
+// ── Job Board Alerts ─────────────────────────────────────────────────────────
+export function useJobBoardAlerts(keywordList) {
+  const [alerts, setAlerts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState(() =>
+    getJobBoardCacheTimestamp(),
+  );
+
+  const fetchAlerts = useCallback(async () => {
+    setLoading(true);
+    const kws = (keywordList || []).map((k) =>
+      typeof k === "string" ? k : k.keyword,
+    );
+    if (kws.length === 0) {
+      setAlerts([]);
+      setLoading(false);
+      return;
+    }
+    try {
+      const results = await fetchJobBoardGigs(kws);
+      setAlerts(results);
+      setLastUpdated(Date.now());
+    } catch {
+      setAlerts([]);
+    }
+    setLoading(false);
+  }, [keywordList]);
+
+  useEffect(() => {
+    fetchAlerts();
+  }, [fetchAlerts]);
+
+  // Poll every 5 minutes
+  useEffect(() => {
+    const kws = (keywordList || []).map((k) =>
+      typeof k === "string" ? k : k.keyword,
+    );
+    if (kws.length === 0) return;
+    const id = setInterval(
+      () => {
+        clearJobBoardCache();
+        fetchAlerts();
+      },
+      5 * 60 * 1000,
+    );
+    return () => clearInterval(id);
   }, [fetchAlerts, keywordList]);
 
   return { alerts, loading, lastUpdated, refetch: fetchAlerts };

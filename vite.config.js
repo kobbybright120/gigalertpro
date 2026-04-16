@@ -30,6 +30,7 @@ function upstashApiPlugin() {
       server.middlewares.use(async (req, res, next) => {
         const simpleKeyMap = {
           "/api/scan-reddit": "gigalertpro:latest",
+          "/api/jobboards-feed": "gigalertpro:jobboards:latest",
         };
 
         // Simple single-key endpoints

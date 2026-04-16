@@ -29,6 +29,9 @@ const SCANNING_SOURCES = [
   "Checking X/Twitter...",
   "Checking Threads...",
   "Checking Craigslist...",
+  "Checking RemoteOK...",
+  "Checking Wellfound...",
+  "Checking job boards...",
 ];
 
 export default function OnboardingFlow({ onComplete }) {

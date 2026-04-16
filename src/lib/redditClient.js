@@ -2129,3 +2129,105 @@ function matchAndScore(posts, lowerKws) {
 
 // ── Temporary export for terminal testing (remove after verification) ──
 export { matchAndScore as _testMatchAndScore };
+
+// ── Job Board Feed ───────────────────────────────────────────────────────────
+
+const jobBoardCache = { data: null, ts: 0 };
+const JB_FRESH_TTL = 2 * 60 * 1000; // 2 min
+
+/**
+ * Fetch job board posts from /api/jobboards-feed, keyword-match on the client.
+ * Returns the same shape as fetchRedditGigs: array of scored, matched gig objects.
+ */
+export async function fetchJobBoardGigs(keywords) {
+  if (!keywords || keywords.length === 0) return [];
+
+  const lowerKws = keywords.map((k) => k.toLowerCase().trim()).filter(Boolean);
+  if (lowerKws.length === 0) return [];
+
+  // Use cache if fresh
+  const now = Date.now();
+  if (!jobBoardCache.data || now - jobBoardCache.ts >= JB_FRESH_TTL) {
+    try {
+      const resp = await fetchWithRetry("/api/jobboards-feed", {
+        headers: { Accept: "application/json" },
+      });
+      if (resp && resp.ok) {
+        const json = await resp.json();
+        jobBoardCache.data = json.posts || [];
+        jobBoardCache.ts = Date.now();
+      }
+    } catch (err) {
+      console.warn("[GigAlertPro] Job board feed fetch failed:", err.message);
+      if (!jobBoardCache.data) return [];
+    }
+  }
+
+  const posts = jobBoardCache.data || [];
+
+  // Keyword match + score
+  const results = [];
+  const seen = new Set();
+
+  for (const p of posts) {
+    const postId = p.id || p.name;
+    if (seen.has(postId)) continue;
+    seen.add(postId);
+
+    const titleLower = (p.title || "").toLowerCase();
+    const bodyLower = (p.selftext || "").toLowerCase();
+    const combined = titleLower + " " + bodyLower;
+
+    // Match keywords
+    const matched = lowerKws.filter((kw) => {
+      if (kw.includes(" ")) {
+        return combined.includes(kw);
+      }
+      const escaped = kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const rx = new RegExp(`\\b${escaped}`, "i");
+      return rx.test(combined);
+    });
+
+    if (matched.length === 0) continue;
+
+    const score = p.score || 30;
+    const category = detectCategory(combined);
+
+    results.push({
+      id: postId,
+      reddit_post_id: p.name || p.id,
+      title: p.title || "Untitled",
+      body_preview: (p.selftext || "").slice(0, 400),
+      url: p.permalink || "",
+      subreddit: null,
+      budget: p.compensation || null,
+      author: p.author || "unknown",
+      reddit_created: p.created_utc
+        ? new Date(p.created_utc * 1000).toISOString()
+        : new Date().toISOString(),
+      matched_keywords: matched,
+      score,
+      category: category.label,
+      category_icon: category.icon,
+      time_ago: p.created_utc ? timeAgo(p.created_utc) : "recently",
+      comment_count: 0,
+      upvotes: 0,
+      flair: p.link_flair_text || null,
+      source_platform: p.source_platform || "JobBoard",
+      location: p.location || null,
+      company: p.company || null,
+    });
+  }
+
+  results.sort((a, b) => (b.score || 0) - (a.score || 0));
+  return enrichWithGoldScores(results, lowerKws);
+}
+
+export function getJobBoardCacheTimestamp() {
+  return jobBoardCache.ts > 0 ? jobBoardCache.ts : null;
+}
+
+export function clearJobBoardCache() {
+  jobBoardCache.data = null;
+  jobBoardCache.ts = 0;
+}

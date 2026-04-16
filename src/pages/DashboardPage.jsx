@@ -14,6 +14,7 @@ import {
   Globe,
   Activity,
   Lightbulb,
+  Briefcase,
 } from "lucide-react";
 import GigCard from "../components/GigCard";
 import NotificationToggle from "../components/NotificationToggle";
@@ -23,6 +24,7 @@ import { useLockedDashboard } from "../context/LockedDashboardContext";
 import {
   useKeywords,
   useGigAlerts,
+  useJobBoardAlerts,
   useProposals,
   useProfile,
 } from "../lib/useSupabase";
@@ -48,6 +50,8 @@ export default function DashboardPage() {
   const { alerts, loading: alertsLoading } = useGigAlerts(keywords, {
     isPaid: !isLocked,
   });
+  const { alerts: jobBoardAlerts, loading: jbLoading } =
+    useJobBoardAlerts(keywords);
   const { saveProposal } = useProposals();
 
   const [keywordError, setKeywordError] = useState("");
@@ -164,7 +168,7 @@ export default function DashboardPage() {
           },
           {
             label: "Sources Scanned",
-            value: "37+",
+            value: "4+",
             icon: Globe,
             color: "text-purple-400",
             bg: "bg-gradient-to-br from-purple-400/10 to-purple-400/5",
@@ -296,7 +300,7 @@ export default function DashboardPage() {
                 Scanning Sources...
               </h3>
               <p className="text-gray-500 text-sm mt-1">
-                Searching Reddit, Craigslist & X/Twitter for gigs matching your
+                Searching Reddit, X, Threads & Craigslist for gigs matching your
                 keywords
               </p>
             </div>
@@ -373,12 +377,7 @@ export default function DashboardPage() {
                     title: alert.title,
                     body_preview: alert.body_preview || "",
                     budget: alert.budget || null,
-                    source:
-                      alert.source_platform === "Reddit"
-                        ? "Reddit"
-                        : alert.source_platform === "Craigslist"
-                          ? "Craigslist"
-                          : alert.source_platform || "Reddit",
+                    source: alert.source_platform || "Reddit",
                     url: alert.url,
                     postedAt:
                       alert.time_ago ||
@@ -443,6 +442,63 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      {/* Job Board Highlights */}
+      {keywords.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <Briefcase className="w-5 h-5 text-[#00F0B5]" />
+              From Job Boards
+            </h2>
+            <Link
+              to="/gig-alerts"
+              className="group text-sm text-[#00F0B5] hover:text-[#00dba5] transition-colors flex items-center gap-1 font-medium"
+            >
+              View all
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+            </Link>
+          </div>
+          <div className="grid gap-4">
+            {jbLoading ? (
+              <div className="glass-card rounded-2xl p-6 text-center">
+                <p className="text-gray-500 text-sm">Checking job boards...</p>
+              </div>
+            ) : jobBoardAlerts.length > 0 ? (
+              jobBoardAlerts.slice(0, 2).map((alert) => (
+                <GigCard
+                  key={alert.id}
+                  gig={{
+                    id: alert.id,
+                    title: alert.title,
+                    body_preview: alert.body_preview || "",
+                    budget: alert.budget || null,
+                    source: alert.source_platform || "RemoteOK",
+                    url: alert.url,
+                    postedAt:
+                      alert.time_ago ||
+                      new Date(alert.reddit_created).toLocaleDateString(),
+                    keywords: alert.matched_keywords,
+                    score: alert.score,
+                    category: alert.category,
+                    source_platform: alert.source_platform || "RemoteOK",
+                    is_gold: alert.is_gold,
+                    quality_score: alert.quality_score,
+                    filter_reason: alert.filter_reason,
+                  }}
+                  onGenerateProposal={handleGenerateProposal}
+                />
+              ))
+            ) : (
+              <div className="glass-card rounded-2xl p-6 text-center">
+                <p className="text-gray-500 text-sm">
+                  No job board matches yet — we scan every 30 minutes.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
