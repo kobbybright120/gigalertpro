@@ -450,9 +450,9 @@ async function main() {
         break;
       }
 
-      // Longer delays to avoid rate limiting (8-15s)
+      // Delays to avoid rate limiting (4-7s)
       if (i < searchQueries.length - 1) {
-        await randomDelay(8000, 15000);
+        await randomDelay(4000, 7000);
       }
     }
 
