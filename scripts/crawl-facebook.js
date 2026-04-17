@@ -1,9 +1,9 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// GigAlertPro — Facebook Gig Crawler (via Google Search)
+// GigAlertPro — Facebook Gig Crawler (via DuckDuckGo Search)
 //
-// Searches Google for public Facebook posts containing freelance gig keywords.
-// Uses queries like: site:facebook.com "looking for a video editor"
-// No Facebook login required — all posts are publicly indexed by Google.
+// Searches DuckDuckGo for public Facebook posts containing freelance gig
+// keywords. Uses queries like: site:facebook.com "looking for a video editor"
+// No Facebook login required — all posts are publicly indexed.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { chromium } from "playwright";
@@ -156,54 +156,48 @@ function randomDelay(minMs, maxMs) {
   return sleep(minMs + Math.random() * (maxMs - minMs));
 }
 
-// ── Extract Google search results ───────────────────────────────────────────
+// ── Extract DuckDuckGo search results ───────────────────────────────────────
 
-async function extractGoogleResults(page) {
+async function extractSearchResults(page) {
   return page.evaluate(() => {
     const results = [];
-    // Google search result containers
-    const items = document.querySelectorAll("div.g, div[data-sokoban-container], div.MjjYud");
+    // DuckDuckGo result containers
+    const items = document.querySelectorAll("article[data-testid='result'], li[data-layout='organic'], div.result, div.results_links, ol.react-results--main li");
 
     for (const item of items) {
       try {
-        // Get the link
         const linkEl = item.querySelector("a[href*='facebook.com']");
         if (!linkEl) continue;
 
-        const href = linkEl.getAttribute("href") || "";
+        let href = linkEl.getAttribute("href") || "";
+        // DDG sometimes wraps URLs in redirect
+        if (href.includes("duckduckgo.com") && href.includes("uddg=")) {
+          try {
+            href = decodeURIComponent(href.split("uddg=")[1].split("&")[0]);
+          } catch { /* use as-is */ }
+        }
         if (!href.includes("facebook.com")) continue;
-        // Skip non-post URLs
-        if (
-          !href.includes("/posts/") &&
-          !href.includes("/permalink/") &&
-          !href.includes("story_fbid") &&
-          !href.includes("/videos/") &&
-          !href.includes("/photo") &&
-          !href.includes("/groups/") &&
-          !href.includes("/reel/")
-        ) continue;
 
         // Get the title
-        const titleEl = item.querySelector("h3");
+        const titleEl = item.querySelector("h2, h3, a[data-testid='result-title-a']");
         const title = titleEl ? titleEl.innerText.trim() : "";
 
-        // Get the snippet/description
-        const snippetEl =
-          item.querySelector("div[data-sncf], span.aCOpRe, div.VwiC3b, div[style='-webkit-line-clamp:2']") ||
-          item.querySelector("div.IsZvec") ||
-          item.querySelector("span:not(h3 span)");
+        // Get the snippet
+        const snippetEl = item.querySelector(
+          "span[data-testid='result-snippet'], div.result__snippet, div[data-result='snippet'], p"
+        );
         let snippet = "";
         if (snippetEl) {
           snippet = snippetEl.innerText.trim();
         }
         if (!snippet && !title) continue;
 
-        // Get the date if visible
+        // Date from snippet (DDG often prefixes with date)
         let dateText = null;
-        const dateEl = item.querySelector("span.MUxGbd, span.LEwnzc, span[class*='date']");
-        if (dateEl) {
-          const dt = dateEl.innerText.trim();
-          if (/\d/.test(dt) && dt.length < 30) dateText = dt;
+        const dateMatch = (snippet || "").match(/^(\w+ \d+, \d{4})\s*[—–-]\s*/);
+        if (dateMatch) {
+          dateText = dateMatch[1];
+          snippet = snippet.slice(dateMatch[0].length).trim();
         }
 
         results.push({
@@ -219,29 +213,6 @@ async function extractGoogleResults(page) {
 
     return results;
   });
-}
-
-// ── Handle Google consent / CAPTCHA ─────────────────────────────────────────
-
-async function dismissGoogleConsent(page) {
-  try {
-    const selectors = [
-      'button:has-text("Accept all")',
-      'button:has-text("I agree")',
-      'button:has-text("Accept")',
-      'button[id="L2AGLb"]',
-      'button[id="W0wltc"]',
-    ];
-    for (const sel of selectors) {
-      const btn = page.locator(sel).first();
-      if (await btn.isVisible({ timeout: 1500 }).catch(() => false)) {
-        await btn.click();
-        await sleep(1000);
-        return true;
-      }
-    }
-  } catch { /* no consent */ }
-  return false;
 }
 
 // ── Parse date strings from Google snippets ─────────────────────────────────
@@ -294,27 +265,24 @@ async function main() {
     const seenSet = new Set(seenRaw || []);
     console.log(`Seen set: ${seenSet.size} previously seen posts`);
 
-    // ── 2. Search Google for each keyword ──
+    // ── 2. Search DuckDuckGo for each keyword ──
     for (let i = 0; i < SEARCH_KEYWORDS.length; i++) {
       const keyword = SEARCH_KEYWORDS[i];
-      // Search Google for public Facebook posts with this keyword, recent results
+      // DuckDuckGo search for public Facebook posts, recent results
       const query = `site:facebook.com "${keyword}"`;
       const encoded = encodeURIComponent(query);
-      // tbs=qdr:w restricts to past week
-      const searchUrl = `https://www.google.com/search?q=${encoded}&tbs=qdr:w&num=20`;
+      // df=w restricts to past week on DDG
+      const searchUrl = `https://duckduckgo.com/?q=${encoded}&df=w&ia=web`;
 
       try {
         console.log(`[${i + 1}/${SEARCH_KEYWORDS.length}] Searching: "${keyword}"`);
         await page.goto(searchUrl, { waitUntil: "domcontentloaded", timeout: 20000 });
-        await sleep(2000);
+        await sleep(3000);
 
-        // Dismiss Google consent dialog if present
-        await dismissGoogleConsent(page);
-
-        // Check for CAPTCHA
+        // Check for block/error
         const pageText = await page.evaluate(() => document.body.innerText || "");
-        if (pageText.includes("unusual traffic") || pageText.includes("not a robot") || pageText.includes("CAPTCHA")) {
-          console.warn("  ✗ Google CAPTCHA detected — stopping searches");
+        if (pageText.includes("blocked") || pageText.includes("bot") || pageText.length < 50) {
+          console.warn("  ✗ DuckDuckGo may be blocking — stopping searches");
           await page.screenshot({ path: "fb-captcha-debug.png", fullPage: false });
           break;
         }
@@ -323,15 +291,15 @@ async function main() {
         if (i === 0) {
           console.log("  [debug] URL:", page.url());
           const resultCount = await page.evaluate(() =>
-            document.querySelectorAll("div.g, div.MjjYud").length
+            document.querySelectorAll("article[data-testid='result'], li[data-layout='organic'], div.result, ol.react-results--main li").length
           );
-          console.log("  [debug] Google result containers:", resultCount);
-          console.log("  [debug] Page text preview:", pageText.slice(0, 200));
+          console.log("  [debug] Result containers:", resultCount);
+          console.log("  [debug] Page text preview:", pageText.slice(0, 300));
           await page.screenshot({ path: "fb-search-debug.png", fullPage: false });
           console.log("  [debug] Screenshot saved");
         }
 
-        const results = await extractGoogleResults(page);
+        const results = await extractSearchResults(page);
         keywordStats[keyword] = results.length;
         totalExtracted += results.length;
 
@@ -468,7 +436,7 @@ async function main() {
       posts: finalPosts.slice(0, 300),
       post_count: Math.min(finalPosts.length, 300),
       cached_at: new Date().toISOString(),
-      feed: "facebook-google",
+      feed: "facebook-ddg",
       sources: { facebook: finalPosts.length },
     });
 
