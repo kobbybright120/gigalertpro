@@ -1,9 +1,9 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// GigAlertPro — Facebook Public Profile Crawler (mbasic)
+// GigAlertPro — Facebook Gig Crawler (via Google Search)
 //
-// Uses mbasic.facebook.com (Facebook's lightweight HTML version) to search
-// for freelance gig posts on public profiles. mbasic renders server-side
-// HTML, avoiding JS-rendering issues and data center IP blocks.
+// Searches Google for public Facebook posts containing freelance gig keywords.
+// Uses queries like: site:facebook.com "looking for a video editor"
+// No Facebook login required — all posts are publicly indexed by Google.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { chromium } from "playwright";
@@ -12,10 +12,7 @@ import { classifyAndFilter } from "./gig-classifier.js";
 const MAX_AGE_DAYS = parseInt(process.env.FB_MAX_AGE_DAYS || "7", 10);
 const MAX_AGE_MS = MAX_AGE_DAYS * 86400 * 1000;
 
-const FB_EMAIL = process.env.FB_EMAIL || "";
-const FB_PASSWORD = process.env.FB_PASSWORD || "";
-
-// ── Search keywords — organic freelance gig requests ────────────────────────
+// ── Search keywords — organic freelance gig requests from public profiles ───
 
 const SEARCH_KEYWORDS = [
   "looking for a video editor",
@@ -127,10 +124,6 @@ async function redisCommand(...args) {
   return json.result;
 }
 
-async function redisGet(key) {
-  return redisCommand("GET", key);
-}
-
 async function redisSet(key, value, ttlSeconds) {
   return redisCommand("SET", key, value, "EX", ttlSeconds);
 }
@@ -163,280 +156,116 @@ function randomDelay(minMs, maxMs) {
   return sleep(minMs + Math.random() * (maxMs - minMs));
 }
 
-// ── Facebook relative timestamp parser ──────────────────────────────────────
+// ── Extract Google search results ───────────────────────────────────────────
 
-function parseFBTimestamp(text) {
-  if (!text) return null;
-  const t = text.trim().toLowerCase();
-  const now = Date.now();
-
-  if (t === "just now" || t === "now") return Math.floor(now / 1000);
-
-  let m = t.match(/^(\d+)\s*m(?:in(?:ute)?s?)?\s*(?:ago)?$/);
-  if (m) return Math.floor((now - parseInt(m[1]) * 60 * 1000) / 1000);
-
-  m = t.match(/^(\d+)\s*h(?:(?:ou)?rs?)?\s*(?:ago)?$/);
-  if (m) return Math.floor((now - parseInt(m[1]) * 3600 * 1000) / 1000);
-
-  m = t.match(/^(\d+)\s*d(?:ays?)?\s*(?:ago)?$/);
-  if (m) return Math.floor((now - parseInt(m[1]) * 86400 * 1000) / 1000);
-
-  m = t.match(/^yesterday/);
-  if (m) {
-    const d = new Date(now - 86400 * 1000);
-    return Math.floor(d.getTime() / 1000);
-  }
-
-  // "hrs" format like "2 hrs"
-  m = t.match(/^(\d+)\s*hrs?\s*$/);
-  if (m) return Math.floor((now - parseInt(m[1]) * 3600 * 1000) / 1000);
-
-  // "mins" format like "15 mins"
-  m = t.match(/^(\d+)\s*mins?\s*$/);
-  if (m) return Math.floor((now - parseInt(m[1]) * 60 * 1000) / 1000);
-
-  const parsed = new Date(text.trim());
-  if (!isNaN(parsed.getTime())) return Math.floor(parsed.getTime() / 1000);
-
-  return null;
-}
-
-// ── Session management ──────────────────────────────────────────────────────
-
-const SESSION_REDIS_KEY = "gigalertpro:facebook:session";
-const SESSION_TTL = 7 * 86400;
-
-async function loadSession() {
-  try {
-    const raw = await redisGet(SESSION_REDIS_KEY);
-    if (!raw) return null;
-    const cookies = JSON.parse(raw);
-    if (Array.isArray(cookies) && cookies.length > 0) {
-      console.log(`Loaded ${cookies.length} cookies from Redis session`);
-      return cookies;
-    }
-  } catch (err) {
-    console.warn("Failed to load session from Redis:", err.message);
-  }
-  return null;
-}
-
-async function saveSession(cookies) {
-  try {
-    await redisSet(SESSION_REDIS_KEY, JSON.stringify(cookies), SESSION_TTL);
-    console.log(`Saved ${cookies.length} cookies to Redis (TTL ${SESSION_TTL}s)`);
-  } catch (err) {
-    console.warn("Failed to save session to Redis:", err.message);
-  }
-}
-
-// ── mbasic.facebook.com login ───────────────────────────────────────────────
-
-async function loginMbasic(page) {
-  if (!FB_EMAIL || !FB_PASSWORD) {
-    throw new Error("FB_EMAIL and FB_PASSWORD env vars are required");
-  }
-
-  console.log("Logging in via mbasic.facebook.com...");
-  await page.goto("https://mbasic.facebook.com/login/", { waitUntil: "domcontentloaded", timeout: 30000 });
-  await sleep(2000);
-
-  // Debug: log what the page looks like
-  const formHtml = await page.evaluate(() => {
-    const forms = document.querySelectorAll("form");
-    const inputs = document.querySelectorAll("input");
-    const buttons = document.querySelectorAll("button");
-    return {
-      formCount: forms.length,
-      inputs: Array.from(inputs).map((i) => `${i.tagName} name=${i.name} type=${i.type} value=${i.value}`).slice(0, 10),
-      buttons: Array.from(buttons).map((b) => `${b.tagName} name=${b.name} text=${b.innerText}`).slice(0, 5),
-      title: document.title,
-      bodyPreview: (document.body?.innerText || "").slice(0, 200),
-    };
-  });
-  console.log("  [debug] Forms:", formHtml.formCount);
-  console.log("  [debug] Inputs:", JSON.stringify(formHtml.inputs));
-  console.log("  [debug] Buttons:", JSON.stringify(formHtml.buttons));
-  console.log("  [debug] Body:", formHtml.bodyPreview.slice(0, 150));
-
-  // Accept cookie consent if present
-  try {
-    const cookieBtn = page.locator('button[name="accept_only_essential"], button[value="Accept All"], input[value="Accept All"], a:has-text("Accept"), button:has-text("Accept"), input[type="submit"][value*="Accept"], input[type="submit"][value*="allow"], a[href*="cookie"]').first();
-    if (await cookieBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await cookieBtn.click();
-      console.log("  → Dismissed cookie consent");
-      await sleep(1500);
-    }
-  } catch { /* no cookie banner */ }
-
-  // mbasic has simple HTML form inputs
-  const emailInput = page.locator('input[name="email"]').first();
-  const passInput = page.locator('input[name="pass"]').first();
-
-  await emailInput.waitFor({ state: "visible", timeout: 10000 });
-  await emailInput.fill(FB_EMAIL);
-  await randomDelay(300, 600);
-
-  await passInput.waitFor({ state: "visible", timeout: 10000 });
-  await passInput.fill(FB_PASSWORD);
-  await randomDelay(200, 500);
-
-  // Submit — try multiple selectors, fall back to Enter key
-  const loginBtn = page.locator('input[name="login"], input[type="submit"][value="Log In"], input[type="submit"][value="Log in"], input[type="submit"], button[name="login"], button[type="submit"]').first();
-  try {
-    await loginBtn.click({ timeout: 5000 });
-  } catch {
-    console.log("  Login button not found, pressing Enter instead...");
-    await passInput.press("Enter");
-  }
-  await page.waitForLoadState("domcontentloaded", { timeout: 30000 });
-  await sleep(3000);
-
-  // Check for checkpoint
-  const url = page.url();
-  if (url.includes("checkpoint") || url.includes("login/identify")) {
-    await page.screenshot({ path: "fb-checkpoint-debug.png", fullPage: false });
-    throw new Error("Facebook checkpoint/2FA detected. Please resolve manually.");
-  }
-
-  // Verify login — mbasic shows different content when logged in
-  const pageText = await page.evaluate(() => document.body.innerText || "");
-  const stillOnLogin = url.includes("/login") && !pageText.includes("News Feed") && !pageText.includes("Search");
-
-  if (stillOnLogin) {
-    await page.screenshot({ path: "fb-login-debug.png", fullPage: false });
-    console.log("  [debug] Login may have failed. URL:", url);
-    console.log("  [debug] Page text preview:", pageText.slice(0, 200));
-    throw new Error("Facebook login failed — still on login page.");
-  }
-
-  console.log("Login successful (mbasic)");
-}
-
-// ── Extract posts from mbasic search results ────────────────────────────────
-
-async function extractMbasicPosts(page) {
+async function extractGoogleResults(page) {
   return page.evaluate(() => {
-    const out = [];
+    const results = [];
+    // Google search result containers
+    const items = document.querySelectorAll("div.g, div[data-sokoban-container], div.MjjYud");
 
-    // mbasic search results are in simple div/article structures
-    // Look for story containers
-    const stories = document.querySelectorAll(
-      'div[role="article"], article, div.bx, div.by, div[id^="u_"]'
-    );
-
-    // Fallback: grab any div that looks like a post (has text + links)
-    let containers = Array.from(stories);
-    if (containers.length === 0) {
-      // mbasic wraps posts in divs with specific structure
-      const allDivs = document.querySelectorAll("#structured_composer_async_container div, #BrowseResultsContainer div, div[data-ft]");
-      containers = Array.from(allDivs).filter(
-        (d) => d.innerText && d.innerText.length > 30 && d.querySelectorAll("a").length > 0,
-      );
-    }
-
-    // Last resort: grab text blocks from the main content area
-    if (containers.length === 0) {
-      const mainContent = document.querySelector('#root, #content, main, body');
-      if (mainContent) {
-        const sections = mainContent.querySelectorAll("div");
-        containers = Array.from(sections).filter(
-          (d) => {
-            const text = (d.innerText || "").trim();
-            return text.length > 50 && text.length < 3000 && d.querySelectorAll("a").length > 0;
-          },
-        );
-      }
-    }
-
-    // Deduplicate by removing nested containers
-    const unique = [];
-    for (const c of containers) {
-      let isChild = false;
-      for (const u of unique) {
-        if (u.contains(c) || c.contains(u)) {
-          isChild = true;
-          if (c.contains(u)) {
-            unique.splice(unique.indexOf(u), 1);
-            unique.push(c);
-          }
-          break;
-        }
-      }
-      if (!isChild) unique.push(c);
-    }
-
-    for (const el of unique.slice(0, 30)) {
+    for (const item of items) {
       try {
-        const text = (el.innerText || "").replace(/\s+/g, " ").trim();
-        if (!text || text.length < 20) continue;
+        // Get the link
+        const linkEl = item.querySelector("a[href*='facebook.com']");
+        if (!linkEl) continue;
 
-        // Author — usually the first link with a profile URL
-        let author = null;
-        const authorLink = el.querySelector('a[href*="/profile.php"], a[href*="facebook.com/"]');
-        if (authorLink) {
-          author = authorLink.innerText.trim();
-          if (author.length > 50) author = null;
-        }
-        if (!author) {
-          const strong = el.querySelector("strong, h3 a, h4 a");
-          if (strong) author = strong.innerText.trim();
-        }
+        const href = linkEl.getAttribute("href") || "";
+        if (!href.includes("facebook.com")) continue;
+        // Skip non-post URLs
+        if (
+          !href.includes("/posts/") &&
+          !href.includes("/permalink/") &&
+          !href.includes("story_fbid") &&
+          !href.includes("/videos/") &&
+          !href.includes("/photo") &&
+          !href.includes("/groups/") &&
+          !href.includes("/reel/")
+        ) continue;
 
-        // Timestamp — mbasic uses abbr tags or plain text
-        let timeText = null;
-        const abbr = el.querySelector("abbr");
-        if (abbr) {
-          timeText = abbr.getAttribute("data-utime") || abbr.innerText.trim();
-        }
-        if (!timeText) {
-          const spans = el.querySelectorAll("span, a");
-          for (const s of spans) {
-            const t = (s.innerText || "").trim();
-            if (/^\d+\s*(hrs?|mins?|[mhd]|hours?|minutes?|days?)\s*(ago)?$/i.test(t)) {
-              timeText = t;
-              break;
-            }
-          }
-        }
+        // Get the title
+        const titleEl = item.querySelector("h3");
+        const title = titleEl ? titleEl.innerText.trim() : "";
 
-        // Post URL
-        let postUrl = null;
-        const links = el.querySelectorAll("a[href]");
-        for (const link of links) {
-          const href = link.getAttribute("href") || "";
-          if (
-            href.includes("/story.php") ||
-            href.includes("/posts/") ||
-            href.includes("/permalink/") ||
-            href.includes("story_fbid")
-          ) {
-            postUrl = href.startsWith("http")
-              ? href
-              : "https://mbasic.facebook.com" + href;
-            break;
-          }
+        // Get the snippet/description
+        const snippetEl =
+          item.querySelector("div[data-sncf], span.aCOpRe, div.VwiC3b, div[style='-webkit-line-clamp:2']") ||
+          item.querySelector("div.IsZvec") ||
+          item.querySelector("span:not(h3 span)");
+        let snippet = "";
+        if (snippetEl) {
+          snippet = snippetEl.innerText.trim();
+        }
+        if (!snippet && !title) continue;
+
+        // Get the date if visible
+        let dateText = null;
+        const dateEl = item.querySelector("span.MUxGbd, span.LEwnzc, span[class*='date']");
+        if (dateEl) {
+          const dt = dateEl.innerText.trim();
+          if (/\d/.test(dt) && dt.length < 30) dateText = dt;
         }
 
-        // Clean text — remove author name from beginning if present
-        let cleanText = text;
-        if (author && cleanText.startsWith(author)) {
-          cleanText = cleanText.slice(author.length).trim();
-        }
-
-        out.push({
-          text: cleanText.slice(0, 2000),
-          author,
-          timeText,
-          postUrl: postUrl || window.location.href,
+        results.push({
+          url: href,
+          title,
+          snippet,
+          dateText,
         });
       } catch {
         /* skip */
       }
     }
 
-    return out;
+    return results;
   });
+}
+
+// ── Handle Google consent / CAPTCHA ─────────────────────────────────────────
+
+async function dismissGoogleConsent(page) {
+  try {
+    const selectors = [
+      'button:has-text("Accept all")',
+      'button:has-text("I agree")',
+      'button:has-text("Accept")',
+      'button[id="L2AGLb"]',
+      'button[id="W0wltc"]',
+    ];
+    for (const sel of selectors) {
+      const btn = page.locator(sel).first();
+      if (await btn.isVisible({ timeout: 1500 }).catch(() => false)) {
+        await btn.click();
+        await sleep(1000);
+        return true;
+      }
+    }
+  } catch { /* no consent */ }
+  return false;
+}
+
+// ── Parse date strings from Google snippets ─────────────────────────────────
+
+function parseGoogleDate(text) {
+  if (!text) return null;
+  const t = text.trim().toLowerCase();
+  const now = Date.now();
+
+  // "X hours ago", "X days ago", "X minutes ago"
+  let m = t.match(/(\d+)\s*(?:hour|hr)s?\s*ago/);
+  if (m) return Math.floor((now - parseInt(m[1]) * 3600 * 1000) / 1000);
+
+  m = t.match(/(\d+)\s*(?:day)s?\s*ago/);
+  if (m) return Math.floor((now - parseInt(m[1]) * 86400 * 1000) / 1000);
+
+  m = t.match(/(\d+)\s*(?:min(?:ute)?)s?\s*ago/);
+  if (m) return Math.floor((now - parseInt(m[1]) * 60 * 1000) / 1000);
+
+  // "Mon DD, YYYY" or "DD Mon YYYY" style dates
+  const parsed = new Date(text.trim());
+  if (!isNaN(parsed.getTime())) return Math.floor(parsed.getTime() / 1000);
+
+  return null;
 }
 
 // ── Main crawler ────────────────────────────────────────────────────────────
@@ -448,123 +277,92 @@ async function main() {
 
   const context = await browser.newContext({
     userAgent:
-      "Mozilla/5.0 (Linux; Android 10; SM-G960F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36",
-    viewport: { width: 412, height: 915 },
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
+    viewport: { width: 1280, height: 900 },
     locale: "en-US",
   });
 
   const page = await context.newPage();
+  const allPosts = [];
+  const keywordStats = {};
+  let totalExtracted = 0;
 
   try {
-    // ── 1. Restore or create session ──
-    const savedCookies = await loadSession();
-    let needsLogin = true;
-
-    if (savedCookies) {
-      await context.addCookies(savedCookies);
-      await page.goto("https://mbasic.facebook.com/", { waitUntil: "domcontentloaded", timeout: 30000 });
-      await sleep(2000);
-
-      const pageText = await page.evaluate(() => document.body.innerText || "");
-      const url = page.url();
-      const isLoggedIn = !url.includes("/login") &&
-        (pageText.includes("News Feed") || pageText.includes("Search") || pageText.includes("What's on your mind"));
-
-      if (isLoggedIn) {
-        console.log("Session restored from Redis — already logged in");
-        needsLogin = false;
-      } else {
-        console.log("Saved session expired — clearing cookies and re-logging in");
-        await context.clearCookies();
-      }
-    }
-
-    if (needsLogin) {
-      await loginMbasic(page);
-      const cookies = await context.cookies();
-      await saveSession(cookies);
-    }
-
-    // ── 2. Load seen set for dedup ──
+    // ── 1. Load seen set for dedup ──
     const SEEN_KEY = "gigalertpro:seen:facebook";
     const seenRaw = await redisSmembers(SEEN_KEY);
     const seenSet = new Set(seenRaw || []);
     console.log(`Seen set: ${seenSet.size} previously seen posts`);
 
-    // ── 3. Search and collect posts ──
-    const allPosts = [];
-    const keywordStats = {};
-    let totalExtracted = 0;
-
+    // ── 2. Search Google for each keyword ──
     for (let i = 0; i < SEARCH_KEYWORDS.length; i++) {
       const keyword = SEARCH_KEYWORDS[i];
-      const encoded = encodeURIComponent(keyword);
-      // mbasic search URL for public posts
-      const searchUrl = `https://mbasic.facebook.com/search/posts/?q=${encoded}&source=filter&isTrending=0`;
+      // Search Google for public Facebook posts with this keyword, recent results
+      const query = `site:facebook.com "${keyword}"`;
+      const encoded = encodeURIComponent(query);
+      // tbs=qdr:w restricts to past week
+      const searchUrl = `https://www.google.com/search?q=${encoded}&tbs=qdr:w&num=20`;
 
       try {
         console.log(`[${i + 1}/${SEARCH_KEYWORDS.length}] Searching: "${keyword}"`);
         await page.goto(searchUrl, { waitUntil: "domcontentloaded", timeout: 20000 });
         await sleep(2000);
 
+        // Dismiss Google consent dialog if present
+        await dismissGoogleConsent(page);
+
+        // Check for CAPTCHA
+        const pageText = await page.evaluate(() => document.body.innerText || "");
+        if (pageText.includes("unusual traffic") || pageText.includes("not a robot") || pageText.includes("CAPTCHA")) {
+          console.warn("  ✗ Google CAPTCHA detected — stopping searches");
+          await page.screenshot({ path: "fb-captcha-debug.png", fullPage: false });
+          break;
+        }
+
         // Debug: on first search, log page state
         if (i === 0) {
           console.log("  [debug] URL:", page.url());
-          const debugText = await page.evaluate(() => (document.body.innerText || "").slice(0, 500));
-          console.log("  [debug] Page text:", debugText.slice(0, 300));
+          const resultCount = await page.evaluate(() =>
+            document.querySelectorAll("div.g, div.MjjYud").length
+          );
+          console.log("  [debug] Google result containers:", resultCount);
+          console.log("  [debug] Page text preview:", pageText.slice(0, 200));
           await page.screenshot({ path: "fb-search-debug.png", fullPage: false });
           console.log("  [debug] Screenshot saved");
         }
 
-        // Check if we got redirected to login
-        if (page.url().includes("/login")) {
-          console.warn("  ✗ Redirected to login — session may have expired");
-          break;
+        const results = await extractGoogleResults(page);
+        keywordStats[keyword] = results.length;
+        totalExtracted += results.length;
+
+        for (const r of results) {
+          allPosts.push({
+            text: r.snippet || r.title,
+            title: r.title,
+            snippet: r.snippet,
+            author: null,
+            timeText: r.dateText,
+            postUrl: r.url,
+            searchQuery: keyword,
+          });
         }
 
-        const posts = await extractMbasicPosts(page);
-        keywordStats[keyword] = posts.length;
-        totalExtracted += posts.length;
-
-        for (const p of posts) {
-          allPosts.push({ ...p, searchQuery: keyword });
-        }
-
-        console.log(`  → ${posts.length} posts extracted`);
-
-        // Try to load "See more results" if available
-        try {
-          const seeMore = page.locator('a:has-text("See more results"), a:has-text("See More Results"), a[href*="see_more"]').first();
-          if (await seeMore.isVisible({ timeout: 2000 }).catch(() => false)) {
-            await seeMore.click();
-            await page.waitForLoadState("domcontentloaded", { timeout: 15000 });
-            await sleep(1500);
-            const morePosts = await extractMbasicPosts(page);
-            for (const p of morePosts) {
-              allPosts.push({ ...p, searchQuery: keyword });
-            }
-            totalExtracted += morePosts.length;
-            if (morePosts.length > 0) {
-              console.log(`  → ${morePosts.length} more posts from page 2`);
-            }
-          }
-        } catch { /* no more results link */ }
-
+        console.log(`  → ${results.length} results found`);
       } catch (err) {
         console.warn(`  ✗ Search failed for "${keyword}":`, err.message);
         keywordStats[keyword] = 0;
       }
 
-      // Anti-ban delay
+      // Anti-ban delay — Google rate-limits aggressively
       if (i < SEARCH_KEYWORDS.length - 1) {
-        await randomDelay(3000, 8000);
+        await randomDelay(5000, 12000);
       }
     }
 
     await browser.close();
-    console.log(`\nTotal raw posts extracted: ${totalExtracted}`);
+    console.log(`\nTotal raw results: ${totalExtracted}`);
 
-    // ── 4. Deduplicate ──
+    // ── 3. Deduplicate by URL ──
     const deduped = new Map();
     for (const p of allPosts) {
       const key = p.postUrl || p.text.slice(0, 100);
@@ -576,19 +374,20 @@ async function main() {
     const uniquePosts = Array.from(deduped.values());
     console.log(`After dedup: ${uniquePosts.length} unique posts`);
 
-    // ── 5. Regex gig filter ──
-    const gigPosts = uniquePosts.filter((p) => isGigPost(p.text));
+    // ── 4. Regex gig filter ──
+    const combinedText = (p) => [p.title, p.snippet, p.text].filter(Boolean).join(" ");
+    const gigPosts = uniquePosts.filter((p) => isGigPost(combinedText(p)));
     console.log(
       `Gig filter: kept ${gigPosts.length}/${uniquePosts.length} (rejected ${uniquePosts.length - gigPosts.length} non-gig)`,
     );
 
-    // ── 6. Parse timestamps and freshness filter ──
+    // ── 5. Parse timestamps and freshness filter ──
     const now = Date.now();
     const freshPosts = [];
     let staleCount = 0;
 
     for (const p of gigPosts) {
-      const createdUtc = parseFBTimestamp(p.timeText);
+      const createdUtc = parseGoogleDate(p.timeText);
       if (!createdUtc) {
         p.created_utc = Math.floor(now / 1000);
         freshPosts.push(p);
@@ -605,7 +404,7 @@ async function main() {
       console.log(`Freshness filter: dropped ${staleCount} stale posts`);
     }
 
-    // ── 7. Split new vs already-seen ──
+    // ── 6. Split new vs already-seen ──
     const newPosts = [];
     const existingPosts = [];
 
@@ -618,14 +417,14 @@ async function main() {
     }
     console.log(`New: ${newPosts.length}, Previously seen: ${existingPosts.length}`);
 
-    // ── 8. AI classify new posts ──
+    // ── 7. AI classify new posts ──
     let classifiedNew = newPosts;
     if (newPosts.length > 0) {
       const forClassifier = newPosts.map((p) => ({
         id: p.id,
         name: p.id,
-        title: p.text.slice(0, 120),
-        selftext: p.text.slice(0, 2000),
+        title: (p.title || p.text || "").slice(0, 120),
+        selftext: (p.snippet || p.text || "").slice(0, 2000),
         author: p.author || "unknown",
       }));
 
@@ -642,12 +441,12 @@ async function main() {
       }
     }
 
-    // ── 9. Normalize to pipeline schema ──
+    // ── 8. Normalize to pipeline schema ──
     const finalPosts = [...classifiedNew, ...existingPosts].map((p) => ({
       id: p.id,
       name: p.id,
-      title: (p.text || "").slice(0, 120),
-      selftext: (p.text || "").slice(0, 2000),
+      title: (p.title || p.text || "").slice(0, 120),
+      selftext: (p.snippet || p.text || "").slice(0, 2000),
       author: p.author || "unknown",
       author_name: p.author || "unknown",
       permalink: p.postUrl || "",
@@ -664,12 +463,12 @@ async function main() {
 
     finalPosts.sort((a, b) => (b.created_utc || 0) - (a.created_utc || 0));
 
-    // ── 10. Store to Redis ──
+    // ── 9. Store to Redis ──
     const payload = JSON.stringify({
       posts: finalPosts.slice(0, 300),
       post_count: Math.min(finalPosts.length, 300),
       cached_at: new Date().toISOString(),
-      feed: "facebook-playwright",
+      feed: "facebook-google",
       sources: { facebook: finalPosts.length },
     });
 
@@ -678,12 +477,12 @@ async function main() {
       `\nStored ${Math.min(finalPosts.length, 300)} posts to Redis (key: gigalertpro:facebook:latest, TTL 2h)`,
     );
 
-    // ── 11. Terminal metrics ──
+    // ── 10. Terminal metrics ──
     console.log("\n╔══════════════════════════════════════════════╗");
     console.log("║         FACEBOOK CRAWLER RESULTS             ║");
     console.log("╠══════════════════════════════════════════════╣");
     console.log(`║ Keywords searched     │ ${SEARCH_KEYWORDS.length.toString().padStart(6)}`);
-    console.log(`║ Raw posts extracted   │ ${totalExtracted.toString().padStart(6)}`);
+    console.log(`║ Raw results found     │ ${totalExtracted.toString().padStart(6)}`);
     console.log(`║ After dedup           │ ${uniquePosts.length.toString().padStart(6)}`);
     console.log(`║ After gig filter      │ ${gigPosts.length.toString().padStart(6)}`);
     console.log(`║ After freshness       │ ${freshPosts.length.toString().padStart(6)}`);
@@ -709,7 +508,7 @@ async function main() {
           p.created_utc > 0
             ? `${Math.round((Date.now() / 1000 - p.created_utc) / 3600)}h ago`
             : "unknown";
-        console.log(`  [${age}] ${p.title.slice(0, 80)}... — ${p.author || "?"}`);
+        console.log(`  [${age}] ${p.title.slice(0, 80)} — ${p.permalink.slice(0, 50)}`);
       }
     }
   } catch (err) {
@@ -717,8 +516,6 @@ async function main() {
       await page.screenshot({ path: "fb-error-screenshot.png", fullPage: false });
       console.log("Screenshot saved to fb-error-screenshot.png");
       console.log("Page URL at failure:", page.url());
-      const title = await page.title().catch(() => "unknown");
-      console.log("Page title at failure:", title);
     } catch { /* ignore */ }
     await browser.close().catch(() => {});
     console.error("Facebook crawler failed:", err.message || err);
