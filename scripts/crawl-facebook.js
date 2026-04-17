@@ -11,88 +11,106 @@ import { classifyAndFilter } from "./gig-classifier.js";
 const MAX_AGE_DAYS = parseInt(process.env.FB_MAX_AGE_DAYS || "7", 10);
 const MAX_AGE_MS = MAX_AGE_DAYS * 86400 * 1000;
 
-// ── Search keywords — organic freelance gig requests from public profiles ───
+// ── Search keywords — organized by skill category (mirrors X/Nitter strategy) ─
 
 const SEARCH_KEYWORDS = [
-  "looking for a video editor",
-  "looking for a graphic designer",
-  "looking for a web developer",
-  "looking for a freelancer",
-  "looking for a copywriter",
-  "looking for a social media manager",
-  "looking for a virtual assistant",
-  "looking for a photographer",
-  "looking for a UI/UX designer",
-  "looking for an app developer",
-  "looking for a brand designer",
-  "need a video editor",
-  "need a graphic designer",
-  "need a web developer",
-  "need a designer",
-  "need a developer",
-  "need a wordpress developer",
-  "need a logo designer",
-  "need an animator",
-  "need a react developer",
-  "hiring video editor",
+  // ── Design & Creative ──
   "hiring graphic designer",
-  "hiring web developer",
-  "hiring content writer",
-  "hiring virtual assistant",
-  "hiring social media manager",
+  "hiring UI UX designer",
   "hiring illustrator",
-  "hiring voiceover artist",
+  "hiring video editor",
+  "hiring motion graphics",
+  "hiring animator",
+  "need a logo designer",
+  "looking for graphic designer",
+  "need a designer freelance",
+  "hiring thumbnail designer",
+  "hiring brand designer",
+  // ── Development & Tech ──
+  "hiring web developer",
+  "hiring frontend developer",
+  "hiring backend developer",
+  "hiring mobile app developer",
+  "hiring software engineer",
+  "hiring AI developer",
+  "hiring game developer",
+  "hiring blockchain developer",
+  "hiring Shopify developer",
+  "need a developer",
+  "looking for programmer",
+  "hiring React developer",
+  "hiring Python developer",
+  "hiring WordPress developer",
+  "hiring flutter developer",
+  "hiring iOS developer",
+  "hiring Android developer",
+  "hiring DevOps engineer",
+  "need a full stack developer",
+  "hiring Webflow developer",
+  "hiring no-code developer",
+  // ── Writing & Content ──
+  "hiring copywriter",
+  "hiring content writer",
+  "hiring technical writer",
+  "hiring ghostwriter",
+  "hiring editor proofreader",
+  "need a writer",
+  "looking for blogger",
+  "hiring SEO writer",
+  "hiring scriptwriter",
+  "need a content creator",
+  // ── Marketing & Sales ──
+  "hiring social media manager",
+  "hiring SEO specialist",
+  "hiring digital marketer",
+  "hiring growth hacker",
+  "hiring email marketer",
+  "need a marketer",
+  "hiring PPC specialist",
+  "hiring Google Ads expert",
+  "hiring Facebook Ads freelancer",
+  "hiring community manager",
+  "hiring lead generation",
+  // ── Business & Admin ──
+  "hiring virtual assistant",
+  "hiring data entry",
+  "hiring project manager",
+  "hiring customer support",
+  "hiring executive assistant",
+  "need a VA",
   "hiring bookkeeper",
-  "hiring shopify developer",
+  "hiring accountant freelance",
+  "hiring admin assistant remote",
+  // ── Video & Audio ──
+  "hiring podcast editor",
+  "hiring voiceover artist",
+  "hiring voice actor",
+  "hiring music producer",
+  "hiring audio engineer",
+  "hiring sound designer",
+  "hiring YouTube editor",
+  // ── Data & AI ──
+  "hiring data analyst freelance",
+  "hiring data scientist",
+  "need a data scraper",
+  "hiring automation expert",
+  "hiring chatbot developer",
+  // ── Specialized Niches ──
+  "hiring translator",
+  "hiring photographer",
+  "hiring 3D artist",
+  "hiring transcriptionist",
+  "hiring CAD designer",
+  "hiring Blender artist",
+  "hiring tutor online",
+  // ── General / Remote ──
+  "freelance gig",
+  "freelance opportunity",
+  "remote freelance job",
+  "looking for freelancer",
+  "need a freelancer",
+  "hiring freelancer",
 ];
-
-// ── Gig-post filter ─────────────────────────────────────────────────────────
-
-const REJECT_PATTERNS = [
-  /\bi(?:'| a)?m a (?:freelanc|designer|developer|writer|creator|editor|VA|marketer)/i,
-  /\bmy (?:freelanc|UGC|design|dev|writing|editing) journey/i,
-  /\bjust started (?:my|freelanc|UGC)/i,
-  /\bfollow (?:me|us|my page)/i,
-  /\bcheck out my (?:portfolio|work|page|website|profile)/i,
-  /\bhere(?:'s| is) my (?:portfolio|work|showreel)/i,
-  /\bopen for (?:collabs|collaborations|work|commissions)/i,
-  /\bavailable for (?:hire|projects|work|bookings)/i,
-  /\bI offer (?:services|freelanc)/i,
-  /\btips for (?:freelanc|new |beginner)/i,
-  /\bhow I (?:got|landed|started|grew|built)/i,
-  /\bwho else (?:is|feels|thinks)/i,
-  /\bany (?:tips|advice|recommendations)\b/i,
-  /\bwhat tools? do you/i,
-  /\bfollow for (?:more|daily|weekly)/i,
-  /\blet me introduce myself/i,
-  /\bintroduction post/i,
-  /\brate my (?:portfolio|work|reel|website)/i,
-  /\bsharing my (?:journey|experience|story)/i,
-  /\bday \d+ of/i,
-];
-
-const HIRING_SIGNALS = [
-  /\b(?:hiring|looking for(?: a)?|need(?: a)?|seeking|wanted|searching for)\b/i,
-  /\b(?:DM (?:me|us|if)|send (?:your |me )?(?:portfolio|samples|resume|CV|rates?))/i,
-  /\b(?:apply|submit|deadline|position|role|opening|gig|project|contract|remote (?:job|position|role))\b/i,
-  /\$\d/,
-  /\b\d+(?:k|K)\b/,
-  /\bbudget\b/i,
-  /\bper (?:hour|month|project|video|post|article)\b/i,
-  /\b(?:paid|compensation|salary|stipend|retainer)\b/i,
-  /\b(?:freelancer|contractor|agency) (?:needed|wanted|required)\b/i,
-];
-
-function isGigPost(text) {
-  if (!text || text.length < 15) return false;
-  for (const rx of REJECT_PATTERNS) {
-    if (rx.test(text)) return false;
-  }
-  for (const rx of HIRING_SIGNALS) {
-    if (rx.test(text)) return true;
-  }
-  return false;
-}
 
 // ── Upstash Redis helpers ───────────────────────────────────────────────────
 
@@ -163,26 +181,16 @@ const HTTP_HEADERS = {
   "Accept-Language": "en-US,en;q=0.9",
 };
 
-function parseFBLinks(html) {
-  const results = [];
-  // Extract all Facebook URLs and surrounding text from search result HTML
-  const linkRegex = /href="([^"]*facebook\.com[^"]*)"/gi;
-  let match;
-  while ((match = linkRegex.exec(html)) !== null) {
-    let url = match[1];
-    // Decode DDG redirect URLs
-    if (url.includes("uddg=")) {
-      try { url = decodeURIComponent(url.split("uddg=")[1].split("&")[0]); } catch {}
-    }
-    // Decode Bing redirect URLs
-    if (url.includes("bing.com") && url.includes("u=")) {
-      try { url = decodeURIComponent(url.split("u=")[1].split("&")[0]); } catch {}
-    }
-    if (!url.includes("facebook.com")) continue;
-
-    results.push(url);
-  }
-  return [...new Set(results)];
+function decodeHtmlEntities(str) {
+  return str
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCodePoint(parseInt(dec, 10)))
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&nbsp;/g, " ");
 }
 
 function extractSnippets(html) {
@@ -203,15 +211,12 @@ function extractSnippets(html) {
     if (!url.includes("facebook.com")) continue;
 
     // Extract visible text (strip HTML tags)
-    const text = chunk
-      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
-      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
-      .replace(/<[^>]+>/g, " ")
-      .replace(/&amp;/g, "&")
-      .replace(/&lt;/g, "<")
-      .replace(/&gt;/g, ">")
-      .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, "'")
+    const text = decodeHtmlEntities(
+      chunk
+        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+        .replace(/<[^>]+>/g, " ")
+    )
       .replace(/\s+/g, " ")
       .trim();
 
@@ -301,6 +306,38 @@ function parseSearchDate(text) {
   if (!isNaN(parsed.getTime())) return Math.floor(parsed.getTime() / 1000);
 
   return null;
+}
+
+// ── URL validation — reject non-post Facebook links ────────────────────────
+
+const REJECT_URL_PATTERNS = [
+  /facebook\.com\/?$/,
+  /facebook\.com\/login/,
+  /facebook\.com\/help/,
+  /facebook\.com\/policies/,
+  /facebook\.com\/business/,
+  /facebook\.com\/marketplace/,
+  /facebook\.com\/events\/\d+\/?$/,
+  /facebook\.com\/groups\/[^/]+\/?$/,
+  /facebook\.com\/[^/]+\/?$/,
+  /facebook\.com\/watch\/?$/,
+  /facebook\.com\/(?:photo|video)\.php/,
+];
+
+const POST_URL_SIGNALS = [
+  /\/posts\//,
+  /\/permalink\//,
+  /story_fbid/,
+  /\/groups\/[^/]+\/posts\//,
+  /\/[^/]+\/(?:posts|videos|photos)\/\d+/,
+];
+
+function isValidPostUrl(url) {
+  if (!url || !url.includes("facebook.com")) return false;
+  for (const rx of REJECT_URL_PATTERNS) {
+    if (rx.test(url)) return false;
+  }
+  return POST_URL_SIGNALS.some((rx) => rx.test(url));
 }
 
 // ── Main crawler ────────────────────────────────────────────────────────────
@@ -393,18 +430,20 @@ async function main() {
     const uniquePosts = Array.from(deduped.values());
     console.log(`After dedup: ${uniquePosts.length} unique posts`);
 
-    // ── 5. Regex gig filter ──
-    const gigPosts = uniquePosts.filter((p) => isGigPost(p.text));
-    console.log(
-      `Gig filter: kept ${gigPosts.length}/${uniquePosts.length} (rejected ${uniquePosts.length - gigPosts.length} non-gig)`,
-    );
+    // ── 5. URL validation — reject non-post links ──
+    const validPosts = uniquePosts.filter((p) => isValidPostUrl(p.url));
+    const urlRejected = uniquePosts.length - validPosts.length;
+    if (urlRejected > 0) {
+      console.log(`URL filter: rejected ${urlRejected} non-post links`);
+    }
+    console.log(`Valid post URLs: ${validPosts.length}`);
 
     // ── 6. Parse timestamps and freshness filter ──
     const now = Date.now();
     const freshPosts = [];
     let staleCount = 0;
 
-    for (const p of gigPosts) {
+    for (const p of validPosts) {
       const createdUtc = parseSearchDate(p.dateText);
       if (!createdUtc) {
         p.created_utc = Math.floor(now / 1000);
@@ -502,7 +541,7 @@ async function main() {
     console.log(`║ Keywords searched     │ ${SEARCH_KEYWORDS.length.toString().padStart(6)}`);
     console.log(`║ Raw results found     │ ${totalExtracted.toString().padStart(6)}`);
     console.log(`║ After dedup           │ ${uniquePosts.length.toString().padStart(6)}`);
-    console.log(`║ After gig filter      │ ${gigPosts.length.toString().padStart(6)}`);
+    console.log(`║ Valid post URLs       │ ${validPosts.length.toString().padStart(6)}`);
     console.log(`║ After freshness       │ ${freshPosts.length.toString().padStart(6)}`);
     console.log(`║ New (AI classified)   │ ${classifiedNew.length.toString().padStart(6)}`);
     console.log(`║ Previously seen       │ ${existingPosts.length.toString().padStart(6)}`);
