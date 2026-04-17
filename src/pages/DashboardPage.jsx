@@ -164,7 +164,7 @@ export default function DashboardPage() {
           },
           {
             label: "Sources Scanned",
-            value: "4+",
+            value: "6+",
             icon: Globe,
             color: "text-purple-400",
             bg: "bg-gradient-to-br from-purple-400/10 to-purple-400/5",
@@ -296,7 +296,7 @@ export default function DashboardPage() {
                 Scanning Sources...
               </h3>
               <p className="text-gray-500 text-sm mt-1">
-                Searching Reddit, X, Threads & Craigslist for gigs matching your
+                Searching Reddit, X, Threads, Facebook, LinkedIn & Craigslist for gigs matching your
                 keywords
               </p>
             </div>

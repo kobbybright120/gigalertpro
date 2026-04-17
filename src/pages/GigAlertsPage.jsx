@@ -166,6 +166,9 @@ export default function GigAlertsPage() {
   const facebookCount = alerts.filter(
     (a) => a.source_platform === "Facebook",
   ).length;
+  const linkedinCount = alerts.filter(
+    (a) => a.source_platform === "LinkedIn",
+  ).length;
 
   // Collect unique categories from current alerts
   const categorySet = new Set(alerts.map((a) => a.category).filter(Boolean));
@@ -192,7 +195,7 @@ export default function GigAlertsPage() {
             Gig Alerts
           </h1>
           <p className="text-gray-500 mt-1.5 text-sm">
-            Real-time gig matching across Reddit, Craigslist, X, Threads & Facebook
+            Real-time gig matching across Reddit, Craigslist, X, Threads, Facebook & LinkedIn
           </p>
         </div>
         <span className="inline-flex items-center gap-2 px-4 py-2 glass-card rounded-full border border-[#00F0B5]/15 shrink-0">
@@ -303,6 +306,12 @@ export default function GigAlertsPage() {
                 key: "facebook",
                 label: "Facebook",
                 count: facebookCount,
+                locked: false,
+              },
+              {
+                key: "linkedin",
+                label: "LinkedIn",
+                count: linkedinCount,
                 locked: false,
               },
               {
@@ -430,7 +439,7 @@ export default function GigAlertsPage() {
                 Scanning Sources...
               </h3>
               <p className="text-gray-500 text-sm mt-1">
-                Searching Reddit, Craigslist, X, Threads & Facebook for matching gigs
+                Searching Reddit, Craigslist, X, Threads, Facebook & LinkedIn for matching gigs
               </p>
             </div>
             {[1, 2, 3].map((i) => (
@@ -463,7 +472,7 @@ export default function GigAlertsPage() {
             </h3>
             <p className="text-gray-500 text-sm max-w-md mx-auto">
               Type a keyword or skill above to start finding matching gigs from
-              Reddit, Craigslist, X, Threads & Facebook. Be the first to apply!
+              Reddit, Craigslist, X, Threads, Facebook & LinkedIn. Be the first to apply!
             </p>
           </div>
         ) : filtered.length > 0 ? (

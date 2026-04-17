@@ -1621,7 +1621,9 @@ async function fetchCommunityPostsFromProxy() {
               ? "Threads"
               : p._sub === "facebook"
                 ? "Facebook"
-                : "Community",
+                : p._sub === "linkedin"
+                  ? "LinkedIn"
+                  : "Community",
     }));
   } catch (err) {
     console.error("[GigAlertPro] Community API fetch failed:", err.message);
@@ -1792,6 +1794,8 @@ function matchAndScore(posts, lowerKws) {
       p._sub === "threads" || p._source_platform === "Threads";
     const isFacebookPost =
       p._sub === "facebook" || p._source_platform === "Facebook";
+    const isLinkedInPost =
+      p._sub === "linkedin" || p._source_platform === "LinkedIn";
 
     // Decode common HTML entities so regex filters work on clean text
     const decodeEntities = (s) =>
@@ -1924,6 +1928,8 @@ function matchAndScore(posts, lowerKws) {
     // etc.) in the Playwright crawler, so keyword matches are higher signal.
     if (isThreadsPost) score = Math.min(100, score + 8);
 
+    if (isLinkedInPost) score = Math.min(100, score + 8);
+
     // ── Skip low-relevance posts (spammy pitches that barely match) ──
     if (score < 22) continue;
 
@@ -1942,8 +1948,8 @@ function matchAndScore(posts, lowerKws) {
     // ── Stricter X/Threads/Instagram/TikTok/YouTube score gate ──
     // X and Threads produce much more noise than Reddit/CL.
     // Require higher score for body-only matches on these platforms.
-    if ((isXPost || isThreadsPost) && titleHits === 0 && score < 45) continue;
-    if ((isXPost || isThreadsPost) && score < 35) continue;
+    if ((isXPost || isThreadsPost || isLinkedInPost) && titleHits === 0 && score < 45) continue;
+    if ((isXPost || isThreadsPost || isLinkedInPost) && score < 35) continue;
 
     // ── Multi-role hiring post detection (5+ roles = corporate job listing) ──
     const multiRolePatterns = [
@@ -1991,6 +1997,7 @@ function matchAndScore(posts, lowerKws) {
     if (
       !isXPost &&
       !isThreadsPost &&
+      !isLinkedInPost &&
       !isCLPost &&
       titleHits === 0 &&
       matched.length === 1 &&
@@ -2042,12 +2049,12 @@ function matchAndScore(posts, lowerKws) {
 
     // ── For X/Threads/Facebook posts: derive a short headline + full body ──
     let finalTitle, finalBody;
-    if (isXPost || isThreadsPost || isFacebookPost) {
+    if (isXPost || isThreadsPost || isFacebookPost || isLinkedInPost) {
       // Use whichever is longer (title & selftext are often identical for tweets)
       const rawTitle = p.title || "";
       const rawBody = p.selftext || "";
       const source = rawBody.length >= rawTitle.length ? rawBody : rawTitle;
-      let fullTweet = isFacebookPost ? cleanText(source) : cleanTweet(source);
+      let fullTweet = (isFacebookPost || isLinkedInPost) ? cleanText(source) : cleanTweet(source);
       fullTweet = fullTweet || "Untitled";
 
       // Threads DOM scrape bakes username + relative time into the text
