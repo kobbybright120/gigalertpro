@@ -309,7 +309,6 @@ async function main() {
   const allPosts = [];
   const keywordStats = {};
   let totalExtracted = 0;
-  let searchEngine = "unknown";
 
   try {
     // ── 1. Load seen set for dedup ──
@@ -318,63 +317,69 @@ async function main() {
     const seenSet = new Set(seenRaw || []);
     console.log(`Seen set: ${seenSet.size} previously seen posts`);
 
-    // ── 2. Try DDG Lite first, fall back to Bing ──
-    // Test which engine works with first keyword
-    console.log("Testing search engines...");
-    const testResults = await searchDDGLite(SEARCH_KEYWORDS[0]);
-    let useEngine = "ddg";
-    if (testResults.length > 0) {
-      console.log(`DDG Lite works — found ${testResults.length} results`);
-      searchEngine = "DDG Lite";
-    } else {
-      const bingTest = await searchBing(SEARCH_KEYWORDS[0]);
-      if (bingTest.length > 0) {
-        console.log(`Bing works — found ${bingTest.length} results`);
-        useEngine = "bing";
-        searchEngine = "Bing";
-      } else {
-        console.log("Neither DDG Lite nor Bing returned results for test query");
-        console.log("  DDG Lite test results: 0, Bing test results: 0");
-        searchEngine = "none";
-      }
-    }
+    // ── 2. Search each keyword — try DDG Lite first, fall back to Bing ──
+    let ddgBlocked = false;
+    let bingBlocked = false;
 
-    // Process first keyword results
-    const firstResults = useEngine === "ddg" ? testResults : (useEngine === "bing" ? await searchBing(SEARCH_KEYWORDS[0]) : []);
-    keywordStats[SEARCH_KEYWORDS[0]] = firstResults.length;
-    totalExtracted += firstResults.length;
-    for (const r of firstResults) {
-      allPosts.push({ ...r, searchQuery: SEARCH_KEYWORDS[0] });
-    }
-    console.log(`[1/${SEARCH_KEYWORDS.length}] "${SEARCH_KEYWORDS[0]}" → ${firstResults.length} results`);
-
-    // ── 3. Search remaining keywords ──
-    const searchFn = useEngine === "bing" ? searchBing : searchDDGLite;
-
-    for (let i = 1; i < SEARCH_KEYWORDS.length; i++) {
+    for (let i = 0; i < SEARCH_KEYWORDS.length; i++) {
       const keyword = SEARCH_KEYWORDS[i];
+      let results = [];
 
-      try {
-        const results = await searchFn(keyword);
-        keywordStats[keyword] = results.length;
-        totalExtracted += results.length;
-
-        for (const r of results) {
-          allPosts.push({ ...r, searchQuery: keyword });
+      // Try DDG Lite first (unless already blocked)
+      if (!ddgBlocked) {
+        results = await searchDDGLite(keyword);
+        if (results.length === 0) {
+          // Check if it was a 403 (DDG rate limit)
+          const testResp = await fetch(
+            `https://lite.duckduckgo.com/lite/?q=${encodeURIComponent("test")}`,
+            { headers: { ...HTTP_HEADERS, "User-Agent": "Lynx/2.9.2 libwww-FM/2.14" } },
+          ).catch(() => null);
+          if (testResp && !testResp.ok) {
+            ddgBlocked = true;
+            console.log("  DDG Lite rate-limited — switching to Bing");
+          }
         }
-
-        console.log(`[${i + 1}/${SEARCH_KEYWORDS.length}] "${keyword}" → ${results.length} results`);
-      } catch (err) {
-        console.warn(`  ✗ Search failed for "${keyword}":`, err.message);
-        keywordStats[keyword] = 0;
       }
 
-      // Rate limit
-      await randomDelay(3000, 7000);
+      // Fall back to Bing if DDG returned nothing
+      if (results.length === 0 && !bingBlocked) {
+        results = await searchBing(keyword);
+        if (results.length === 0 && i > 2) {
+          // After a few tries, check if Bing is also blocking
+          const testResp = await fetch(
+            "https://www.bing.com/search?q=test",
+            { headers: HTTP_HEADERS },
+          ).catch(() => null);
+          if (testResp && !testResp.ok) {
+            bingBlocked = true;
+            console.log("  Bing also rate-limited");
+          }
+        }
+      }
+
+      keywordStats[keyword] = results.length;
+      totalExtracted += results.length;
+
+      for (const r of results) {
+        allPosts.push({ ...r, searchQuery: keyword });
+      }
+
+      const engine = results.length > 0 ? (ddgBlocked ? "Bing" : "DDG") : "—";
+      console.log(`[${i + 1}/${SEARCH_KEYWORDS.length}] "${keyword}" → ${results.length} [${engine}]`);
+
+      // If both engines are blocked, stop early
+      if (ddgBlocked && bingBlocked) {
+        console.log("Both search engines blocked — stopping early");
+        break;
+      }
+
+      // Longer delays to avoid rate limiting (8-15s)
+      if (i < SEARCH_KEYWORDS.length - 1) {
+        await randomDelay(8000, 15000);
+      }
     }
 
-    console.log(`\nSearch engine used: ${searchEngine}`);
-    console.log(`Total raw results: ${totalExtracted}`);
+    console.log(`\nTotal raw results: ${totalExtracted}`);
 
     // ── 4. Deduplicate by URL ──
     const deduped = new Map();
