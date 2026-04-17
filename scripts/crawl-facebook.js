@@ -236,16 +236,14 @@ function cleanSearchText(text) {
 
 function extractSnippets(html) {
   const results = [];
-  // Generic pattern: find text blocks near Facebook links
-  // Split HTML by result-like boundaries
-  const chunks = html.split(/<(?:li|div|article|tr)[^>]*>/i);
+  const seenUrls = new Set();
 
-  for (const chunk of chunks) {
-    // Check if chunk contains a Facebook URL
-    const fbMatch = chunk.match(/href="([^"]*facebook\.com[^"]*)"/i);
-    if (!fbMatch) continue;
+  const urlPattern = /href="([^"]*facebook\.com[^"]*)"/gi;
+  let match;
 
-    let url = fbMatch[1];
+  while ((match = urlPattern.exec(html)) !== null) {
+    let url = match[1];
+
     if (url.includes("uddg=")) {
       try { url = decodeURIComponent(url.split("uddg=")[1].split("&")[0]); } catch {}
     }
@@ -257,10 +255,17 @@ function extractSnippets(html) {
     }
     if (!url.includes("facebook.com")) continue;
 
-    // Extract visible text (strip HTML tags + search artifacts)
+    const normalizedUrl = url.replace(/\/+$/, "");
+    if (seenUrls.has(normalizedUrl)) continue;
+    seenUrls.add(normalizedUrl);
+
+    const start = Math.max(0, match.index - 200);
+    const end = Math.min(html.length, match.index + 1500);
+    const context = html.slice(start, end);
+
     const text = cleanSearchText(
       decodeHtmlEntities(
-        chunk
+        context
           .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
           .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
           .replace(/<[^>]+>/g, " ")
@@ -269,8 +274,6 @@ function extractSnippets(html) {
 
     if (text.length < 20) continue;
 
-    // Try to extract a date — check short relative formats first ("3h", "2d", "1w"),
-    // then long relative ("3 hours ago"), then absolute ("June 5, 2024")
     let dateText = null;
     const relMatch = text.match(/\b(\d+)\s*(h|hr|hrs|d|day|days|w|wk|wks|min|m)\b/i);
     if (relMatch) {
@@ -286,7 +289,7 @@ function extractSnippets(html) {
     }
 
     results.push({
-      url,
+      url: normalizedUrl,
       text: text.slice(0, 500),
       dateText,
     });
@@ -417,28 +420,18 @@ function parseSearchDate(text) {
   return null;
 }
 
-// ── URL validation — reject non-post Facebook links ────────────────────────
+// ── URL validation — reject junk Facebook links, accept everything else ─────
 
 const REJECT_URL_PATTERNS = [
   /facebook\.com\/?$/,
   /facebook\.com\/login/,
   /facebook\.com\/help/,
   /facebook\.com\/policies/,
-  /facebook\.com\/business/,
-  /facebook\.com\/marketplace/,
-  /facebook\.com\/events\/\d+\/?$/,
-  /facebook\.com\/groups\/[^/]+\/?$/,
-  /facebook\.com\/[^/]+\/?$/,
   /facebook\.com\/watch\/?$/,
   /facebook\.com\/(?:photo|video)\.php/,
-];
-
-const POST_URL_SIGNALS = [
-  /\/posts\//,
-  /\/permalink\//,
-  /story_fbid/,
-  /\/groups\/[^/]+\/posts\//,
-  /\/[^/]+\/(?:posts|videos|photos)\/\d+/,
+  /facebook\.com\/ads\//,
+  /facebook\.com\/privacy/,
+  /facebook\.com\/settings/,
 ];
 
 function isValidPostUrl(url) {
@@ -446,7 +439,7 @@ function isValidPostUrl(url) {
   for (const rx of REJECT_URL_PATTERNS) {
     if (rx.test(url)) return false;
   }
-  return POST_URL_SIGNALS.some((rx) => rx.test(url));
+  return true;
 }
 
 // ── Main crawler ────────────────────────────────────────────────────────────
@@ -574,7 +567,7 @@ async function main() {
 
     // ── 5. URL validation — reject non-post links ──
     const validPosts = fingerprintDeduped.filter((p) => isValidPostUrl(p.url));
-    const urlRejected = uniquePosts.length - validPosts.length;
+    const urlRejected = fingerprintDeduped.length - validPosts.length;
     if (urlRejected > 0) {
       console.log(`URL filter: rejected ${urlRejected} non-post links`);
     }
@@ -585,12 +578,10 @@ async function main() {
     const freshPosts = [];
     let staleCount = 0;
 
-    const unknownDateTimestamp = Math.floor(now / 1000) - 86400;
     for (const p of validPosts) {
       const createdUtc = parseSearchDate(p.dateText);
       if (!createdUtc) {
-        p.created_utc = unknownDateTimestamp;
-        p._date_unknown = true;
+        p.created_utc = 0;
         freshPosts.push(p);
         continue;
       }
@@ -662,10 +653,7 @@ async function main() {
       _ai_is_gig: true,
     }));
 
-    finalPosts.sort((a, b) => {
-      if (a._date_unknown !== b._date_unknown) return a._date_unknown ? 1 : -1;
-      return (b.created_utc || 0) - (a.created_utc || 0);
-    });
+    finalPosts.sort((a, b) => (b.created_utc || 0) - (a.created_utc || 0));
 
     // ── 10. Store to Redis ──
     const payload = JSON.stringify({
