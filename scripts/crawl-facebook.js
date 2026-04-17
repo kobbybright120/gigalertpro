@@ -249,6 +249,12 @@ function extractSnippets(html) {
     if (url.includes("uddg=")) {
       try { url = decodeURIComponent(url.split("uddg=")[1].split("&")[0]); } catch {}
     }
+    if (url.includes("/url?")) {
+      try {
+        const qMatch = url.match(/[?&](?:q|url)=([^&]+)/);
+        if (qMatch) url = decodeURIComponent(qMatch[1]);
+      } catch {}
+    }
     if (!url.includes("facebook.com")) continue;
 
     // Extract visible text (strip HTML tags + search artifacts)
@@ -292,19 +298,19 @@ function extractSnippets(html) {
 async function searchBing(keyword) {
   const query = `site:facebook.com ${keyword}`;
   const encoded = encodeURIComponent(query);
-  const url = `https://www.bing.com/search?q=${encoded}&filters=ex1%3a"ez5"&count=20`;
+  const url = `https://www.bing.com/search?q=${encoded}&freshness=Week&count=20`;
 
   try {
     const resp = await fetch(url, { headers: getHttpHeaders(randomFrom(BROWSER_USER_AGENTS)), redirect: "follow" });
     if (!resp.ok) {
       console.log(`  [debug] Bing returned ${resp.status}`);
-      return [];
+      return null;
     }
     const html = await resp.text();
 
     if (html.includes("captcha") || html.includes("unusual traffic")) {
       console.log("  [debug] Bing CAPTCHA detected");
-      return [];
+      return null;
     }
 
     return extractSnippets(html);
@@ -325,12 +331,40 @@ async function searchDDGLite(keyword, dateFilter = "w") {
     });
     if (!resp.ok) {
       console.log(`  [debug] DDG Lite returned ${resp.status}`);
-      return [];
+      return null;
     }
     const html = await resp.text();
     return extractSnippets(html);
   } catch (err) {
     console.warn(`  [debug] DDG Lite fetch failed:`, err.message);
+    return [];
+  }
+}
+
+async function searchGoogle(keyword) {
+  const query = `site:facebook.com ${keyword}`;
+  const encoded = encodeURIComponent(query);
+  const url = `https://www.google.com/search?q=${encoded}&tbs=qdr:w&num=20&hl=en`;
+
+  try {
+    const resp = await fetch(url, {
+      headers: getHttpHeaders(randomFrom(BROWSER_USER_AGENTS)),
+      redirect: "follow",
+    });
+    if (!resp.ok) {
+      console.log(`  [debug] Google returned ${resp.status}`);
+      return null;
+    }
+    const html = await resp.text();
+
+    if (html.includes("/sorry/") || html.includes("captcha") || html.includes("unusual traffic")) {
+      console.log("  [debug] Google CAPTCHA detected");
+      return null;
+    }
+
+    return extractSnippets(html);
+  } catch (err) {
+    console.warn(`  [debug] Google fetch failed:`, err.message);
     return [];
   }
 }
@@ -437,8 +471,13 @@ async function main() {
       `Generated ${searchQueries.length} queries from ${groupsThisRun.length}/${ROLE_GROUPS.length} groups (budget: ${QUERY_BUDGET})`,
     );
 
-    let ddgBlocked = false;
-    let bingBlocked = false;
+    // Round-robin across 3 engines so no single one gets hammered
+    const blocked = { ddg: false, bing: false, google: false };
+    const ENGINE_ROTATIONS = [
+      ["ddg", "bing", "google"],
+      ["google", "ddg", "bing"],
+      ["bing", "google", "ddg"],
+    ];
     let consecutiveEmpty = 0;
 
     for (let i = 0; i < searchQueries.length; i++) {
@@ -446,39 +485,30 @@ async function main() {
       let results = [];
       let engine = "—";
 
-      // Try DDG Lite — daily filter only (no weekly fallback — we want fresh posts)
-      if (!ddgBlocked) {
-        results = await searchDDGLite(search, "d");
-        if (results.length === 0) {
-          // Check if it was a rate limit (DDG returning non-200)
-          const testResp = await fetch(
-            `https://lite.duckduckgo.com/lite/?q=${encodeURIComponent("test")}`,
-            { headers: getHttpHeaders(randomFrom(TEXT_BROWSER_USER_AGENTS)) },
-          ).catch(() => null);
-          if (testResp && !testResp.ok) {
-            ddgBlocked = true;
-            console.log("  DDG Lite rate-limited — switching to Bing");
-          }
-        } else {
-          engine = "DDG";
-        }
-      }
+      const engineOrder = ENGINE_ROTATIONS[i % 3];
 
-      // Fall back to Bing if DDG returned nothing
-      if (results.length === 0 && !bingBlocked) {
-        results = await searchBing(search);
-        if (results.length > 0) {
-          engine = "Bing";
-        } else if (i > 2) {
-          // After a few tries, check if Bing is also blocking
-          const testResp = await fetch(
-            "https://www.bing.com/search?q=test",
-            { headers: getHttpHeaders(randomFrom(BROWSER_USER_AGENTS)) },
-          ).catch(() => null);
-          if (testResp && !testResp.ok) {
-            bingBlocked = true;
-            console.log("  Bing also rate-limited");
+      for (const eng of engineOrder) {
+        if (blocked[eng]) continue;
+
+        let res;
+        if (eng === "ddg") {
+          res = await searchDDGLite(search, "d");
+          if (res !== null && res.length === 0) {
+            res = await searchDDGLite(search, "w");
           }
+          if (res === null) { blocked.ddg = true; console.log("  DDG Lite rate-limited"); continue; }
+        } else if (eng === "bing") {
+          res = await searchBing(search);
+          if (res === null) { blocked.bing = true; console.log("  Bing rate-limited / CAPTCHA"); continue; }
+        } else {
+          res = await searchGoogle(search);
+          if (res === null) { blocked.google = true; console.log("  Google rate-limited / CAPTCHA"); continue; }
+        }
+
+        if (res.length > 0) {
+          results = res;
+          engine = eng === "ddg" ? "DDG" : eng === "bing" ? "Bing" : "Google";
+          break;
         }
       }
 
@@ -491,23 +521,21 @@ async function main() {
 
       console.log(`[${i + 1}/${searchQueries.length}] ${display} → ${results.length} [${engine}]`);
 
-      // Track consecutive empties for adaptive delay
       if (results.length === 0) {
         consecutiveEmpty++;
       } else {
         consecutiveEmpty = 0;
       }
 
-      // If both engines are blocked, stop early
-      if (ddgBlocked && bingBlocked) {
-        console.log("Both search engines blocked — stopping early");
+      if (blocked.ddg && blocked.bing && blocked.google) {
+        console.log("All search engines blocked — stopping early");
         break;
       }
 
-      // Adaptive delays: base 8-15s, +2s per consecutive empty result (max +10s extra)
+      // Longer delays to avoid triggering CAPTCHAs (12-20s base)
       if (i < searchQueries.length - 1) {
-        const extraDelay = Math.min(consecutiveEmpty * 2000, 10000);
-        await randomDelay(8000 + extraDelay, 15000 + extraDelay);
+        const extraDelay = Math.min(consecutiveEmpty * 3000, 15000);
+        await randomDelay(12000 + extraDelay, 20000 + extraDelay);
       }
     }
 
