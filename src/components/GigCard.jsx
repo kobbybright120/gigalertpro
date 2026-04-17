@@ -167,9 +167,10 @@ export default function GigCard({
             {"$" + cleanBudget}
           </span>
         )}
-        <span className="text-gray-500">
-          {gig.source_platform || gig.source}
-        </span>
+        {gig.source &&
+          gig.source !== gig.source_platform && (
+            <span className="text-gray-500">{gig.source}</span>
+          )}
         {gig.postedAt && (
           <span className="inline-flex items-center gap-1 text-gray-500">
             <Clock className="w-3.5 h-3.5" />

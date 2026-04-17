@@ -193,6 +193,21 @@ function decodeHtmlEntities(str) {
     .replace(/&nbsp;/g, " ");
 }
 
+function cleanSearchText(text) {
+  return text
+    .replace(/^\d+\.\s*/, "")
+    .replace(/\s*[-–—·|]\s*Facebook\b.*$/i, "")
+    .replace(/\bFacebook\s*[-–—·|]\s*/gi, "")
+    .replace(/\bfacebook\.com\b/gi, "")
+    .replace(/\bPosted\s+\d+[smhdw]\s+ago\b/gi, "")
+    .replace(/\bPosted\s+by\b.*/gi, "")
+    .replace(/\bSign up\b.*$/gi, "")
+    .replace(/\bLog in\b.*$/gi, "")
+    .replace(/\bSee more\b/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function extractSnippets(html) {
   const results = [];
   // Generic pattern: find text blocks near Facebook links
@@ -210,15 +225,15 @@ function extractSnippets(html) {
     }
     if (!url.includes("facebook.com")) continue;
 
-    // Extract visible text (strip HTML tags)
-    const text = decodeHtmlEntities(
-      chunk
-        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
-        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
-        .replace(/<[^>]+>/g, " ")
-    )
-      .replace(/\s+/g, " ")
-      .trim();
+    // Extract visible text (strip HTML tags + search artifacts)
+    const text = cleanSearchText(
+      decodeHtmlEntities(
+        chunk
+          .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+          .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+          .replace(/<[^>]+>/g, " ")
+      )
+    );
 
     if (text.length < 20) continue;
 
@@ -446,7 +461,7 @@ async function main() {
     for (const p of validPosts) {
       const createdUtc = parseSearchDate(p.dateText);
       if (!createdUtc) {
-        p.created_utc = Math.floor(now / 1000);
+        p.created_utc = 0;
         freshPosts.push(p);
         continue;
       }
@@ -508,10 +523,10 @@ async function main() {
       author_name: p.author || "unknown",
       permalink: p.url || "",
       subreddit: null,
-      created_utc: p.created_utc || Math.floor(Date.now() / 1000),
+      created_utc: p.created_utc || 0,
       num_comments: 0,
       ups: 0,
-      link_flair_text: p.searchQuery || null,
+      link_flair_text: null,
       _sub: "facebook",
       source: `fb-search-${(p.searchQuery || "").replace(/\s+/g, "-").toLowerCase()}`,
       source_platform: "Facebook",

@@ -1790,6 +1790,8 @@ function matchAndScore(posts, lowerKws) {
       p._sub === "craigslist" || p._source_platform === "Craigslist";
     const isThreadsPost =
       p._sub === "threads" || p._source_platform === "Threads";
+    const isFacebookPost =
+      p._sub === "facebook" || p._source_platform === "Facebook";
 
     // Decode common HTML entities so regex filters work on clean text
     const decodeEntities = (s) =>
@@ -2038,14 +2040,15 @@ function matchAndScore(posts, lowerKws) {
         .replace(/\s+/g, " ")
         .trim();
 
-    // ── For X/Threads posts: derive a short headline + full body ──
+    // ── For X/Threads/Facebook posts: derive a short headline + full body ──
     let finalTitle, finalBody;
-    if (isXPost || isThreadsPost) {
+    if (isXPost || isThreadsPost || isFacebookPost) {
       // Use whichever is longer (title & selftext are often identical for tweets)
       const rawTitle = p.title || "";
       const rawBody = p.selftext || "";
       const source = rawBody.length >= rawTitle.length ? rawBody : rawTitle;
-      let fullTweet = cleanTweet(source) || "Untitled";
+      let fullTweet = isFacebookPost ? cleanText(source) : cleanTweet(source);
+      fullTweet = fullTweet || "Untitled";
 
       // Threads DOM scrape bakes username + relative time into the text
       // e.g. "dr.lynette.neil 1h Need a web developer…" — strip that prefix

@@ -514,7 +514,9 @@ export default function GigAlertsPage() {
                   title: alert.title,
                   body_preview: alert.body_preview || "",
                   budget: alert.budget || null,
-                  source: alert.source_platform || "Reddit",
+                  source: alert.subreddit
+                    ? `r/${alert.subreddit}`
+                    : alert.source_platform || "Reddit",
                   url: alert.url,
                   postedAt:
                     alert.time_ago ||

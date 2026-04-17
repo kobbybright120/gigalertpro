@@ -310,7 +310,9 @@ export default function DashboardPage() {
                   title: topAlerts[0].title,
                   body_preview: topAlerts[0].body_preview || "",
                   budget: topAlerts[0].budget || null,
-                  source: topAlerts[0].source_platform || "Reddit",
+                  source: topAlerts[0].subreddit
+                    ? `r/${topAlerts[0].subreddit}`
+                    : topAlerts[0].source_platform || "Reddit",
                   url: topAlerts[0].url,
                   postedAt:
                     topAlerts[0].time_ago ||
@@ -342,7 +344,9 @@ export default function DashboardPage() {
                       title: alert.title,
                       body_preview: alert.body_preview || "",
                       budget: alert.budget || null,
-                      source: alert.source_platform || "Reddit",
+                      source: alert.subreddit
+                        ? `r/${alert.subreddit}`
+                        : alert.source_platform || "Reddit",
                       url: alert.url,
                       postedAt:
                         alert.time_ago ||
@@ -373,7 +377,9 @@ export default function DashboardPage() {
                     title: alert.title,
                     body_preview: alert.body_preview || "",
                     budget: alert.budget || null,
-                    source: alert.source_platform || "Reddit",
+                    source: alert.subreddit
+                      ? `r/${alert.subreddit}`
+                      : alert.source_platform || "Reddit",
                     url: alert.url,
                     postedAt:
                       alert.time_ago ||
