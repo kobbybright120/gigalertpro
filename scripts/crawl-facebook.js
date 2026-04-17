@@ -11,106 +11,114 @@ import { classifyAndFilter } from "./gig-classifier.js";
 const MAX_AGE_DAYS = parseInt(process.env.FB_MAX_AGE_DAYS || "7", 10);
 const MAX_AGE_MS = MAX_AGE_DAYS * 86400 * 1000;
 
-// ── Search keywords — organized by skill category (mirrors X/Nitter strategy) ─
+// ── Dynamic query generation — role × signal matrix ─────────────────────────
+// Instead of exact phrases like "hiring video editor" (misses "Video Editor
+// Wanted", "We're Hiring: Video Editor"), we search for the ROLE as an exact
+// phrase plus a SIGNAL word anywhere on the page. Each run picks 2 random
+// signals per role so results vary across runs.
 
-const SEARCH_KEYWORDS = [
+const ROLES = [
   // ── Design & Creative ──
-  "hiring graphic designer",
-  "hiring UI UX designer",
-  "hiring illustrator",
-  "hiring video editor",
-  "hiring motion graphics",
-  "hiring animator",
-  "need a logo designer",
-  "looking for graphic designer",
-  "need a designer freelance",
-  "hiring thumbnail designer",
-  "hiring brand designer",
+  "graphic designer",
+  "UI UX designer",
+  "illustrator",
+  "video editor",
+  "motion graphics",
+  "animator",
+  "logo designer",
+  "thumbnail designer",
+  "brand designer",
   // ── Development & Tech ──
-  "hiring web developer",
-  "hiring frontend developer",
-  "hiring backend developer",
-  "hiring mobile app developer",
-  "hiring software engineer",
-  "hiring AI developer",
-  "hiring game developer",
-  "hiring blockchain developer",
-  "hiring Shopify developer",
-  "need a developer",
-  "looking for programmer",
-  "hiring React developer",
-  "hiring Python developer",
-  "hiring WordPress developer",
-  "hiring flutter developer",
-  "hiring iOS developer",
-  "hiring Android developer",
-  "hiring DevOps engineer",
-  "need a full stack developer",
-  "hiring Webflow developer",
-  "hiring no-code developer",
+  "web developer",
+  "frontend developer",
+  "backend developer",
+  "mobile app developer",
+  "software engineer",
+  "AI developer",
+  "game developer",
+  "blockchain developer",
+  "Shopify developer",
+  "React developer",
+  "Python developer",
+  "WordPress developer",
+  "flutter developer",
+  "iOS developer",
+  "Android developer",
+  "DevOps engineer",
+  "full stack developer",
+  "Webflow developer",
+  "no-code developer",
   // ── Writing & Content ──
-  "hiring copywriter",
-  "hiring content writer",
-  "hiring technical writer",
-  "hiring ghostwriter",
-  "hiring editor proofreader",
-  "need a writer",
-  "looking for blogger",
-  "hiring SEO writer",
-  "hiring scriptwriter",
-  "need a content creator",
+  "copywriter",
+  "content writer",
+  "technical writer",
+  "ghostwriter",
+  "editor proofreader",
+  "SEO writer",
+  "scriptwriter",
+  "content creator",
+  "blogger",
   // ── Marketing & Sales ──
-  "hiring social media manager",
-  "hiring SEO specialist",
-  "hiring digital marketer",
-  "hiring growth hacker",
-  "hiring email marketer",
-  "need a marketer",
-  "hiring PPC specialist",
-  "hiring Google Ads expert",
-  "hiring Facebook Ads freelancer",
-  "hiring community manager",
-  "hiring lead generation",
+  "social media manager",
+  "SEO specialist",
+  "digital marketer",
+  "growth hacker",
+  "email marketer",
+  "PPC specialist",
+  "Google Ads expert",
+  "Facebook Ads freelancer",
+  "community manager",
   // ── Business & Admin ──
-  "hiring virtual assistant",
-  "hiring data entry",
-  "hiring project manager",
-  "hiring customer support",
-  "hiring executive assistant",
-  "need a VA",
-  "hiring bookkeeper",
-  "hiring accountant freelance",
-  "hiring admin assistant remote",
+  "virtual assistant",
+  "data entry",
+  "project manager",
+  "customer support",
+  "executive assistant",
+  "bookkeeper",
+  "accountant freelance",
   // ── Video & Audio ──
-  "hiring podcast editor",
-  "hiring voiceover artist",
-  "hiring voice actor",
-  "hiring music producer",
-  "hiring audio engineer",
-  "hiring sound designer",
-  "hiring YouTube editor",
+  "podcast editor",
+  "voiceover artist",
+  "voice actor",
+  "music producer",
+  "audio engineer",
+  "sound designer",
+  "YouTube editor",
   // ── Data & AI ──
-  "hiring data analyst freelance",
-  "hiring data scientist",
-  "need a data scraper",
-  "hiring automation expert",
-  "hiring chatbot developer",
+  "data analyst",
+  "data scientist",
+  "automation expert",
+  "chatbot developer",
   // ── Specialized Niches ──
-  "hiring translator",
-  "hiring photographer",
-  "hiring 3D artist",
-  "hiring transcriptionist",
-  "hiring CAD designer",
-  "hiring Blender artist",
-  "hiring tutor online",
-  // ── General / Remote ──
-  "freelance gig",
-  "freelance opportunity",
-  "remote freelance job",
-  "looking for freelancer",
-  "need a freelancer",
-  "hiring freelancer",
+  "translator",
+  "photographer",
+  "3D artist",
+  "transcriptionist",
+  "CAD designer",
+  "Blender artist",
+  "tutor online",
 ];
+
+const SIGNALS = [
+  "hiring",
+  "wanted",
+  "needed",
+  "looking for",
+  "seeking",
+  "freelance",
+  "remote",
+];
+
+function buildSearchQueries() {
+  const queries = [];
+  for (const role of ROLES) {
+    const shuffled = [...SIGNALS].sort(() => Math.random() - 0.5);
+    for (const signal of shuffled.slice(0, 2)) {
+      queries.push({ display: `${role} + ${signal}`, search: `"${role}" ${signal}` });
+    }
+  }
+  return queries.sort(() => Math.random() - 0.5);
+}
 
 // ── Upstash Redis helpers ───────────────────────────────────────────────────
 
@@ -253,7 +261,7 @@ function extractSnippets(html) {
 }
 
 async function searchBing(keyword) {
-  const query = `site:facebook.com "${keyword}"`;
+  const query = `site:facebook.com ${keyword}`;
   const encoded = encodeURIComponent(query);
   const url = `https://www.bing.com/search?q=${encoded}&filters=ex1%3a"ez1"&count=20`;
 
@@ -278,7 +286,7 @@ async function searchBing(keyword) {
 }
 
 async function searchDDGLite(keyword) {
-  const query = `site:facebook.com "${keyword}"`;
+  const query = `site:facebook.com ${keyword}`;
   const url = `https://lite.duckduckgo.com/lite/?q=${encodeURIComponent(query)}&df=w`;
 
   try {
@@ -369,17 +377,20 @@ async function main() {
     const seenSet = new Set(seenRaw || []);
     console.log(`Seen set: ${seenSet.size} previously seen posts`);
 
-    // ── 2. Search each keyword — try DDG Lite first, fall back to Bing ──
+    // ── 2. Build search queries (role × signal matrix, randomized each run) ──
+    const searchQueries = buildSearchQueries();
+    console.log(`Generated ${searchQueries.length} search queries (${ROLES.length} roles × 2 signals)`);
+
     let ddgBlocked = false;
     let bingBlocked = false;
 
-    for (let i = 0; i < SEARCH_KEYWORDS.length; i++) {
-      const keyword = SEARCH_KEYWORDS[i];
+    for (let i = 0; i < searchQueries.length; i++) {
+      const { display, search } = searchQueries[i];
       let results = [];
 
       // Try DDG Lite first (unless already blocked)
       if (!ddgBlocked) {
-        results = await searchDDGLite(keyword);
+        results = await searchDDGLite(search);
         if (results.length === 0) {
           // Check if it was a 403 (DDG rate limit)
           const testResp = await fetch(
@@ -395,7 +406,7 @@ async function main() {
 
       // Fall back to Bing if DDG returned nothing
       if (results.length === 0 && !bingBlocked) {
-        results = await searchBing(keyword);
+        results = await searchBing(search);
         if (results.length === 0 && i > 2) {
           // After a few tries, check if Bing is also blocking
           const testResp = await fetch(
@@ -409,15 +420,15 @@ async function main() {
         }
       }
 
-      keywordStats[keyword] = results.length;
+      keywordStats[display] = results.length;
       totalExtracted += results.length;
 
       for (const r of results) {
-        allPosts.push({ ...r, searchQuery: keyword });
+        allPosts.push({ ...r, searchQuery: display });
       }
 
       const engine = results.length > 0 ? (ddgBlocked ? "Bing" : "DDG") : "—";
-      console.log(`[${i + 1}/${SEARCH_KEYWORDS.length}] "${keyword}" → ${results.length} [${engine}]`);
+      console.log(`[${i + 1}/${searchQueries.length}] ${display} → ${results.length} [${engine}]`);
 
       // If both engines are blocked, stop early
       if (ddgBlocked && bingBlocked) {
@@ -426,7 +437,7 @@ async function main() {
       }
 
       // Longer delays to avoid rate limiting (8-15s)
-      if (i < SEARCH_KEYWORDS.length - 1) {
+      if (i < searchQueries.length - 1) {
         await randomDelay(8000, 15000);
       }
     }
@@ -553,7 +564,7 @@ async function main() {
     console.log("\n╔══════════════════════════════════════════════╗");
     console.log("║         FACEBOOK CRAWLER RESULTS             ║");
     console.log("╠══════════════════════════════════════════════╣");
-    console.log(`║ Keywords searched     │ ${SEARCH_KEYWORDS.length.toString().padStart(6)}`);
+    console.log(`║ Queries searched      │ ${searchQueries.length.toString().padStart(6)}`);
     console.log(`║ Raw results found     │ ${totalExtracted.toString().padStart(6)}`);
     console.log(`║ After dedup           │ ${uniquePosts.length.toString().padStart(6)}`);
     console.log(`║ Valid post URLs       │ ${validPosts.length.toString().padStart(6)}`);
