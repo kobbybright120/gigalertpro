@@ -238,14 +238,33 @@ async function loginMbasic(page) {
   }
 
   console.log("Logging in via mbasic.facebook.com...");
-  await page.goto("https://mbasic.facebook.com/", { waitUntil: "domcontentloaded", timeout: 30000 });
+  await page.goto("https://mbasic.facebook.com/login/", { waitUntil: "domcontentloaded", timeout: 30000 });
   await sleep(2000);
+
+  // Debug: log what the page looks like
+  const formHtml = await page.evaluate(() => {
+    const forms = document.querySelectorAll("form");
+    const inputs = document.querySelectorAll("input");
+    const buttons = document.querySelectorAll("button");
+    return {
+      formCount: forms.length,
+      inputs: Array.from(inputs).map((i) => `${i.tagName} name=${i.name} type=${i.type} value=${i.value}`).slice(0, 10),
+      buttons: Array.from(buttons).map((b) => `${b.tagName} name=${b.name} text=${b.innerText}`).slice(0, 5),
+      title: document.title,
+      bodyPreview: (document.body?.innerText || "").slice(0, 200),
+    };
+  });
+  console.log("  [debug] Forms:", formHtml.formCount);
+  console.log("  [debug] Inputs:", JSON.stringify(formHtml.inputs));
+  console.log("  [debug] Buttons:", JSON.stringify(formHtml.buttons));
+  console.log("  [debug] Body:", formHtml.bodyPreview.slice(0, 150));
 
   // Accept cookie consent if present
   try {
-    const cookieBtn = page.locator('button[name="accept_only_essential"], button[value="Accept All"], a:has-text("Accept"), button:has-text("Accept")').first();
+    const cookieBtn = page.locator('button[name="accept_only_essential"], button[value="Accept All"], input[value="Accept All"], a:has-text("Accept"), button:has-text("Accept"), input[type="submit"][value*="Accept"], input[type="submit"][value*="allow"], a[href*="cookie"]').first();
     if (await cookieBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
       await cookieBtn.click();
+      console.log("  → Dismissed cookie consent");
       await sleep(1500);
     }
   } catch { /* no cookie banner */ }
@@ -262,11 +281,16 @@ async function loginMbasic(page) {
   await passInput.fill(FB_PASSWORD);
   await randomDelay(200, 500);
 
-  // Submit — mbasic uses a standard form submit button
-  const loginBtn = page.locator('input[name="login"], input[type="submit"], button[name="login"]').first();
-  await loginBtn.click();
+  // Submit — try multiple selectors, fall back to Enter key
+  const loginBtn = page.locator('input[name="login"], input[type="submit"][value="Log In"], input[type="submit"][value="Log in"], input[type="submit"], button[name="login"], button[type="submit"]').first();
+  try {
+    await loginBtn.click({ timeout: 5000 });
+  } catch {
+    console.log("  Login button not found, pressing Enter instead...");
+    await passInput.press("Enter");
+  }
   await page.waitForLoadState("domcontentloaded", { timeout: 30000 });
-  await sleep(2000);
+  await sleep(3000);
 
   // Check for checkpoint
   const url = page.url();
