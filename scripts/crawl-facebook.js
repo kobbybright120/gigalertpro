@@ -8,7 +8,7 @@
 
 import { classifyAndFilter } from "./gig-classifier.js";
 
-const MAX_AGE_DAYS = parseInt(process.env.FB_MAX_AGE_DAYS || "7", 10);
+const MAX_AGE_DAYS = parseInt(process.env.FB_MAX_AGE_DAYS || "2", 10);
 const MAX_AGE_MS = MAX_AGE_DAYS * 86400 * 1000;
 
 // ── Dynamic query generation — grouped roles × social-media signals ─────────
@@ -292,7 +292,7 @@ function extractSnippets(html) {
 async function searchBing(keyword) {
   const query = `site:facebook.com ${keyword}`;
   const encoded = encodeURIComponent(query);
-  const url = `https://www.bing.com/search?q=${encoded}&filters=ex1%3a"ez1"&count=20`;
+  const url = `https://www.bing.com/search?q=${encoded}&filters=ex1%3a"ez5"&count=20`;
 
   try {
     const resp = await fetch(url, { headers: getHttpHeaders(randomFrom(BROWSER_USER_AGENTS)), redirect: "follow" });
@@ -446,12 +446,9 @@ async function main() {
       let results = [];
       let engine = "—";
 
-      // Try DDG Lite — daily filter first (fresher), fall back to weekly if empty
+      // Try DDG Lite — daily filter only (no weekly fallback — we want fresh posts)
       if (!ddgBlocked) {
         results = await searchDDGLite(search, "d");
-        if (results.length === 0) {
-          results = await searchDDGLite(search, "w");
-        }
         if (results.length === 0) {
           // Check if it was a rate limit (DDG returning non-200)
           const testResp = await fetch(
@@ -560,10 +557,12 @@ async function main() {
     const freshPosts = [];
     let staleCount = 0;
 
+    const unknownDateTimestamp = Math.floor(now / 1000) - 86400;
     for (const p of validPosts) {
       const createdUtc = parseSearchDate(p.dateText);
       if (!createdUtc) {
-        p.created_utc = 0;
+        p.created_utc = unknownDateTimestamp;
+        p._date_unknown = true;
         freshPosts.push(p);
         continue;
       }
@@ -635,7 +634,10 @@ async function main() {
       _ai_is_gig: true,
     }));
 
-    finalPosts.sort((a, b) => (b.created_utc || 0) - (a.created_utc || 0));
+    finalPosts.sort((a, b) => {
+      if (a._date_unknown !== b._date_unknown) return a._date_unknown ? 1 : -1;
+      return (b.created_utc || 0) - (a.created_utc || 0);
+    });
 
     // ── 10. Store to Redis ──
     const payload = JSON.stringify({
