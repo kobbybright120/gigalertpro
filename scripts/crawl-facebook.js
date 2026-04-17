@@ -13,29 +13,44 @@ const MAX_AGE_DAYS = parseInt(process.env.FB_MAX_AGE_DAYS || "7", 10);
 const MAX_AGE_MS = MAX_AGE_DAYS * 86400 * 1000;
 
 // ── Public Facebook groups and pages to scrape ──────────────────────────────
-// These are publicly accessible without login.
+// Focused on groups where clients post organic gig requests like
+// "looking for a video editor", "need a graphic designer", etc.
 
 const SEED_URLS = [
-  // Freelance hiring groups
-  "https://www.facebook.com/groups/freelancejobposting/",
-  "https://www.facebook.com/groups/remotejobsanywhere/",
-  "https://www.facebook.com/groups/graphicdesignjobsworldwide/",
-  "https://www.facebook.com/groups/webdeveloperjobs/",
+  // Freelance hiring / for-hire groups
   "https://www.facebook.com/groups/hireafreelancer/",
-  "https://www.facebook.com/groups/freelancewritinggigs/",
-  "https://www.facebook.com/groups/virtualassistantjobs/",
-  "https://www.facebook.com/groups/socialmediamarketingjobs/",
-  "https://www.facebook.com/groups/uxuidesignjobs/",
+  "https://www.facebook.com/groups/freelancejobposting/",
+  "https://www.facebook.com/groups/haborfreelance/",
+  "https://www.facebook.com/groups/findafreelancer/",
+  "https://www.facebook.com/groups/freelancersforhire/",
+  // Video editing gigs
   "https://www.facebook.com/groups/videoeditingjobs/",
-  "https://www.facebook.com/groups/remoteworkers/",
-  "https://www.facebook.com/groups/digitalnomadsjobs/",
+  "https://www.facebook.com/groups/videoeditorforhire/",
+  "https://www.facebook.com/groups/videoeditingfreelance/",
+  // Graphic design gigs
+  "https://www.facebook.com/groups/graphicdesignjobsworldwide/",
+  "https://www.facebook.com/groups/graphicdesignersforhire/",
+  "https://www.facebook.com/groups/logodesignjobs/",
+  // Web development gigs
+  "https://www.facebook.com/groups/webdeveloperjobs/",
+  "https://www.facebook.com/groups/wordpressfreelancers/",
+  "https://www.facebook.com/groups/webdesignfreelance/",
+  // Writing / content
+  "https://www.facebook.com/groups/freelancewritinggigs/",
   "https://www.facebook.com/groups/contentwritingjobs/",
-  "https://www.facebook.com/groups/saborfreelance/",
+  "https://www.facebook.com/groups/copywritingjobs/",
+  // Virtual assistants
+  "https://www.facebook.com/groups/virtualassistantjobs/",
+  "https://www.facebook.com/groups/hireaVA/",
+  // Social media / marketing
+  "https://www.facebook.com/groups/socialmediamarketingjobs/",
+  "https://www.facebook.com/groups/socialmediamanagerforhire/",
+  // UI/UX design
+  "https://www.facebook.com/groups/uxuidesignjobs/",
+  // General freelance marketplaces
   "https://www.facebook.com/groups/freelancersunion/",
-  // Public pages that post gigs
-  "https://www.facebook.com/remotejobshq/",
-  "https://www.facebook.com/freelancermap/",
-  "https://www.facebook.com/weworkremotely/",
+  "https://www.facebook.com/groups/freelancejobsboard/",
+  "https://www.facebook.com/groups/needafreelancer/",
 ];
 
 // ── Gig-post filter ─────────────────────────────────────────────────────────
