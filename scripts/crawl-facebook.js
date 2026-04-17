@@ -1,9 +1,9 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// GigAlertPro — Facebook Playwright Crawler
+// GigAlertPro — Facebook Public Group/Page Crawler
 //
-// Logs into Facebook with a dedicated account, searches for freelance gig
-// keywords, extracts posts, filters with regex + AI, and stores to Redis.
-// Session cookies persist in Redis so we only log in once.
+// Scrapes public Facebook groups and pages for freelance gig posts.
+// No login required — reads publicly visible content only.
+// Uses Playwright to handle JS-rendered content, scrolling, and overlays.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { chromium } from "playwright";
@@ -12,45 +12,33 @@ import { classifyAndFilter } from "./gig-classifier.js";
 const MAX_AGE_DAYS = parseInt(process.env.FB_MAX_AGE_DAYS || "7", 10);
 const MAX_AGE_MS = MAX_AGE_DAYS * 86400 * 1000;
 
-const FB_EMAIL = process.env.FB_EMAIL || "";
-const FB_PASSWORD = process.env.FB_PASSWORD || "";
+// ── Public Facebook groups and pages to scrape ──────────────────────────────
+// These are publicly accessible without login.
 
-// ── Search keywords (covering major freelance niches) ────────────────────────
-
-const SEARCH_KEYWORDS = [
-  "hiring video editor",
-  "hiring graphic designer",
-  "hiring web developer",
-  "looking for a freelancer",
-  "need a designer",
-  "need a developer",
-  "hiring virtual assistant",
-  "looking for copywriter",
-  "hiring social media manager",
-  "need a video editor",
-  "freelance opportunity",
-  "need a wordpress developer",
-  "hiring content writer",
-  "looking for SEO expert",
-  "need a logo designer",
-  "hiring data entry",
-  "looking for photographer",
-  "need an animator",
-  "hiring illustrator",
-  "looking for UI/UX designer",
-  "hiring shopify developer",
-  "need a react developer",
-  "hiring bookkeeper",
-  "looking for translator",
-  "hiring voiceover artist",
-  "need email marketing",
-  "hiring podcast editor",
-  "looking for app developer",
-  "need a brand designer",
-  "hiring video producer",
+const SEED_URLS = [
+  // Freelance hiring groups
+  "https://www.facebook.com/groups/freelancejobposting/",
+  "https://www.facebook.com/groups/remotejobsanywhere/",
+  "https://www.facebook.com/groups/graphicdesignjobsworldwide/",
+  "https://www.facebook.com/groups/webdeveloperjobs/",
+  "https://www.facebook.com/groups/hireafreelancer/",
+  "https://www.facebook.com/groups/freelancewritinggigs/",
+  "https://www.facebook.com/groups/virtualassistantjobs/",
+  "https://www.facebook.com/groups/socialmediamarketingjobs/",
+  "https://www.facebook.com/groups/uxuidesignjobs/",
+  "https://www.facebook.com/groups/videoeditingjobs/",
+  "https://www.facebook.com/groups/remoteworkers/",
+  "https://www.facebook.com/groups/digitalnomadsjobs/",
+  "https://www.facebook.com/groups/contentwritingjobs/",
+  "https://www.facebook.com/groups/saborfreelance/",
+  "https://www.facebook.com/groups/freelancersunion/",
+  // Public pages that post gigs
+  "https://www.facebook.com/remotejobshq/",
+  "https://www.facebook.com/freelancermap/",
+  "https://www.facebook.com/weworkremotely/",
 ];
 
-// ── Gig-post filter (reused from Threads crawler) ────────────────────────────
+// ── Gig-post filter ─────────────────────────────────────────────────────────
 
 const REJECT_PATTERNS = [
   /\bi(?:'| a)?m a (?:freelanc|designer|developer|writer|creator|editor|VA|marketer)/i,
@@ -98,7 +86,7 @@ function isGigPost(text) {
   return false;
 }
 
-// ── Upstash Redis helpers ────────────────────────────────────────────────────
+// ── Upstash Redis helpers ───────────────────────────────────────────────────
 
 function getUpstashCredentials() {
   const url = (process.env.UPSTASH_REDIS_REST_URL || "")
@@ -163,7 +151,7 @@ function randomDelay(minMs, maxMs) {
   return sleep(minMs + Math.random() * (maxMs - minMs));
 }
 
-// ── Facebook relative timestamp parser ───────────────────────────────────────
+// ── Facebook relative timestamp parser ──────────────────────────────────────
 
 function parseFBTimestamp(text) {
   if (!text) return null;
@@ -172,19 +160,15 @@ function parseFBTimestamp(text) {
 
   if (t === "just now" || t === "now") return Math.floor(now / 1000);
 
-  // "Xm" or "X min" or "X mins ago"
   let m = t.match(/^(\d+)\s*m(?:in(?:ute)?s?)?\s*(?:ago)?$/);
   if (m) return Math.floor((now - parseInt(m[1]) * 60 * 1000) / 1000);
 
-  // "Xh" or "X hr" or "X hours ago"
   m = t.match(/^(\d+)\s*h(?:(?:ou)?rs?)?\s*(?:ago)?$/);
   if (m) return Math.floor((now - parseInt(m[1]) * 3600 * 1000) / 1000);
 
-  // "Xd" or "X days ago"
   m = t.match(/^(\d+)\s*d(?:ays?)?\s*(?:ago)?$/);
   if (m) return Math.floor((now - parseInt(m[1]) * 86400 * 1000) / 1000);
 
-  // "Yesterday at HH:MM"
   m = t.match(/^yesterday/);
   if (m) {
     const timeMatch = t.match(/(\d{1,2}):(\d{2})\s*(am|pm)?/i);
@@ -198,178 +182,74 @@ function parseFBTimestamp(text) {
     return Math.floor(d.getTime() / 1000);
   }
 
-  // Try parsing as a full date string
   const parsed = new Date(text.trim());
   if (!isNaN(parsed.getTime())) return Math.floor(parsed.getTime() / 1000);
 
   return null;
 }
 
-// ── Session management ───────────────────────────────────────────────────────
-
-const SESSION_REDIS_KEY = "gigalertpro:facebook:session";
-const SESSION_TTL = 7 * 86400; // 7 days
-
-async function loadSession() {
-  try {
-    const raw = await redisGet(SESSION_REDIS_KEY);
-    if (!raw) return null;
-    const cookies = JSON.parse(raw);
-    if (Array.isArray(cookies) && cookies.length > 0) {
-      console.log(`Loaded ${cookies.length} cookies from Redis session`);
-      return cookies;
-    }
-  } catch (err) {
-    console.warn("Failed to load session from Redis:", err.message);
-  }
-  return null;
-}
-
-async function saveSession(cookies) {
-  try {
-    await redisSet(SESSION_REDIS_KEY, JSON.stringify(cookies), SESSION_TTL);
-    console.log(
-      `Saved ${cookies.length} cookies to Redis (TTL ${SESSION_TTL}s)`,
-    );
-  } catch (err) {
-    console.warn("Failed to save session to Redis:", err.message);
-  }
-}
-
-// ── Browser login ────────────────────────────────────────────────────────────
-
-async function loginToFacebook(page) {
-  if (!FB_EMAIL || !FB_PASSWORD) {
-    throw new Error("FB_EMAIL and FB_PASSWORD env vars are required for login");
-  }
-
-  console.log("Performing fresh Facebook login...");
-  await page.goto("https://www.facebook.com/login/", {
-    waitUntil: "domcontentloaded",
-    timeout: 30000,
-  });
-  await sleep(3000);
-
-  // Accept cookies dialog if present
-  try {
-    const cookieBtn = page
-      .locator(
-        'button[data-cookiebanner="accept_button"], button:has-text("Allow all cookies"), button:has-text("Accept All"), button:has-text("Allow essential and optional cookies"), button:has-text("Accept"), [data-testid="cookie-policy-manage-dialog-accept-button"]',
-      )
-      .first();
-    if (await cookieBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await cookieBtn.click();
-      await sleep(1500);
-    }
-  } catch {
-    /* no cookie banner */
-  }
-
-  // Fill login form — try multiple selector strategies
-  const emailInput = page.locator('input[name="email"], #email, input#email, input[type="text"]').first();
-  await emailInput.waitFor({ state: "visible", timeout: 10000 });
-  await emailInput.fill(FB_EMAIL);
-  await randomDelay(500, 1000);
-
-  const passInput = page.locator('input[name="pass"], #pass, input#pass, input[type="password"]').first();
-  await passInput.waitFor({ state: "visible", timeout: 10000 });
-  await passInput.fill(FB_PASSWORD);
-  await randomDelay(300, 700);
-
-  // Click login — try multiple selectors, fall back to Enter key
-  const loginBtn = page.locator(
-    'button[name="login"], button[data-testid="royal_login_button"], button[type="submit"], #loginbutton, input[type="submit"], button:has-text("Log In"), button:has-text("Log in")',
-  ).first();
-  try {
-    await loginBtn.click({ timeout: 5000 });
-  } catch {
-    console.log("Login button not found by selector, pressing Enter instead...");
-    await passInput.press("Enter");
-  }
-
-  // Wait for navigation after login
-  await page
-    .waitForURL((url) => !url.href.includes("/login"), { timeout: 30000 })
-    .catch(() => {});
-  await sleep(3000);
-
-  // Check for checkpoint / 2FA
-  const url = page.url();
-  if (
-    url.includes("checkpoint") ||
-    url.includes("two_step_verification") ||
-    url.includes("login/identify")
-  ) {
-    throw new Error(
-      "Facebook login hit a checkpoint/2FA. Please resolve manually, then re-run to save the new session.",
-    );
-  }
-
-  // Verify login succeeded
-  const isLoggedIn = await page.evaluate(() => {
-    return (
-      !!document.querySelector('[aria-label="Facebook"]') ||
-      !!document.querySelector('[role="navigation"]') ||
-      !!document.querySelector('[aria-label="Your profile"]') ||
-      !!document.querySelector('[data-pagelet="LeftRail"]') ||
-      !!document.querySelector('[aria-label="Create a post"]') ||
-      !!document.querySelector('[aria-label="Search Facebook"]') ||
-      !!document.querySelector('[data-pagelet="RightRail"]')
-    );
-  });
-
-  if (!isLoggedIn) {
-    const currentUrl = page.url();
-    console.log("  [debug] Login check failed. URL:", currentUrl);
-    await page.screenshot({ path: "fb-login-debug.png", fullPage: false });
-    if (currentUrl.includes("login") || currentUrl.includes("checkpoint")) {
-      throw new Error(
-        "Facebook login failed — still on login/checkpoint page. Check credentials.",
-      );
-    }
-    console.log("  [warn] Could not verify login via DOM, but URL looks OK — continuing...");
-  }
-
-  console.log("Login successful");
-}
-
-// ── Post extraction ──────────────────────────────────────────────────────────
+// ── Post extraction from a loaded page ──────────────────────────────────────
 
 async function extractPosts(page) {
   return page.evaluate(() => {
     const out = [];
-    // Try multiple container selectors — Facebook changes these frequently
-    let containers = document.querySelectorAll('div[role="article"]');
+
+    // Try multiple container selectors
+    let containers = Array.from(document.querySelectorAll('div[role="article"]'));
     if (containers.length === 0) {
-      containers = document.querySelectorAll('div[data-pagelet^="FeedUnit_"]');
+      containers = Array.from(document.querySelectorAll('div[data-pagelet^="FeedUnit_"]'));
     }
     if (containers.length === 0) {
-      // Fallback: grab direct children of the feed
       const feed = document.querySelector('div[role="feed"]');
       if (feed) {
-        containers = feed.querySelectorAll(":scope > div");
+        containers = Array.from(feed.querySelectorAll(":scope > div")).filter(
+          (d) => d.innerText && d.innerText.length > 30,
+        );
       }
     }
     if (containers.length === 0) {
-      // Last resort: grab any significant text blocks in main content
       const main = document.querySelector('div[role="main"]');
       if (main) {
-        containers = main.querySelectorAll('div[data-ad-preview], div[class]:has(div[dir="auto"])');
+        containers = Array.from(main.querySelectorAll('div[class]:has(div[dir="auto"])')).filter(
+          (d) => d.innerText && d.innerText.length > 30,
+        );
       }
     }
+    // Last resort: find containers near time-like elements
+    if (containers.length === 0) {
+      const allSpans = document.querySelectorAll("span");
+      const parentSet = new Set();
+      for (const span of allSpans) {
+        const t = (span.innerText || "").trim();
+        if (/^\d+[mhd]$|^just now$|^yesterday/i.test(t)) {
+          let parent = span.parentElement;
+          for (let i = 0; i < 8 && parent; i++) {
+            if (parent.innerText && parent.innerText.length > 50 && !parentSet.has(parent)) {
+              parentSet.add(parent);
+              break;
+            }
+            parent = parent.parentElement;
+          }
+        }
+      }
+      containers = Array.from(parentSet);
+    }
 
-    for (const article of Array.from(containers).slice(0, 25)) {
+    for (const article of containers.slice(0, 30)) {
       try {
-        // Post text — find the longest text block
-        const textDivs = article.querySelectorAll('div[dir="auto"]');
+        // Post text
+        const textDivs = article.querySelectorAll('div[dir="auto"], span[dir="auto"]');
         let text = "";
         for (const d of textDivs) {
           const t = (d.innerText || "").replace(/\s+/g, " ").trim();
           if (t.length > text.length) text = t;
         }
+        if (!text) {
+          text = (article.innerText || "").replace(/\s+/g, " ").trim();
+        }
         if (!text || text.length < 15) continue;
 
-        // Author — look for strong text inside header links
+        // Author
         let author = null;
         const authorEl =
           article.querySelector("h2 a strong") ||
@@ -379,30 +259,24 @@ async function extractPosts(page) {
           article.querySelector("strong");
         if (authorEl) author = authorEl.innerText.trim();
 
-        // Timestamp — look for links with aria-label containing time info
+        // Timestamp
         let timeText = null;
         const timeLinks = article.querySelectorAll('a[role="link"]');
         for (const link of timeLinks) {
           const label = link.getAttribute("aria-label") || "";
-          const innerText = (link.innerText || "").trim();
-          // Match patterns like "2h", "1d", "Just now", "Yesterday", dates
+          const inner = (link.innerText || "").trim();
           if (
-            /^\d+[mhd]$|^just now$|^yesterday|^\w+ \d+/i.test(innerText) ||
+            /^\d+[mhd]$|^just now$|^yesterday|^\w+ \d+/i.test(inner) ||
             /^\d+[mhd]$|^just now$|^yesterday/i.test(label)
           ) {
-            timeText = innerText || label;
+            timeText = inner || label;
             break;
           }
         }
-        // Fallback: look for abbr with data-utime
         if (!timeText) {
           const abbr = article.querySelector("abbr[data-utime]");
-          if (abbr) {
-            const utime = abbr.getAttribute("data-utime");
-            if (utime) timeText = utime;
-          }
+          if (abbr) timeText = abbr.getAttribute("data-utime");
         }
-        // Fallback: search for tooltip-style time spans
         if (!timeText) {
           const spans = article.querySelectorAll("span");
           for (const span of spans) {
@@ -414,7 +288,7 @@ async function extractPosts(page) {
           }
         }
 
-        // Post URL — look for permalink-style links
+        // Post URL
         let postUrl = null;
         const allLinks = article.querySelectorAll("a[href]");
         for (const link of allLinks) {
@@ -432,7 +306,6 @@ async function extractPosts(page) {
             break;
           }
         }
-        // Fallback: use the timestamp link's href
         if (!postUrl) {
           for (const link of timeLinks) {
             const href = link.getAttribute("href") || "";
@@ -452,7 +325,7 @@ async function extractPosts(page) {
           postUrl: postUrl || window.location.href,
         });
       } catch {
-        /* skip broken article */
+        /* skip broken container */
       }
     }
 
@@ -460,7 +333,7 @@ async function extractPosts(page) {
   });
 }
 
-// ── Main crawler ─────────────────────────────────────────────────────────────
+// ── Main crawler ────────────────────────────────────────────────────────────
 
 async function main() {
   const browser = await chromium.launch({
@@ -475,78 +348,109 @@ async function main() {
   });
 
   const page = await context.newPage();
+  const allPosts = [];
+  const sourceStats = {};
+  let cookiesDismissed = false;
 
-  try {
-    // ── 1. Restore or create session ──
-    const savedCookies = await loadSession();
-    if (savedCookies) {
-      await context.addCookies(savedCookies);
-      await page.goto("https://www.facebook.com/", {
-        waitUntil: "networkidle",
-        timeout: 30000,
-      });
-      await sleep(2000);
-
-      const stillLoggedIn =
-        !page.url().includes("/login") &&
-        (await page
-          .evaluate(
-            () =>
-              !!document.querySelector('[aria-label="Facebook"]') ||
-              !!document.querySelector('[role="navigation"]') ||
-              !!document.querySelector('[aria-label="Your profile"]'),
-          )
-          .catch(() => false));
-
-      if (!stillLoggedIn) {
-        console.log("Saved session expired — performing fresh login");
-        await loginToFacebook(page);
-        const cookies = await context.cookies();
-        await saveSession(cookies);
-      } else {
-        console.log("Session restored from Redis — already logged in");
+  // ── Dismiss cookie/login walls ──
+  async function dismissOverlays() {
+    // Cookie consent
+    if (!cookiesDismissed) {
+      try {
+        const selectors = [
+          'button[data-cookiebanner="accept_button"]',
+          'button:has-text("Allow all cookies")',
+          'button:has-text("Accept All")',
+          'button:has-text("Allow essential and optional cookies")',
+          'button:has-text("Accept")',
+          '[data-testid="cookie-policy-manage-dialog-accept-button"]',
+        ];
+        for (const sel of selectors) {
+          const btn = page.locator(sel).first();
+          if (await btn.isVisible({ timeout: 1500 }).catch(() => false)) {
+            await btn.click();
+            console.log("  → Dismissed cookie wall");
+            cookiesDismissed = true;
+            await sleep(1500);
+            break;
+          }
+        }
+      } catch {
+        /* no cookie wall */
       }
-    } else {
-      await loginToFacebook(page);
-      const cookies = await context.cookies();
-      await saveSession(cookies);
     }
 
-    // ── 2. Load seen set for dedup ──
+    // Login modal / "Not now" dialogs
+    try {
+      const dismissSelectors = [
+        'div[role="dialog"] a[href="#"]:has-text("Not Now")',
+        'div[role="dialog"] button:has-text("Not Now")',
+        'div[role="dialog"] button:has-text("Close")',
+        '[aria-label="Close"]',
+      ];
+      for (const sel of dismissSelectors) {
+        const btn = page.locator(sel).first();
+        if (await btn.isVisible({ timeout: 1000 }).catch(() => false)) {
+          await btn.click();
+          console.log("  → Dismissed login/overlay dialog");
+          await sleep(1000);
+          break;
+        }
+      }
+    } catch {
+      /* no dialog */
+    }
+
+    // Brute-force remove blocking overlays
+    await page.evaluate(() => {
+      const dialogs = document.querySelectorAll('[role="dialog"]');
+      dialogs.forEach((d) => d.remove());
+      const overlays = document.querySelectorAll(
+        'div[style*="position: fixed"], div[style*="z-index: 9"]',
+      );
+      overlays.forEach((o) => {
+        if (o.querySelector("button") || o.querySelector("a")) o.remove();
+      });
+      document.body.style.overflow = "auto";
+    });
+  }
+
+  try {
+    // ── 1. Load seen set for dedup ──
     const SEEN_KEY = "gigalertpro:seen:facebook";
     const seenRaw = await redisSmembers(SEEN_KEY);
     const seenSet = new Set(seenRaw || []);
     console.log(`Seen set: ${seenSet.size} previously seen posts`);
 
-    // ── 3. Search and collect posts ──
-    const allPosts = [];
-    const keywordStats = {};
+    // ── 2. Visit each public group/page and collect posts ──
     let totalExtracted = 0;
 
-    for (let i = 0; i < SEARCH_KEYWORDS.length; i++) {
-      const keyword = SEARCH_KEYWORDS[i];
-      const encoded = encodeURIComponent(keyword);
-      const searchUrl = `https://www.facebook.com/search/posts?q=${encoded}`;
+    for (let i = 0; i < SEED_URLS.length; i++) {
+      const seedUrl = SEED_URLS[i];
+      const sourceName = seedUrl.replace(/https:\/\/www\.facebook\.com\//, "").replace(/\/$/, "");
 
       try {
-        console.log(
-          `[${i + 1}/${SEARCH_KEYWORDS.length}] Searching: "${keyword}"`,
-        );
-        await page.goto(searchUrl, {
+        console.log(`[${i + 1}/${SEED_URLS.length}] Visiting: ${sourceName}`);
+        await page.goto(seedUrl, {
           waitUntil: "domcontentloaded",
-          timeout: 20000,
+          timeout: 30000,
         });
 
-        // Wait for any content container to appear
+        await sleep(3000);
+        await dismissOverlays();
+
+        // Wait for content to appear
         await page
-          .waitForSelector('div[role="article"], div[role="feed"], div[role="main"], div[data-pagelet^="FeedUnit_"]', {
-            timeout: 15000,
-          })
+          .waitForSelector(
+            'div[role="article"], div[role="feed"], div[role="main"], div[data-pagelet^="FeedUnit_"]',
+            { timeout: 15000 },
+          )
           .catch(() => {});
 
-        await sleep(3000);
+        await sleep(2000);
+        await dismissOverlays();
 
-        // Aggressive scrolling — scroll down and wait for new content to render
+        // Scroll to trigger lazy loading
         let prevHeight = 0;
         for (let s = 0; s < 5; s++) {
           await page.keyboard.press("PageDown");
@@ -558,68 +462,57 @@ async function main() {
           prevHeight = newHeight;
         }
 
-        // Scroll back to top so we can capture all loaded posts
+        // Scroll back to top
         await page.evaluate(() => window.scrollTo(0, 0));
         await sleep(500);
 
-        // Debug: on first search, log page state and take screenshot
+        // Debug: on first page, log what we see
         if (i === 0) {
           console.log("  [debug] URL:", page.url());
           const debugInfo = await page.evaluate(() => {
             const articles = document.querySelectorAll('div[role="article"]');
             const feed = document.querySelectorAll('div[role="feed"]');
-            const feedUnits = document.querySelectorAll('div[data-pagelet^="FeedUnit_"]');
-            const main = document.querySelectorAll('div[role="main"]');
             const allDivs = document.querySelectorAll("div[role]");
-            const roles = [...new Set(Array.from(allDivs).map(d => d.getAttribute("role")))];
-            const feedChildren = feed.length > 0 ? feed[0].querySelectorAll(":scope > div").length : 0;
+            const roles = [...new Set(Array.from(allDivs).map((d) => d.getAttribute("role")))];
             return {
               articleCount: articles.length,
               feedCount: feed.length,
-              feedChildren,
-              feedUnitCount: feedUnits.length,
-              mainCount: main.length,
               roles: roles.slice(0, 20),
               title: document.title,
-              bodyText: document.body?.innerText?.slice(0, 500) || "empty",
+              bodyText: (document.body?.innerText || "").slice(0, 300),
             };
           });
-          console.log("  [debug] Articles:", debugInfo.articleCount, "| Feed divs:", debugInfo.feedCount, "| Feed children:", debugInfo.feedChildren);
-          console.log("  [debug] FeedUnit pagelets:", debugInfo.feedUnitCount, "| Main divs:", debugInfo.mainCount);
-          console.log("  [debug] Roles on page:", debugInfo.roles.join(", "));
-          console.log("  [debug] Page title:", debugInfo.title);
-          console.log("  [debug] Body text preview:", debugInfo.bodyText.slice(0, 300));
+          console.log("  [debug] Articles:", debugInfo.articleCount, "| Feed divs:", debugInfo.feedCount);
+          console.log("  [debug] Roles:", debugInfo.roles.join(", "));
+          console.log("  [debug] Title:", debugInfo.title);
+          console.log("  [debug] Body preview:", debugInfo.bodyText.slice(0, 200));
           await page.screenshot({ path: "fb-search-debug.png", fullPage: false });
-          console.log("  [debug] Screenshot saved to fb-search-debug.png");
         }
 
         const posts = await extractPosts(page);
-        keywordStats[keyword] = posts.length;
+        sourceStats[sourceName] = posts.length;
         totalExtracted += posts.length;
 
         for (const p of posts) {
-          allPosts.push({
-            ...p,
-            searchQuery: keyword,
-          });
+          allPosts.push({ ...p, source: sourceName });
         }
 
         console.log(`  → ${posts.length} posts extracted`);
       } catch (err) {
-        console.warn(`  ✗ Search failed for "${keyword}":`, err.message);
-        keywordStats[keyword] = 0;
+        console.warn(`  ✗ Failed for "${sourceName}":`, err.message);
+        sourceStats[sourceName] = 0;
       }
 
-      // Anti-ban delay between searches
-      if (i < SEARCH_KEYWORDS.length - 1) {
-        await randomDelay(3000, 8000);
+      // Anti-ban delay between pages
+      if (i < SEED_URLS.length - 1) {
+        await randomDelay(3000, 7000);
       }
     }
 
     await browser.close();
     console.log(`\nTotal raw posts extracted: ${totalExtracted}`);
 
-    // ── 4. Deduplicate by post URL ──
+    // ── 3. Deduplicate ──
     const deduped = new Map();
     for (const p of allPosts) {
       const key = p.postUrl || p.text.slice(0, 100);
@@ -631,13 +524,13 @@ async function main() {
     const uniquePosts = Array.from(deduped.values());
     console.log(`After dedup: ${uniquePosts.length} unique posts`);
 
-    // ── 5. Regex gig filter ──
+    // ── 4. Regex gig filter ──
     const gigPosts = uniquePosts.filter((p) => isGigPost(p.text));
     console.log(
       `Gig filter: kept ${gigPosts.length}/${uniquePosts.length} (rejected ${uniquePosts.length - gigPosts.length} non-gig)`,
     );
 
-    // ── 6. Parse timestamps and apply freshness filter ──
+    // ── 5. Parse timestamps and freshness filter ──
     const now = Date.now();
     const freshPosts = [];
     let staleCount = 0;
@@ -645,7 +538,6 @@ async function main() {
     for (const p of gigPosts) {
       const createdUtc = parseFBTimestamp(p.timeText);
       if (!createdUtc) {
-        // If we can't parse the timestamp, keep the post with current time
         p.created_utc = Math.floor(now / 1000);
         freshPosts.push(p);
         continue;
@@ -661,7 +553,7 @@ async function main() {
       console.log(`Freshness filter: dropped ${staleCount} stale posts`);
     }
 
-    // ── 7. Split new vs already-seen for AI classification ──
+    // ── 6. Split new vs already-seen ──
     const newPosts = [];
     const existingPosts = [];
 
@@ -672,11 +564,9 @@ async function main() {
         newPosts.push(p);
       }
     }
-    console.log(
-      `New: ${newPosts.length}, Previously seen: ${existingPosts.length}`,
-    );
+    console.log(`New: ${newPosts.length}, Previously seen: ${existingPosts.length}`);
 
-    // ── 8. AI classify new posts only ──
+    // ── 7. AI classify new posts ──
     let classifiedNew = newPosts;
     if (newPosts.length > 0) {
       const forClassifier = newPosts.map((p) => ({
@@ -691,11 +581,8 @@ async function main() {
       const classifiedIds = new Set(classified.map((c) => c.id));
       classifiedNew = newPosts.filter((p) => classifiedIds.has(p.id));
 
-      console.log(
-        `AI filter: kept ${classifiedNew.length}/${newPosts.length} new posts`,
-      );
+      console.log(`AI filter: kept ${classifiedNew.length}/${newPosts.length} new posts`);
 
-      // Mark new posts as seen
       if (newPosts.length > 0) {
         const ids = newPosts.map((p) => p.id);
         await redisSadd(SEEN_KEY, ...ids);
@@ -703,7 +590,7 @@ async function main() {
       }
     }
 
-    // ── 9. Merge classified new + existing → normalize to pipeline schema ──
+    // ── 8. Normalize to pipeline schema ──
     const finalPosts = [...classifiedNew, ...existingPosts].map((p) => ({
       id: p.id,
       name: p.id,
@@ -716,17 +603,16 @@ async function main() {
       created_utc: p.created_utc || Math.floor(Date.now() / 1000),
       num_comments: 0,
       ups: 0,
-      link_flair_text: p.searchQuery || null,
+      link_flair_text: p.source || null,
       _sub: "facebook",
-      source: `fb-search-${(p.searchQuery || "").replace(/\s+/g, "-").toLowerCase()}`,
+      source: `fb-group-${(p.source || "").replace(/\s+/g, "-").toLowerCase()}`,
       source_platform: "Facebook",
       _ai_is_gig: true,
     }));
 
-    // Sort newest first
     finalPosts.sort((a, b) => (b.created_utc || 0) - (a.created_utc || 0));
 
-    // ── 10. Store to Redis ──
+    // ── 9. Store to Redis ──
     const payload = JSON.stringify({
       posts: finalPosts.slice(0, 300),
       post_count: Math.min(finalPosts.length, 300),
@@ -740,12 +626,12 @@ async function main() {
       `\nStored ${Math.min(finalPosts.length, 300)} posts to Redis (key: gigalertpro:facebook:latest, TTL 2h)`,
     );
 
-    // ── 11. Terminal metrics ──
+    // ── 10. Terminal metrics ──
     console.log("\n╔══════════════════════════════════════════════╗");
     console.log("║         FACEBOOK CRAWLER RESULTS             ║");
     console.log("╠══════════════════════════════════════════════╣");
     console.log(
-      `║ Keywords searched     │ ${SEARCH_KEYWORDS.length.toString().padStart(6)}`,
+      `║ Sources scraped       │ ${SEED_URLS.length.toString().padStart(6)}`,
     );
     console.log(
       `║ Raw posts extracted   │ ${totalExtracted.toString().padStart(6)}`,
@@ -770,14 +656,14 @@ async function main() {
     );
     console.log("╚══════════════════════════════════════════════╝");
 
-    // Top keywords by result count
-    const sorted = Object.entries(keywordStats)
+    // Top sources by result count
+    const sorted = Object.entries(sourceStats)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 10);
     if (sorted.length > 0) {
-      console.log("\nTop keywords:");
-      for (const [kw, count] of sorted) {
-        console.log(`  ${count.toString().padStart(3)} │ ${kw}`);
+      console.log("\nTop sources:");
+      for (const [src, count] of sorted) {
+        console.log(`  ${count.toString().padStart(3)} │ ${src}`);
       }
     }
 
@@ -801,7 +687,9 @@ async function main() {
       console.log("Page URL at failure:", page.url());
       const title = await page.title().catch(() => "unknown");
       console.log("Page title at failure:", title);
-    } catch { /* ignore screenshot errors */ }
+    } catch {
+      /* ignore screenshot errors */
+    }
     await browser.close().catch(() => {});
     console.error("Facebook crawler failed:", err.message || err);
     process.exit(1);
