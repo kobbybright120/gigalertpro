@@ -230,6 +230,13 @@ function cleanSearchText(text) {
     .replace(/\bSign up\b.*$/gi, "")
     .replace(/\bLog in\b.*$/gi, "")
     .replace(/\bSee more\b/gi, "")
+    .replace(/\bTranslate this page\b/gi, "")
+    .replace(/\bCached\b/gi, "")
+    .replace(/\bSee posts,?\s*photos\s*(?:and|&)\s*more\s*on\s*/gi, "")
+    .replace(/\bPeople also (?:search|ask)\b.*$/gi, "")
+    .replace(/\bRelated searches?\b.*$/gi, "")
+    .replace(/\bSimilar\b.*$/gi, "")
+    .replace(/https?:\/\/[^\s]+/g, "")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -259,8 +266,8 @@ function extractSnippets(html) {
     if (seenUrls.has(normalizedUrl)) continue;
     seenUrls.add(normalizedUrl);
 
-    const start = Math.max(0, match.index - 200);
-    const end = Math.min(html.length, match.index + 1500);
+    const start = Math.max(0, match.index - 100);
+    const end = Math.min(html.length, match.index + 800);
     const context = html.slice(start, end);
 
     const text = cleanSearchText(
@@ -554,9 +561,10 @@ async function main() {
     const fingerprintSeen = new Set();
     const fingerprintDeduped = [];
     for (const p of uniquePosts) {
-      const fp = (p.text || "").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 60);
-      if (fp.length < 10 || !fingerprintSeen.has(fp)) {
-        if (fp.length >= 10) fingerprintSeen.add(fp);
+      const alphaNum = (p.text || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+      const fp = alphaNum.slice(20, 170);
+      if (fp.length < 20 || !fingerprintSeen.has(fp)) {
+        if (fp.length >= 20) fingerprintSeen.add(fp);
         fingerprintDeduped.push(p);
       }
     }
