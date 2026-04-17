@@ -1,9 +1,9 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// GigAlertPro — Facebook Public Group/Page Crawler
+// GigAlertPro — Facebook Public Profile Crawler (mbasic)
 //
-// Scrapes public Facebook groups and pages for freelance gig posts.
-// No login required — reads publicly visible content only.
-// Uses Playwright to handle JS-rendered content, scrolling, and overlays.
+// Uses mbasic.facebook.com (Facebook's lightweight HTML version) to search
+// for freelance gig posts on public profiles. mbasic renders server-side
+// HTML, avoiding JS-rendering issues and data center IP blocks.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { chromium } from "playwright";
@@ -12,45 +12,42 @@ import { classifyAndFilter } from "./gig-classifier.js";
 const MAX_AGE_DAYS = parseInt(process.env.FB_MAX_AGE_DAYS || "7", 10);
 const MAX_AGE_MS = MAX_AGE_DAYS * 86400 * 1000;
 
-// ── Public Facebook groups and pages to scrape ──────────────────────────────
-// Focused on groups where clients post organic gig requests like
-// "looking for a video editor", "need a graphic designer", etc.
+const FB_EMAIL = process.env.FB_EMAIL || "";
+const FB_PASSWORD = process.env.FB_PASSWORD || "";
 
-const SEED_URLS = [
-  // Freelance hiring / for-hire groups
-  "https://www.facebook.com/groups/hireafreelancer/",
-  "https://www.facebook.com/groups/freelancejobposting/",
-  "https://www.facebook.com/groups/haborfreelance/",
-  "https://www.facebook.com/groups/findafreelancer/",
-  "https://www.facebook.com/groups/freelancersforhire/",
-  // Video editing gigs
-  "https://www.facebook.com/groups/videoeditingjobs/",
-  "https://www.facebook.com/groups/videoeditorforhire/",
-  "https://www.facebook.com/groups/videoeditingfreelance/",
-  // Graphic design gigs
-  "https://www.facebook.com/groups/graphicdesignjobsworldwide/",
-  "https://www.facebook.com/groups/graphicdesignersforhire/",
-  "https://www.facebook.com/groups/logodesignjobs/",
-  // Web development gigs
-  "https://www.facebook.com/groups/webdeveloperjobs/",
-  "https://www.facebook.com/groups/wordpressfreelancers/",
-  "https://www.facebook.com/groups/webdesignfreelance/",
-  // Writing / content
-  "https://www.facebook.com/groups/freelancewritinggigs/",
-  "https://www.facebook.com/groups/contentwritingjobs/",
-  "https://www.facebook.com/groups/copywritingjobs/",
-  // Virtual assistants
-  "https://www.facebook.com/groups/virtualassistantjobs/",
-  "https://www.facebook.com/groups/hireaVA/",
-  // Social media / marketing
-  "https://www.facebook.com/groups/socialmediamarketingjobs/",
-  "https://www.facebook.com/groups/socialmediamanagerforhire/",
-  // UI/UX design
-  "https://www.facebook.com/groups/uxuidesignjobs/",
-  // General freelance marketplaces
-  "https://www.facebook.com/groups/freelancersunion/",
-  "https://www.facebook.com/groups/freelancejobsboard/",
-  "https://www.facebook.com/groups/needafreelancer/",
+// ── Search keywords — organic freelance gig requests ────────────────────────
+
+const SEARCH_KEYWORDS = [
+  "looking for a video editor",
+  "looking for a graphic designer",
+  "looking for a web developer",
+  "looking for a freelancer",
+  "looking for a copywriter",
+  "looking for a social media manager",
+  "looking for a virtual assistant",
+  "looking for a photographer",
+  "looking for a UI/UX designer",
+  "looking for an app developer",
+  "looking for a brand designer",
+  "need a video editor",
+  "need a graphic designer",
+  "need a web developer",
+  "need a designer",
+  "need a developer",
+  "need a wordpress developer",
+  "need a logo designer",
+  "need an animator",
+  "need a react developer",
+  "hiring video editor",
+  "hiring graphic designer",
+  "hiring web developer",
+  "hiring content writer",
+  "hiring virtual assistant",
+  "hiring social media manager",
+  "hiring illustrator",
+  "hiring voiceover artist",
+  "hiring bookkeeper",
+  "hiring shopify developer",
 ];
 
 // ── Gig-post filter ─────────────────────────────────────────────────────────
@@ -186,16 +183,17 @@ function parseFBTimestamp(text) {
 
   m = t.match(/^yesterday/);
   if (m) {
-    const timeMatch = t.match(/(\d{1,2}):(\d{2})\s*(am|pm)?/i);
     const d = new Date(now - 86400 * 1000);
-    if (timeMatch) {
-      let hrs = parseInt(timeMatch[1]);
-      if (timeMatch[3]?.toLowerCase() === "pm" && hrs < 12) hrs += 12;
-      if (timeMatch[3]?.toLowerCase() === "am" && hrs === 12) hrs = 0;
-      d.setHours(hrs, parseInt(timeMatch[2]), 0, 0);
-    }
     return Math.floor(d.getTime() / 1000);
   }
+
+  // "hrs" format like "2 hrs"
+  m = t.match(/^(\d+)\s*hrs?\s*$/);
+  if (m) return Math.floor((now - parseInt(m[1]) * 3600 * 1000) / 1000);
+
+  // "mins" format like "15 mins"
+  m = t.match(/^(\d+)\s*mins?\s*$/);
+  if (m) return Math.floor((now - parseInt(m[1]) * 60 * 1000) / 1000);
 
   const parsed = new Date(text.trim());
   if (!isNaN(parsed.getTime())) return Math.floor(parsed.getTime() / 1000);
@@ -203,100 +201,175 @@ function parseFBTimestamp(text) {
   return null;
 }
 
-// ── Post extraction from a loaded page ──────────────────────────────────────
+// ── Session management ──────────────────────────────────────────────────────
 
-async function extractPosts(page) {
+const SESSION_REDIS_KEY = "gigalertpro:facebook:session";
+const SESSION_TTL = 7 * 86400;
+
+async function loadSession() {
+  try {
+    const raw = await redisGet(SESSION_REDIS_KEY);
+    if (!raw) return null;
+    const cookies = JSON.parse(raw);
+    if (Array.isArray(cookies) && cookies.length > 0) {
+      console.log(`Loaded ${cookies.length} cookies from Redis session`);
+      return cookies;
+    }
+  } catch (err) {
+    console.warn("Failed to load session from Redis:", err.message);
+  }
+  return null;
+}
+
+async function saveSession(cookies) {
+  try {
+    await redisSet(SESSION_REDIS_KEY, JSON.stringify(cookies), SESSION_TTL);
+    console.log(`Saved ${cookies.length} cookies to Redis (TTL ${SESSION_TTL}s)`);
+  } catch (err) {
+    console.warn("Failed to save session to Redis:", err.message);
+  }
+}
+
+// ── mbasic.facebook.com login ───────────────────────────────────────────────
+
+async function loginMbasic(page) {
+  if (!FB_EMAIL || !FB_PASSWORD) {
+    throw new Error("FB_EMAIL and FB_PASSWORD env vars are required");
+  }
+
+  console.log("Logging in via mbasic.facebook.com...");
+  await page.goto("https://mbasic.facebook.com/", { waitUntil: "load", timeout: 30000 });
+  await sleep(2000);
+
+  // Accept cookie consent if present
+  try {
+    const cookieBtn = page.locator('button[name="accept_only_essential"], button[value="Accept All"], a:has-text("Accept"), button:has-text("Accept")').first();
+    if (await cookieBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await cookieBtn.click();
+      await sleep(1500);
+    }
+  } catch { /* no cookie banner */ }
+
+  // mbasic has simple HTML form inputs
+  const emailInput = page.locator('input[name="email"]').first();
+  const passInput = page.locator('input[name="pass"]').first();
+
+  await emailInput.waitFor({ state: "visible", timeout: 10000 });
+  await emailInput.fill(FB_EMAIL);
+  await randomDelay(300, 600);
+
+  await passInput.waitFor({ state: "visible", timeout: 10000 });
+  await passInput.fill(FB_PASSWORD);
+  await randomDelay(200, 500);
+
+  // Submit — mbasic uses a standard form submit button
+  const loginBtn = page.locator('input[name="login"], input[type="submit"], button[name="login"]').first();
+  await loginBtn.click();
+  await page.waitForLoadState("load", { timeout: 30000 });
+  await sleep(2000);
+
+  // Check for checkpoint
+  const url = page.url();
+  if (url.includes("checkpoint") || url.includes("login/identify")) {
+    await page.screenshot({ path: "fb-checkpoint-debug.png", fullPage: false });
+    throw new Error("Facebook checkpoint/2FA detected. Please resolve manually.");
+  }
+
+  // Verify login — mbasic shows different content when logged in
+  const pageText = await page.evaluate(() => document.body.innerText || "");
+  const stillOnLogin = url.includes("/login") && !pageText.includes("News Feed") && !pageText.includes("Search");
+
+  if (stillOnLogin) {
+    await page.screenshot({ path: "fb-login-debug.png", fullPage: false });
+    console.log("  [debug] Login may have failed. URL:", url);
+    console.log("  [debug] Page text preview:", pageText.slice(0, 200));
+    throw new Error("Facebook login failed — still on login page.");
+  }
+
+  console.log("Login successful (mbasic)");
+}
+
+// ── Extract posts from mbasic search results ────────────────────────────────
+
+async function extractMbasicPosts(page) {
   return page.evaluate(() => {
     const out = [];
 
-    // Try multiple container selectors
-    let containers = Array.from(document.querySelectorAll('div[role="article"]'));
+    // mbasic search results are in simple div/article structures
+    // Look for story containers
+    const stories = document.querySelectorAll(
+      'div[role="article"], article, div.bx, div.by, div[id^="u_"]'
+    );
+
+    // Fallback: grab any div that looks like a post (has text + links)
+    let containers = Array.from(stories);
     if (containers.length === 0) {
-      containers = Array.from(document.querySelectorAll('div[data-pagelet^="FeedUnit_"]'));
-    }
-    if (containers.length === 0) {
-      const feed = document.querySelector('div[role="feed"]');
-      if (feed) {
-        containers = Array.from(feed.querySelectorAll(":scope > div")).filter(
-          (d) => d.innerText && d.innerText.length > 30,
-        );
-      }
-    }
-    if (containers.length === 0) {
-      const main = document.querySelector('div[role="main"]');
-      if (main) {
-        containers = Array.from(main.querySelectorAll('div[class]:has(div[dir="auto"])')).filter(
-          (d) => d.innerText && d.innerText.length > 30,
-        );
-      }
-    }
-    // Last resort: find containers near time-like elements
-    if (containers.length === 0) {
-      const allSpans = document.querySelectorAll("span");
-      const parentSet = new Set();
-      for (const span of allSpans) {
-        const t = (span.innerText || "").trim();
-        if (/^\d+[mhd]$|^just now$|^yesterday/i.test(t)) {
-          let parent = span.parentElement;
-          for (let i = 0; i < 8 && parent; i++) {
-            if (parent.innerText && parent.innerText.length > 50 && !parentSet.has(parent)) {
-              parentSet.add(parent);
-              break;
-            }
-            parent = parent.parentElement;
-          }
-        }
-      }
-      containers = Array.from(parentSet);
+      // mbasic wraps posts in divs with specific structure
+      const allDivs = document.querySelectorAll("#structured_composer_async_container div, #BrowseResultsContainer div, div[data-ft]");
+      containers = Array.from(allDivs).filter(
+        (d) => d.innerText && d.innerText.length > 30 && d.querySelectorAll("a").length > 0,
+      );
     }
 
-    for (const article of containers.slice(0, 30)) {
+    // Last resort: grab text blocks from the main content area
+    if (containers.length === 0) {
+      const mainContent = document.querySelector('#root, #content, main, body');
+      if (mainContent) {
+        const sections = mainContent.querySelectorAll("div");
+        containers = Array.from(sections).filter(
+          (d) => {
+            const text = (d.innerText || "").trim();
+            return text.length > 50 && text.length < 3000 && d.querySelectorAll("a").length > 0;
+          },
+        );
+      }
+    }
+
+    // Deduplicate by removing nested containers
+    const unique = [];
+    for (const c of containers) {
+      let isChild = false;
+      for (const u of unique) {
+        if (u.contains(c) || c.contains(u)) {
+          isChild = true;
+          if (c.contains(u)) {
+            unique.splice(unique.indexOf(u), 1);
+            unique.push(c);
+          }
+          break;
+        }
+      }
+      if (!isChild) unique.push(c);
+    }
+
+    for (const el of unique.slice(0, 30)) {
       try {
-        // Post text
-        const textDivs = article.querySelectorAll('div[dir="auto"], span[dir="auto"]');
-        let text = "";
-        for (const d of textDivs) {
-          const t = (d.innerText || "").replace(/\s+/g, " ").trim();
-          if (t.length > text.length) text = t;
-        }
-        if (!text) {
-          text = (article.innerText || "").replace(/\s+/g, " ").trim();
-        }
-        if (!text || text.length < 15) continue;
+        const text = (el.innerText || "").replace(/\s+/g, " ").trim();
+        if (!text || text.length < 20) continue;
 
-        // Author
+        // Author — usually the first link with a profile URL
         let author = null;
-        const authorEl =
-          article.querySelector("h2 a strong") ||
-          article.querySelector("h3 a strong") ||
-          article.querySelector("h4 a strong") ||
-          article.querySelector('a[role="link"] > strong') ||
-          article.querySelector("strong");
-        if (authorEl) author = authorEl.innerText.trim();
+        const authorLink = el.querySelector('a[href*="/profile.php"], a[href*="facebook.com/"]');
+        if (authorLink) {
+          author = authorLink.innerText.trim();
+          if (author.length > 50) author = null;
+        }
+        if (!author) {
+          const strong = el.querySelector("strong, h3 a, h4 a");
+          if (strong) author = strong.innerText.trim();
+        }
 
-        // Timestamp
+        // Timestamp — mbasic uses abbr tags or plain text
         let timeText = null;
-        const timeLinks = article.querySelectorAll('a[role="link"]');
-        for (const link of timeLinks) {
-          const label = link.getAttribute("aria-label") || "";
-          const inner = (link.innerText || "").trim();
-          if (
-            /^\d+[mhd]$|^just now$|^yesterday|^\w+ \d+/i.test(inner) ||
-            /^\d+[mhd]$|^just now$|^yesterday/i.test(label)
-          ) {
-            timeText = inner || label;
-            break;
-          }
+        const abbr = el.querySelector("abbr");
+        if (abbr) {
+          timeText = abbr.getAttribute("data-utime") || abbr.innerText.trim();
         }
         if (!timeText) {
-          const abbr = article.querySelector("abbr[data-utime]");
-          if (abbr) timeText = abbr.getAttribute("data-utime");
-        }
-        if (!timeText) {
-          const spans = article.querySelectorAll("span");
-          for (const span of spans) {
-            const t = (span.innerText || "").trim();
-            if (/^\d+[mhd]$|^\d+ (?:min|hour|day)/i.test(t)) {
+          const spans = el.querySelectorAll("span, a");
+          for (const s of spans) {
+            const t = (s.innerText || "").trim();
+            if (/^\d+\s*(hrs?|mins?|[mhd]|hours?|minutes?|days?)\s*(ago)?$/i.test(t)) {
               timeText = t;
               break;
             }
@@ -305,42 +378,36 @@ async function extractPosts(page) {
 
         // Post URL
         let postUrl = null;
-        const allLinks = article.querySelectorAll("a[href]");
-        for (const link of allLinks) {
+        const links = el.querySelectorAll("a[href]");
+        for (const link of links) {
           const href = link.getAttribute("href") || "";
           if (
+            href.includes("/story.php") ||
             href.includes("/posts/") ||
             href.includes("/permalink/") ||
-            href.includes("story_fbid") ||
-            href.includes("/videos/") ||
-            href.includes("/photos/")
+            href.includes("story_fbid")
           ) {
             postUrl = href.startsWith("http")
               ? href
-              : "https://www.facebook.com" + href;
+              : "https://mbasic.facebook.com" + href;
             break;
           }
         }
-        if (!postUrl) {
-          for (const link of timeLinks) {
-            const href = link.getAttribute("href") || "";
-            if (href && href !== "#" && !href.includes("/search/")) {
-              postUrl = href.startsWith("http")
-                ? href
-                : "https://www.facebook.com" + href;
-              break;
-            }
-          }
+
+        // Clean text — remove author name from beginning if present
+        let cleanText = text;
+        if (author && cleanText.startsWith(author)) {
+          cleanText = cleanText.slice(author.length).trim();
         }
 
         out.push({
-          text,
+          text: cleanText.slice(0, 2000),
           author,
           timeText,
           postUrl: postUrl || window.location.href,
         });
       } catch {
-        /* skip broken container */
+        /* skip */
       }
     }
 
@@ -357,177 +424,122 @@ async function main() {
 
   const context = await browser.newContext({
     userAgent:
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
-    viewport: { width: 1280, height: 900 },
+      "Mozilla/5.0 (Linux; Android 10; SM-G960F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36",
+    viewport: { width: 412, height: 915 },
     locale: "en-US",
   });
 
   const page = await context.newPage();
-  const allPosts = [];
-  const sourceStats = {};
-  let cookiesDismissed = false;
-
-  // ── Dismiss cookie/login walls ──
-  async function dismissOverlays() {
-    // Cookie consent
-    if (!cookiesDismissed) {
-      try {
-        const selectors = [
-          'button[data-cookiebanner="accept_button"]',
-          'button:has-text("Allow all cookies")',
-          'button:has-text("Accept All")',
-          'button:has-text("Allow essential and optional cookies")',
-          'button:has-text("Accept")',
-          '[data-testid="cookie-policy-manage-dialog-accept-button"]',
-        ];
-        for (const sel of selectors) {
-          const btn = page.locator(sel).first();
-          if (await btn.isVisible({ timeout: 1500 }).catch(() => false)) {
-            await btn.click();
-            console.log("  → Dismissed cookie wall");
-            cookiesDismissed = true;
-            await sleep(1500);
-            break;
-          }
-        }
-      } catch {
-        /* no cookie wall */
-      }
-    }
-
-    // Login modal / "Not now" dialogs
-    try {
-      const dismissSelectors = [
-        'div[role="dialog"] a[href="#"]:has-text("Not Now")',
-        'div[role="dialog"] button:has-text("Not Now")',
-        'div[role="dialog"] button:has-text("Close")',
-        '[aria-label="Close"]',
-      ];
-      for (const sel of dismissSelectors) {
-        const btn = page.locator(sel).first();
-        if (await btn.isVisible({ timeout: 1000 }).catch(() => false)) {
-          await btn.click();
-          console.log("  → Dismissed login/overlay dialog");
-          await sleep(1000);
-          break;
-        }
-      }
-    } catch {
-      /* no dialog */
-    }
-
-    // Brute-force remove blocking overlays
-    await page.evaluate(() => {
-      const dialogs = document.querySelectorAll('[role="dialog"]');
-      dialogs.forEach((d) => d.remove());
-      const overlays = document.querySelectorAll(
-        'div[style*="position: fixed"], div[style*="z-index: 9"]',
-      );
-      overlays.forEach((o) => {
-        if (o.querySelector("button") || o.querySelector("a")) o.remove();
-      });
-      document.body.style.overflow = "auto";
-    });
-  }
 
   try {
-    // ── 1. Load seen set for dedup ──
+    // ── 1. Restore or create session ──
+    const savedCookies = await loadSession();
+    let needsLogin = true;
+
+    if (savedCookies) {
+      await context.addCookies(savedCookies);
+      await page.goto("https://mbasic.facebook.com/", { waitUntil: "load", timeout: 30000 });
+      await sleep(2000);
+
+      const pageText = await page.evaluate(() => document.body.innerText || "");
+      const url = page.url();
+      const isLoggedIn = !url.includes("/login") &&
+        (pageText.includes("News Feed") || pageText.includes("Search") || pageText.includes("What's on your mind"));
+
+      if (isLoggedIn) {
+        console.log("Session restored from Redis — already logged in");
+        needsLogin = false;
+      } else {
+        console.log("Saved session expired — performing fresh login");
+      }
+    }
+
+    if (needsLogin) {
+      await loginMbasic(page);
+      const cookies = await context.cookies();
+      await saveSession(cookies);
+    }
+
+    // ── 2. Load seen set for dedup ──
     const SEEN_KEY = "gigalertpro:seen:facebook";
     const seenRaw = await redisSmembers(SEEN_KEY);
     const seenSet = new Set(seenRaw || []);
     console.log(`Seen set: ${seenSet.size} previously seen posts`);
 
-    // ── 2. Visit each public group/page and collect posts ──
+    // ── 3. Search and collect posts ──
+    const allPosts = [];
+    const keywordStats = {};
     let totalExtracted = 0;
 
-    for (let i = 0; i < SEED_URLS.length; i++) {
-      const seedUrl = SEED_URLS[i];
-      const sourceName = seedUrl.replace(/https:\/\/www\.facebook\.com\//, "").replace(/\/$/, "");
+    for (let i = 0; i < SEARCH_KEYWORDS.length; i++) {
+      const keyword = SEARCH_KEYWORDS[i];
+      const encoded = encodeURIComponent(keyword);
+      // mbasic search URL for public posts
+      const searchUrl = `https://mbasic.facebook.com/search/posts/?q=${encoded}&source=filter&isTrending=0`;
 
       try {
-        console.log(`[${i + 1}/${SEED_URLS.length}] Visiting: ${sourceName}`);
-        await page.goto(seedUrl, {
-          waitUntil: "domcontentloaded",
-          timeout: 30000,
-        });
-
-        await sleep(3000);
-        await dismissOverlays();
-
-        // Wait for content to appear
-        await page
-          .waitForSelector(
-            'div[role="article"], div[role="feed"], div[role="main"], div[data-pagelet^="FeedUnit_"]',
-            { timeout: 15000 },
-          )
-          .catch(() => {});
-
+        console.log(`[${i + 1}/${SEARCH_KEYWORDS.length}] Searching: "${keyword}"`);
+        await page.goto(searchUrl, { waitUntil: "load", timeout: 20000 });
         await sleep(2000);
-        await dismissOverlays();
 
-        // Scroll to trigger lazy loading
-        let prevHeight = 0;
-        for (let s = 0; s < 5; s++) {
-          await page.keyboard.press("PageDown");
-          await sleep(800);
-          await page.evaluate(() => window.scrollBy(0, 800));
-          await sleep(1200 + Math.random() * 800);
-          const newHeight = await page.evaluate(() => document.body.scrollHeight);
-          if (newHeight === prevHeight && s > 1) break;
-          prevHeight = newHeight;
-        }
-
-        // Scroll back to top
-        await page.evaluate(() => window.scrollTo(0, 0));
-        await sleep(500);
-
-        // Debug: on first page, log what we see
+        // Debug: on first search, log page state
         if (i === 0) {
           console.log("  [debug] URL:", page.url());
-          const debugInfo = await page.evaluate(() => {
-            const articles = document.querySelectorAll('div[role="article"]');
-            const feed = document.querySelectorAll('div[role="feed"]');
-            const allDivs = document.querySelectorAll("div[role]");
-            const roles = [...new Set(Array.from(allDivs).map((d) => d.getAttribute("role")))];
-            return {
-              articleCount: articles.length,
-              feedCount: feed.length,
-              roles: roles.slice(0, 20),
-              title: document.title,
-              bodyText: (document.body?.innerText || "").slice(0, 300),
-            };
-          });
-          console.log("  [debug] Articles:", debugInfo.articleCount, "| Feed divs:", debugInfo.feedCount);
-          console.log("  [debug] Roles:", debugInfo.roles.join(", "));
-          console.log("  [debug] Title:", debugInfo.title);
-          console.log("  [debug] Body preview:", debugInfo.bodyText.slice(0, 200));
+          const debugText = await page.evaluate(() => (document.body.innerText || "").slice(0, 500));
+          console.log("  [debug] Page text:", debugText.slice(0, 300));
           await page.screenshot({ path: "fb-search-debug.png", fullPage: false });
+          console.log("  [debug] Screenshot saved");
         }
 
-        const posts = await extractPosts(page);
-        sourceStats[sourceName] = posts.length;
+        // Check if we got redirected to login
+        if (page.url().includes("/login")) {
+          console.warn("  ✗ Redirected to login — session may have expired");
+          break;
+        }
+
+        const posts = await extractMbasicPosts(page);
+        keywordStats[keyword] = posts.length;
         totalExtracted += posts.length;
 
         for (const p of posts) {
-          allPosts.push({ ...p, source: sourceName });
+          allPosts.push({ ...p, searchQuery: keyword });
         }
 
         console.log(`  → ${posts.length} posts extracted`);
+
+        // Try to load "See more results" if available
+        try {
+          const seeMore = page.locator('a:has-text("See more results"), a:has-text("See More Results"), a[href*="see_more"]').first();
+          if (await seeMore.isVisible({ timeout: 2000 }).catch(() => false)) {
+            await seeMore.click();
+            await page.waitForLoadState("load", { timeout: 15000 });
+            await sleep(1500);
+            const morePosts = await extractMbasicPosts(page);
+            for (const p of morePosts) {
+              allPosts.push({ ...p, searchQuery: keyword });
+            }
+            totalExtracted += morePosts.length;
+            if (morePosts.length > 0) {
+              console.log(`  → ${morePosts.length} more posts from page 2`);
+            }
+          }
+        } catch { /* no more results link */ }
+
       } catch (err) {
-        console.warn(`  ✗ Failed for "${sourceName}":`, err.message);
-        sourceStats[sourceName] = 0;
+        console.warn(`  ✗ Search failed for "${keyword}":`, err.message);
+        keywordStats[keyword] = 0;
       }
 
-      // Anti-ban delay between pages
-      if (i < SEED_URLS.length - 1) {
-        await randomDelay(3000, 7000);
+      // Anti-ban delay
+      if (i < SEARCH_KEYWORDS.length - 1) {
+        await randomDelay(3000, 8000);
       }
     }
 
     await browser.close();
     console.log(`\nTotal raw posts extracted: ${totalExtracted}`);
 
-    // ── 3. Deduplicate ──
+    // ── 4. Deduplicate ──
     const deduped = new Map();
     for (const p of allPosts) {
       const key = p.postUrl || p.text.slice(0, 100);
@@ -539,13 +551,13 @@ async function main() {
     const uniquePosts = Array.from(deduped.values());
     console.log(`After dedup: ${uniquePosts.length} unique posts`);
 
-    // ── 4. Regex gig filter ──
+    // ── 5. Regex gig filter ──
     const gigPosts = uniquePosts.filter((p) => isGigPost(p.text));
     console.log(
       `Gig filter: kept ${gigPosts.length}/${uniquePosts.length} (rejected ${uniquePosts.length - gigPosts.length} non-gig)`,
     );
 
-    // ── 5. Parse timestamps and freshness filter ──
+    // ── 6. Parse timestamps and freshness filter ──
     const now = Date.now();
     const freshPosts = [];
     let staleCount = 0;
@@ -568,7 +580,7 @@ async function main() {
       console.log(`Freshness filter: dropped ${staleCount} stale posts`);
     }
 
-    // ── 6. Split new vs already-seen ──
+    // ── 7. Split new vs already-seen ──
     const newPosts = [];
     const existingPosts = [];
 
@@ -581,7 +593,7 @@ async function main() {
     }
     console.log(`New: ${newPosts.length}, Previously seen: ${existingPosts.length}`);
 
-    // ── 7. AI classify new posts ──
+    // ── 8. AI classify new posts ──
     let classifiedNew = newPosts;
     if (newPosts.length > 0) {
       const forClassifier = newPosts.map((p) => ({
@@ -605,7 +617,7 @@ async function main() {
       }
     }
 
-    // ── 8. Normalize to pipeline schema ──
+    // ── 9. Normalize to pipeline schema ──
     const finalPosts = [...classifiedNew, ...existingPosts].map((p) => ({
       id: p.id,
       name: p.id,
@@ -618,16 +630,16 @@ async function main() {
       created_utc: p.created_utc || Math.floor(Date.now() / 1000),
       num_comments: 0,
       ups: 0,
-      link_flair_text: p.source || null,
+      link_flair_text: p.searchQuery || null,
       _sub: "facebook",
-      source: `fb-group-${(p.source || "").replace(/\s+/g, "-").toLowerCase()}`,
+      source: `fb-search-${(p.searchQuery || "").replace(/\s+/g, "-").toLowerCase()}`,
       source_platform: "Facebook",
       _ai_is_gig: true,
     }));
 
     finalPosts.sort((a, b) => (b.created_utc || 0) - (a.created_utc || 0));
 
-    // ── 9. Store to Redis ──
+    // ── 10. Store to Redis ──
     const payload = JSON.stringify({
       posts: finalPosts.slice(0, 300),
       post_count: Math.min(finalPosts.length, 300),
@@ -641,48 +653,30 @@ async function main() {
       `\nStored ${Math.min(finalPosts.length, 300)} posts to Redis (key: gigalertpro:facebook:latest, TTL 2h)`,
     );
 
-    // ── 10. Terminal metrics ──
+    // ── 11. Terminal metrics ──
     console.log("\n╔══════════════════════════════════════════════╗");
     console.log("║         FACEBOOK CRAWLER RESULTS             ║");
     console.log("╠══════════════════════════════════════════════╣");
-    console.log(
-      `║ Sources scraped       │ ${SEED_URLS.length.toString().padStart(6)}`,
-    );
-    console.log(
-      `║ Raw posts extracted   │ ${totalExtracted.toString().padStart(6)}`,
-    );
-    console.log(
-      `║ After dedup           │ ${uniquePosts.length.toString().padStart(6)}`,
-    );
-    console.log(
-      `║ After gig filter      │ ${gigPosts.length.toString().padStart(6)}`,
-    );
-    console.log(
-      `║ After freshness       │ ${freshPosts.length.toString().padStart(6)}`,
-    );
-    console.log(
-      `║ New (AI classified)   │ ${classifiedNew.length.toString().padStart(6)}`,
-    );
-    console.log(
-      `║ Previously seen       │ ${existingPosts.length.toString().padStart(6)}`,
-    );
-    console.log(
-      `║ Final stored          │ ${Math.min(finalPosts.length, 300).toString().padStart(6)}`,
-    );
+    console.log(`║ Keywords searched     │ ${SEARCH_KEYWORDS.length.toString().padStart(6)}`);
+    console.log(`║ Raw posts extracted   │ ${totalExtracted.toString().padStart(6)}`);
+    console.log(`║ After dedup           │ ${uniquePosts.length.toString().padStart(6)}`);
+    console.log(`║ After gig filter      │ ${gigPosts.length.toString().padStart(6)}`);
+    console.log(`║ After freshness       │ ${freshPosts.length.toString().padStart(6)}`);
+    console.log(`║ New (AI classified)   │ ${classifiedNew.length.toString().padStart(6)}`);
+    console.log(`║ Previously seen       │ ${existingPosts.length.toString().padStart(6)}`);
+    console.log(`║ Final stored          │ ${Math.min(finalPosts.length, 300).toString().padStart(6)}`);
     console.log("╚══════════════════════════════════════════════╝");
 
-    // Top sources by result count
-    const sorted = Object.entries(sourceStats)
+    const sorted = Object.entries(keywordStats)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 10);
     if (sorted.length > 0) {
-      console.log("\nTop sources:");
-      for (const [src, count] of sorted) {
-        console.log(`  ${count.toString().padStart(3)} │ ${src}`);
+      console.log("\nTop keywords:");
+      for (const [kw, count] of sorted) {
+        console.log(`  ${count.toString().padStart(3)} │ ${kw}`);
       }
     }
 
-    // Sample posts
     if (finalPosts.length > 0) {
       console.log("\nSample posts:");
       for (const p of finalPosts.slice(0, 10)) {
@@ -690,9 +684,7 @@ async function main() {
           p.created_utc > 0
             ? `${Math.round((Date.now() / 1000 - p.created_utc) / 3600)}h ago`
             : "unknown";
-        console.log(
-          `  [${age}] ${p.title.slice(0, 80)}... — ${p.author || "?"} — ${p.permalink.slice(0, 50)}`,
-        );
+        console.log(`  [${age}] ${p.title.slice(0, 80)}... — ${p.author || "?"}`);
       }
     }
   } catch (err) {
@@ -702,9 +694,7 @@ async function main() {
       console.log("Page URL at failure:", page.url());
       const title = await page.title().catch(() => "unknown");
       console.log("Page title at failure:", title);
-    } catch {
-      /* ignore screenshot errors */
-    }
+    } catch { /* ignore */ }
     await browser.close().catch(() => {});
     console.error("Facebook crawler failed:", err.message || err);
     process.exit(1);
