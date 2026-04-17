@@ -1,12 +1,11 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// GigAlertPro — Facebook Gig Crawler (via DuckDuckGo Search)
+// GigAlertPro — Facebook Gig Crawler (via DuckDuckGo Lite + Bing)
 //
-// Searches DuckDuckGo for public Facebook posts containing freelance gig
-// keywords. Uses queries like: site:facebook.com "looking for a video editor"
+// Searches DuckDuckGo Lite and Bing for public Facebook posts containing
+// freelance gig keywords. Uses plain HTTP fetch (no browser needed for search).
 // No Facebook login required — all posts are publicly indexed.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { chromium } from "playwright";
 import { classifyAndFilter } from "./gig-classifier.js";
 
 const MAX_AGE_DAYS = parseInt(process.env.FB_MAX_AGE_DAYS || "7", 10);
@@ -156,73 +155,139 @@ function randomDelay(minMs, maxMs) {
   return sleep(minMs + Math.random() * (maxMs - minMs));
 }
 
-// ── Extract DuckDuckGo search results ───────────────────────────────────────
+// ── Search via plain HTTP fetch (no browser) ────────────────────────────────
 
-async function extractSearchResults(page) {
-  return page.evaluate(() => {
-    const results = [];
-    // DuckDuckGo result containers
-    const items = document.querySelectorAll("article[data-testid='result'], li[data-layout='organic'], div.result, div.results_links, ol.react-results--main li");
+const HTTP_HEADERS = {
+  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
+  Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+  "Accept-Language": "en-US,en;q=0.9",
+};
 
-    for (const item of items) {
-      try {
-        const linkEl = item.querySelector("a[href*='facebook.com']");
-        if (!linkEl) continue;
-
-        let href = linkEl.getAttribute("href") || "";
-        // DDG sometimes wraps URLs in redirect
-        if (href.includes("duckduckgo.com") && href.includes("uddg=")) {
-          try {
-            href = decodeURIComponent(href.split("uddg=")[1].split("&")[0]);
-          } catch { /* use as-is */ }
-        }
-        if (!href.includes("facebook.com")) continue;
-
-        // Get the title
-        const titleEl = item.querySelector("h2, h3, a[data-testid='result-title-a']");
-        const title = titleEl ? titleEl.innerText.trim() : "";
-
-        // Get the snippet
-        const snippetEl = item.querySelector(
-          "span[data-testid='result-snippet'], div.result__snippet, div[data-result='snippet'], p"
-        );
-        let snippet = "";
-        if (snippetEl) {
-          snippet = snippetEl.innerText.trim();
-        }
-        if (!snippet && !title) continue;
-
-        // Date from snippet (DDG often prefixes with date)
-        let dateText = null;
-        const dateMatch = (snippet || "").match(/^(\w+ \d+, \d{4})\s*[—–-]\s*/);
-        if (dateMatch) {
-          dateText = dateMatch[1];
-          snippet = snippet.slice(dateMatch[0].length).trim();
-        }
-
-        results.push({
-          url: href,
-          title,
-          snippet,
-          dateText,
-        });
-      } catch {
-        /* skip */
-      }
+function parseFBLinks(html) {
+  const results = [];
+  // Extract all Facebook URLs and surrounding text from search result HTML
+  const linkRegex = /href="([^"]*facebook\.com[^"]*)"/gi;
+  let match;
+  while ((match = linkRegex.exec(html)) !== null) {
+    let url = match[1];
+    // Decode DDG redirect URLs
+    if (url.includes("uddg=")) {
+      try { url = decodeURIComponent(url.split("uddg=")[1].split("&")[0]); } catch {}
     }
+    // Decode Bing redirect URLs
+    if (url.includes("bing.com") && url.includes("u=")) {
+      try { url = decodeURIComponent(url.split("u=")[1].split("&")[0]); } catch {}
+    }
+    if (!url.includes("facebook.com")) continue;
 
-    return results;
-  });
+    results.push(url);
+  }
+  return [...new Set(results)];
 }
 
-// ── Parse date strings from Google snippets ─────────────────────────────────
+function extractSnippets(html) {
+  const results = [];
+  // Generic pattern: find text blocks near Facebook links
+  // Split HTML by result-like boundaries
+  const chunks = html.split(/<(?:li|div|article|tr)[^>]*>/i);
 
-function parseGoogleDate(text) {
+  for (const chunk of chunks) {
+    // Check if chunk contains a Facebook URL
+    const fbMatch = chunk.match(/href="([^"]*facebook\.com[^"]*)"/i);
+    if (!fbMatch) continue;
+
+    let url = fbMatch[1];
+    if (url.includes("uddg=")) {
+      try { url = decodeURIComponent(url.split("uddg=")[1].split("&")[0]); } catch {}
+    }
+    if (!url.includes("facebook.com")) continue;
+
+    // Extract visible text (strip HTML tags)
+    const text = chunk
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    if (text.length < 20) continue;
+
+    // Try to extract a date
+    let dateText = null;
+    const dateMatch = text.match(/(\w+ \d+, \d{4})/);
+    if (dateMatch) dateText = dateMatch[1];
+
+    results.push({
+      url,
+      text: text.slice(0, 500),
+      dateText,
+    });
+  }
+
+  return results;
+}
+
+async function searchBing(keyword) {
+  const query = `site:facebook.com "${keyword}"`;
+  const encoded = encodeURIComponent(query);
+  const url = `https://www.bing.com/search?q=${encoded}&filters=ex1%3a"ez1"&count=20`;
+
+  try {
+    const resp = await fetch(url, { headers: HTTP_HEADERS, redirect: "follow" });
+    if (!resp.ok) {
+      console.log(`  [debug] Bing returned ${resp.status}`);
+      return [];
+    }
+    const html = await resp.text();
+
+    if (html.includes("captcha") || html.includes("unusual traffic")) {
+      console.log("  [debug] Bing CAPTCHA detected");
+      return [];
+    }
+
+    return extractSnippets(html);
+  } catch (err) {
+    console.warn(`  [debug] Bing fetch failed:`, err.message);
+    return [];
+  }
+}
+
+async function searchDDGLite(keyword) {
+  const query = `site:facebook.com "${keyword}"`;
+  const url = `https://lite.duckduckgo.com/lite/?q=${encodeURIComponent(query)}&df=w`;
+
+  try {
+    const resp = await fetch(url, {
+      headers: {
+        ...HTTP_HEADERS,
+        "User-Agent": "Lynx/2.9.2 libwww-FM/2.14",
+      },
+      redirect: "follow",
+    });
+    if (!resp.ok) {
+      console.log(`  [debug] DDG Lite returned ${resp.status}`);
+      return [];
+    }
+    const html = await resp.text();
+    return extractSnippets(html);
+  } catch (err) {
+    console.warn(`  [debug] DDG Lite fetch failed:`, err.message);
+    return [];
+  }
+}
+
+// ── Parse date strings ──────────────────────────────────────────────────────
+
+function parseSearchDate(text) {
   if (!text) return null;
   const t = text.trim().toLowerCase();
   const now = Date.now();
 
-  // "X hours ago", "X days ago", "X minutes ago"
   let m = t.match(/(\d+)\s*(?:hour|hr)s?\s*ago/);
   if (m) return Math.floor((now - parseInt(m[1]) * 3600 * 1000) / 1000);
 
@@ -232,7 +297,6 @@ function parseGoogleDate(text) {
   m = t.match(/(\d+)\s*(?:min(?:ute)?)s?\s*ago/);
   if (m) return Math.floor((now - parseInt(m[1]) * 60 * 1000) / 1000);
 
-  // "Mon DD, YYYY" or "DD Mon YYYY" style dates
   const parsed = new Date(text.trim());
   if (!isNaN(parsed.getTime())) return Math.floor(parsed.getTime() / 1000);
 
@@ -242,21 +306,10 @@ function parseGoogleDate(text) {
 // ── Main crawler ────────────────────────────────────────────────────────────
 
 async function main() {
-  const browser = await chromium.launch({
-    headless: process.env.PW_HEADLESS !== "false",
-  });
-
-  const context = await browser.newContext({
-    userAgent:
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
-    viewport: { width: 1280, height: 900 },
-    locale: "en-US",
-  });
-
-  const page = await context.newPage();
   const allPosts = [];
   const keywordStats = {};
   let totalExtracted = 0;
+  let searchEngine = "unknown";
 
   try {
     // ── 1. Load seen set for dedup ──
@@ -265,75 +318,68 @@ async function main() {
     const seenSet = new Set(seenRaw || []);
     console.log(`Seen set: ${seenSet.size} previously seen posts`);
 
-    // ── 2. Search DuckDuckGo for each keyword ──
-    for (let i = 0; i < SEARCH_KEYWORDS.length; i++) {
+    // ── 2. Try DDG Lite first, fall back to Bing ──
+    // Test which engine works with first keyword
+    console.log("Testing search engines...");
+    const testResults = await searchDDGLite(SEARCH_KEYWORDS[0]);
+    let useEngine = "ddg";
+    if (testResults.length > 0) {
+      console.log(`DDG Lite works — found ${testResults.length} results`);
+      searchEngine = "DDG Lite";
+    } else {
+      const bingTest = await searchBing(SEARCH_KEYWORDS[0]);
+      if (bingTest.length > 0) {
+        console.log(`Bing works — found ${bingTest.length} results`);
+        useEngine = "bing";
+        searchEngine = "Bing";
+      } else {
+        console.log("Neither DDG Lite nor Bing returned results for test query");
+        console.log("  DDG Lite test results: 0, Bing test results: 0");
+        searchEngine = "none";
+      }
+    }
+
+    // Process first keyword results
+    const firstResults = useEngine === "ddg" ? testResults : (useEngine === "bing" ? await searchBing(SEARCH_KEYWORDS[0]) : []);
+    keywordStats[SEARCH_KEYWORDS[0]] = firstResults.length;
+    totalExtracted += firstResults.length;
+    for (const r of firstResults) {
+      allPosts.push({ ...r, searchQuery: SEARCH_KEYWORDS[0] });
+    }
+    console.log(`[1/${SEARCH_KEYWORDS.length}] "${SEARCH_KEYWORDS[0]}" → ${firstResults.length} results`);
+
+    // ── 3. Search remaining keywords ──
+    const searchFn = useEngine === "bing" ? searchBing : searchDDGLite;
+
+    for (let i = 1; i < SEARCH_KEYWORDS.length; i++) {
       const keyword = SEARCH_KEYWORDS[i];
-      // DuckDuckGo search for public Facebook posts, recent results
-      const query = `site:facebook.com "${keyword}"`;
-      const encoded = encodeURIComponent(query);
-      // df=w restricts to past week on DDG
-      const searchUrl = `https://duckduckgo.com/?q=${encoded}&df=w&ia=web`;
 
       try {
-        console.log(`[${i + 1}/${SEARCH_KEYWORDS.length}] Searching: "${keyword}"`);
-        await page.goto(searchUrl, { waitUntil: "domcontentloaded", timeout: 20000 });
-        await sleep(3000);
-
-        // Check for block/error
-        const pageText = await page.evaluate(() => document.body.innerText || "");
-        if (pageText.includes("blocked") || pageText.includes("bot") || pageText.length < 50) {
-          console.warn("  ✗ DuckDuckGo may be blocking — stopping searches");
-          await page.screenshot({ path: "fb-captcha-debug.png", fullPage: false });
-          break;
-        }
-
-        // Debug: on first search, log page state
-        if (i === 0) {
-          console.log("  [debug] URL:", page.url());
-          const resultCount = await page.evaluate(() =>
-            document.querySelectorAll("article[data-testid='result'], li[data-layout='organic'], div.result, ol.react-results--main li").length
-          );
-          console.log("  [debug] Result containers:", resultCount);
-          console.log("  [debug] Page text preview:", pageText.slice(0, 300));
-          await page.screenshot({ path: "fb-search-debug.png", fullPage: false });
-          console.log("  [debug] Screenshot saved");
-        }
-
-        const results = await extractSearchResults(page);
+        const results = await searchFn(keyword);
         keywordStats[keyword] = results.length;
         totalExtracted += results.length;
 
         for (const r of results) {
-          allPosts.push({
-            text: r.snippet || r.title,
-            title: r.title,
-            snippet: r.snippet,
-            author: null,
-            timeText: r.dateText,
-            postUrl: r.url,
-            searchQuery: keyword,
-          });
+          allPosts.push({ ...r, searchQuery: keyword });
         }
 
-        console.log(`  → ${results.length} results found`);
+        console.log(`[${i + 1}/${SEARCH_KEYWORDS.length}] "${keyword}" → ${results.length} results`);
       } catch (err) {
         console.warn(`  ✗ Search failed for "${keyword}":`, err.message);
         keywordStats[keyword] = 0;
       }
 
-      // Anti-ban delay — Google rate-limits aggressively
-      if (i < SEARCH_KEYWORDS.length - 1) {
-        await randomDelay(5000, 12000);
-      }
+      // Rate limit
+      await randomDelay(3000, 7000);
     }
 
-    await browser.close();
-    console.log(`\nTotal raw results: ${totalExtracted}`);
+    console.log(`\nSearch engine used: ${searchEngine}`);
+    console.log(`Total raw results: ${totalExtracted}`);
 
-    // ── 3. Deduplicate by URL ──
+    // ── 4. Deduplicate by URL ──
     const deduped = new Map();
     for (const p of allPosts) {
-      const key = p.postUrl || p.text.slice(0, 100);
+      const key = p.url || p.text.slice(0, 100);
       const id = "fb_" + encodeId(key);
       if (!deduped.has(id)) {
         deduped.set(id, { id, ...p });
@@ -342,20 +388,19 @@ async function main() {
     const uniquePosts = Array.from(deduped.values());
     console.log(`After dedup: ${uniquePosts.length} unique posts`);
 
-    // ── 4. Regex gig filter ──
-    const combinedText = (p) => [p.title, p.snippet, p.text].filter(Boolean).join(" ");
-    const gigPosts = uniquePosts.filter((p) => isGigPost(combinedText(p)));
+    // ── 5. Regex gig filter ──
+    const gigPosts = uniquePosts.filter((p) => isGigPost(p.text));
     console.log(
       `Gig filter: kept ${gigPosts.length}/${uniquePosts.length} (rejected ${uniquePosts.length - gigPosts.length} non-gig)`,
     );
 
-    // ── 5. Parse timestamps and freshness filter ──
+    // ── 6. Parse timestamps and freshness filter ──
     const now = Date.now();
     const freshPosts = [];
     let staleCount = 0;
 
     for (const p of gigPosts) {
-      const createdUtc = parseGoogleDate(p.timeText);
+      const createdUtc = parseSearchDate(p.dateText);
       if (!createdUtc) {
         p.created_utc = Math.floor(now / 1000);
         freshPosts.push(p);
@@ -372,7 +417,7 @@ async function main() {
       console.log(`Freshness filter: dropped ${staleCount} stale posts`);
     }
 
-    // ── 6. Split new vs already-seen ──
+    // ── 7. Split new vs already-seen ──
     const newPosts = [];
     const existingPosts = [];
 
@@ -385,14 +430,14 @@ async function main() {
     }
     console.log(`New: ${newPosts.length}, Previously seen: ${existingPosts.length}`);
 
-    // ── 7. AI classify new posts ──
+    // ── 8. AI classify new posts ──
     let classifiedNew = newPosts;
     if (newPosts.length > 0) {
       const forClassifier = newPosts.map((p) => ({
         id: p.id,
         name: p.id,
-        title: (p.title || p.text || "").slice(0, 120),
-        selftext: (p.snippet || p.text || "").slice(0, 2000),
+        title: (p.text || "").slice(0, 120),
+        selftext: (p.text || "").slice(0, 2000),
         author: p.author || "unknown",
       }));
 
@@ -409,15 +454,15 @@ async function main() {
       }
     }
 
-    // ── 8. Normalize to pipeline schema ──
+    // ── 9. Normalize to pipeline schema ──
     const finalPosts = [...classifiedNew, ...existingPosts].map((p) => ({
       id: p.id,
       name: p.id,
-      title: (p.title || p.text || "").slice(0, 120),
-      selftext: (p.snippet || p.text || "").slice(0, 2000),
+      title: (p.text || "").slice(0, 120),
+      selftext: (p.text || "").slice(0, 2000),
       author: p.author || "unknown",
       author_name: p.author || "unknown",
-      permalink: p.postUrl || "",
+      permalink: p.url || "",
       subreddit: null,
       created_utc: p.created_utc || Math.floor(Date.now() / 1000),
       num_comments: 0,
@@ -431,7 +476,7 @@ async function main() {
 
     finalPosts.sort((a, b) => (b.created_utc || 0) - (a.created_utc || 0));
 
-    // ── 9. Store to Redis ──
+    // ── 10. Store to Redis ──
     const payload = JSON.stringify({
       posts: finalPosts.slice(0, 300),
       post_count: Math.min(finalPosts.length, 300),
@@ -445,7 +490,7 @@ async function main() {
       `\nStored ${Math.min(finalPosts.length, 300)} posts to Redis (key: gigalertpro:facebook:latest, TTL 2h)`,
     );
 
-    // ── 10. Terminal metrics ──
+    // ── 11. Terminal metrics ──
     console.log("\n╔══════════════════════════════════════════════╗");
     console.log("║         FACEBOOK CRAWLER RESULTS             ║");
     console.log("╠══════════════════════════════════════════════╣");
@@ -480,12 +525,6 @@ async function main() {
       }
     }
   } catch (err) {
-    try {
-      await page.screenshot({ path: "fb-error-screenshot.png", fullPage: false });
-      console.log("Screenshot saved to fb-error-screenshot.png");
-      console.log("Page URL at failure:", page.url());
-    } catch { /* ignore */ }
-    await browser.close().catch(() => {});
     console.error("Facebook crawler failed:", err.message || err);
     process.exit(1);
   }
