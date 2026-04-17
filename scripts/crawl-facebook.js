@@ -238,7 +238,7 @@ async function loginMbasic(page) {
   }
 
   console.log("Logging in via mbasic.facebook.com...");
-  await page.goto("https://mbasic.facebook.com/", { waitUntil: "load", timeout: 30000 });
+  await page.goto("https://mbasic.facebook.com/", { waitUntil: "domcontentloaded", timeout: 30000 });
   await sleep(2000);
 
   // Accept cookie consent if present
@@ -265,7 +265,7 @@ async function loginMbasic(page) {
   // Submit — mbasic uses a standard form submit button
   const loginBtn = page.locator('input[name="login"], input[type="submit"], button[name="login"]').first();
   await loginBtn.click();
-  await page.waitForLoadState("load", { timeout: 30000 });
+  await page.waitForLoadState("domcontentloaded", { timeout: 30000 });
   await sleep(2000);
 
   // Check for checkpoint
@@ -438,7 +438,7 @@ async function main() {
 
     if (savedCookies) {
       await context.addCookies(savedCookies);
-      await page.goto("https://mbasic.facebook.com/", { waitUntil: "load", timeout: 30000 });
+      await page.goto("https://mbasic.facebook.com/", { waitUntil: "domcontentloaded", timeout: 30000 });
       await sleep(2000);
 
       const pageText = await page.evaluate(() => document.body.innerText || "");
@@ -450,7 +450,8 @@ async function main() {
         console.log("Session restored from Redis — already logged in");
         needsLogin = false;
       } else {
-        console.log("Saved session expired — performing fresh login");
+        console.log("Saved session expired — clearing cookies and re-logging in");
+        await context.clearCookies();
       }
     }
 
@@ -479,7 +480,7 @@ async function main() {
 
       try {
         console.log(`[${i + 1}/${SEARCH_KEYWORDS.length}] Searching: "${keyword}"`);
-        await page.goto(searchUrl, { waitUntil: "load", timeout: 20000 });
+        await page.goto(searchUrl, { waitUntil: "domcontentloaded", timeout: 20000 });
         await sleep(2000);
 
         // Debug: on first search, log page state
@@ -512,7 +513,7 @@ async function main() {
           const seeMore = page.locator('a:has-text("See more results"), a:has-text("See More Results"), a[href*="see_more"]').first();
           if (await seeMore.isVisible({ timeout: 2000 }).catch(() => false)) {
             await seeMore.click();
-            await page.waitForLoadState("load", { timeout: 15000 });
+            await page.waitForLoadState("domcontentloaded", { timeout: 15000 });
             await sleep(1500);
             const morePosts = await extractMbasicPosts(page);
             for (const p of morePosts) {
