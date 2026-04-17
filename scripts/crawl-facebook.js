@@ -8,111 +8,116 @@
 
 import { classifyAndFilter } from "./gig-classifier.js";
 
-const MAX_AGE_DAYS = parseInt(process.env.FB_MAX_AGE_DAYS || "2", 10);
+const MAX_AGE_DAYS = parseInt(process.env.FB_MAX_AGE_DAYS || "7", 10);
 const MAX_AGE_MS = MAX_AGE_DAYS * 86400 * 1000;
 
-// ── Dynamic query generation — grouped roles × social-media signals ─────────
-// Roles are grouped by category so we can combine 2-3 related roles into a
-// single compound OR query (e.g. ("video editor" OR "animator") need a).
-// This cuts total queries by ~3x while maintaining the same coverage.
-// Signals are tuned for how real clients post on social media, not job boards.
+// ── Dynamic query generation — role × signal matrix ─────────────────────────
+// Instead of exact phrases like "hiring video editor" (misses "Video Editor
+// Wanted", "We're Hiring: Video Editor"), we search for the ROLE as an exact
+// phrase plus a SIGNAL word anywhere on the page. Each run picks 2 random
+// signals per role so results vary across runs.
 
-const ROLE_GROUPS = [
+const ROLES = [
   // ── Design & Creative ──
-  ["graphic designer", "UI UX designer", "illustrator"],
-  ["logo designer", "brand designer", "thumbnail designer"],
-  // ── Video & Animation ──
-  ["video editor", "motion graphics", "animator"],
-  ["YouTube editor", "podcast editor"],
-  // ── Web Development ──
-  ["web developer", "frontend developer", "Webflow developer"],
-  ["backend developer", "full stack developer"],
-  ["React developer", "Python developer", "WordPress developer"],
-  ["Shopify developer", "no-code developer"],
-  // ── Mobile & Specialized Dev ──
-  ["mobile app developer", "iOS developer", "Android developer"],
-  ["flutter developer", "game developer"],
-  ["software engineer", "AI developer", "blockchain developer"],
-  ["DevOps engineer", "chatbot developer"],
+  "graphic designer",
+  "UI UX designer",
+  "illustrator",
+  "video editor",
+  "motion graphics",
+  "animator",
+  "logo designer",
+  "thumbnail designer",
+  "brand designer",
+  // ── Development & Tech ──
+  "web developer",
+  "frontend developer",
+  "backend developer",
+  "mobile app developer",
+  "software engineer",
+  "AI developer",
+  "game developer",
+  "blockchain developer",
+  "Shopify developer",
+  "React developer",
+  "Python developer",
+  "WordPress developer",
+  "flutter developer",
+  "iOS developer",
+  "Android developer",
+  "DevOps engineer",
+  "full stack developer",
+  "Webflow developer",
+  "no-code developer",
   // ── Writing & Content ──
-  ["copywriter", "content writer", "SEO writer"],
-  ["technical writer", "ghostwriter", "scriptwriter"],
-  ["editor proofreader", "blogger", "content creator"],
+  "copywriter",
+  "content writer",
+  "technical writer",
+  "ghostwriter",
+  "editor proofreader",
+  "SEO writer",
+  "scriptwriter",
+  "content creator",
+  "blogger",
   // ── Marketing & Sales ──
-  ["social media manager", "community manager"],
-  ["SEO specialist", "digital marketer", "growth hacker"],
-  ["email marketer", "PPC specialist"],
-  ["Google Ads expert", "Facebook Ads freelancer"],
+  "social media manager",
+  "SEO specialist",
+  "digital marketer",
+  "growth hacker",
+  "email marketer",
+  "PPC specialist",
+  "Google Ads expert",
+  "Facebook Ads freelancer",
+  "community manager",
   // ── Business & Admin ──
-  ["virtual assistant", "executive assistant", "data entry"],
-  ["project manager", "customer support"],
-  ["bookkeeper", "accountant freelance"],
-  // ── Audio & Voice ──
-  ["voiceover artist", "voice actor"],
-  ["music producer", "audio engineer", "sound designer"],
+  "virtual assistant",
+  "data entry",
+  "project manager",
+  "customer support",
+  "executive assistant",
+  "bookkeeper",
+  "accountant freelance",
+  // ── Video & Audio ──
+  "podcast editor",
+  "voiceover artist",
+  "voice actor",
+  "music producer",
+  "audio engineer",
+  "sound designer",
+  "YouTube editor",
   // ── Data & AI ──
-  ["data analyst", "data scientist", "automation expert"],
+  "data analyst",
+  "data scientist",
+  "automation expert",
+  "chatbot developer",
   // ── Specialized Niches ──
-  ["translator", "photographer", "transcriptionist"],
-  ["3D artist", "CAD designer", "Blender artist"],
-  ["tutor online"],
+  "translator",
+  "photographer",
+  "3D artist",
+  "transcriptionist",
+  "CAD designer",
+  "Blender artist",
+  "tutor online",
 ];
 
 const SIGNALS = [
   "hiring",
+  "wanted",
   "needed",
   "looking for",
   "seeking",
-  "need a",
-  "who can",
-  "anyone know",
-  "recommend",
-  "DM me",
-  "help me",
-  "looking for someone",
-  "can anyone",
-  "who does",
-  "budget",
   "freelance",
-  "urgent",
+  "remote",
 ];
 
-const QUERY_BUDGET = parseInt(process.env.FB_QUERY_BUDGET || "30", 10);
-const ROTATION_KEY = "gigalertpro:facebook:rotation";
-
-function buildSearchQueries(groupIndices) {
-  const timeSlot = Math.floor(Date.now() / (2 * 60 * 60 * 1000));
+function buildSearchQueries() {
   const queries = [];
-  for (const gi of groupIndices) {
-    const group = ROLE_GROUPS[gi];
-    const offset = (timeSlot + gi) % SIGNALS.length;
-    const sig1 = SIGNALS[offset];
-    const sig2 = SIGNALS[(offset + 1) % SIGNALS.length];
-    const roleQuery =
-      group.length > 1
-        ? `(${group.map((r) => `"${r}"`).join(" OR ")})`
-        : `"${group[0]}"`;
-    const display = group.join(" / ");
-    queries.push({ display: `${display} + ${sig1}`, search: `${roleQuery} ${sig1}`, groupIndex: gi });
-    queries.push({ display: `${display} + ${sig2}`, search: `${roleQuery} ${sig2}`, groupIndex: gi });
+  for (const role of ROLES) {
+    const shuffled = [...SIGNALS].sort(() => Math.random() - 0.5);
+    for (const signal of shuffled.slice(0, 2)) {
+      queries.push({ display: `${role} + ${signal}`, search: `"${role}" ${signal}` });
+    }
   }
   return queries.sort(() => Math.random() - 0.5);
-}
-
-async function getRotationOrder() {
-  const raw = await redisCommand("GET", ROTATION_KEY);
-  const lastSearched = raw ? JSON.parse(raw) : {};
-  const indices = Array.from({ length: ROLE_GROUPS.length }, (_, i) => i);
-  indices.sort((a, b) => (lastSearched[a] || 0) - (lastSearched[b] || 0));
-  return { indices, lastSearched };
-}
-
-async function updateRotation(searchedIndices, lastSearched) {
-  const now = Date.now();
-  for (const i of searchedIndices) {
-    lastSearched[i] = now;
-  }
-  await redisSet(ROTATION_KEY, JSON.stringify(lastSearched), 86400 * 7);
 }
 
 // ── Upstash Redis helpers ───────────────────────────────────────────────────
@@ -178,34 +183,11 @@ function randomDelay(minMs, maxMs) {
 
 // ── Search via plain HTTP fetch (no browser) ────────────────────────────────
 
-const BROWSER_USER_AGENTS = [
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
-  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0",
-  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15",
-  "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36 Edg/136.0.0.0",
-];
-
-const TEXT_BROWSER_USER_AGENTS = [
-  "Lynx/2.9.2 libwww-FM/2.14",
-  "Lynx/2.8.9rel.1 libwww-FM/2.14",
-  "Links (2.29; Linux x86_64; GNU C 12.2)",
-  "w3m/0.5.3+git20230718",
-  "ELinks/0.13.2 (textmode; Linux x86_64)",
-];
-
-function randomFrom(arr) {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
-
-function getHttpHeaders(ua) {
-  return {
-    "User-Agent": ua,
-    Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    "Accept-Language": "en-US,en;q=0.9",
-  };
-}
+const HTTP_HEADERS = {
+  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
+  Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+  "Accept-Language": "en-US,en;q=0.9",
+};
 
 function decodeHtmlEntities(str) {
   return str
@@ -230,49 +212,31 @@ function cleanSearchText(text) {
     .replace(/\bSign up\b.*$/gi, "")
     .replace(/\bLog in\b.*$/gi, "")
     .replace(/\bSee more\b/gi, "")
-    .replace(/\bTranslate this page\b/gi, "")
-    .replace(/\bCached\b/gi, "")
-    .replace(/\bSee posts,?\s*photos\s*(?:and|&)\s*more\s*on\s*/gi, "")
-    .replace(/\bPeople also (?:search|ask)\b.*$/gi, "")
-    .replace(/\bRelated searches?\b.*$/gi, "")
-    .replace(/\bSimilar\b.*$/gi, "")
-    .replace(/https?:\/\/[^\s]+/g, "")
     .replace(/\s+/g, " ")
     .trim();
 }
 
 function extractSnippets(html) {
   const results = [];
-  const seenUrls = new Set();
+  // Generic pattern: find text blocks near Facebook links
+  // Split HTML by result-like boundaries
+  const chunks = html.split(/<(?:li|div|article|tr)[^>]*>/i);
 
-  const urlPattern = /href="([^"]*facebook\.com[^"]*)"/gi;
-  let match;
+  for (const chunk of chunks) {
+    // Check if chunk contains a Facebook URL
+    const fbMatch = chunk.match(/href="([^"]*facebook\.com[^"]*)"/i);
+    if (!fbMatch) continue;
 
-  while ((match = urlPattern.exec(html)) !== null) {
-    let url = match[1];
-
+    let url = fbMatch[1];
     if (url.includes("uddg=")) {
       try { url = decodeURIComponent(url.split("uddg=")[1].split("&")[0]); } catch {}
     }
-    if (url.includes("/url?")) {
-      try {
-        const qMatch = url.match(/[?&](?:q|url)=([^&]+)/);
-        if (qMatch) url = decodeURIComponent(qMatch[1]);
-      } catch {}
-    }
     if (!url.includes("facebook.com")) continue;
 
-    const normalizedUrl = url.replace(/\/+$/, "");
-    if (seenUrls.has(normalizedUrl)) continue;
-    seenUrls.add(normalizedUrl);
-
-    const start = Math.max(0, match.index - 100);
-    const end = Math.min(html.length, match.index + 800);
-    const context = html.slice(start, end);
-
+    // Extract visible text (strip HTML tags + search artifacts)
     const text = cleanSearchText(
       decodeHtmlEntities(
-        context
+        chunk
           .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
           .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
           .replace(/<[^>]+>/g, " ")
@@ -281,6 +245,8 @@ function extractSnippets(html) {
 
     if (text.length < 20) continue;
 
+    // Try to extract a date — check short relative formats first ("3h", "2d"),
+    // then long relative ("3 hours ago"), then absolute ("June 5, 2024")
     let dateText = null;
     const relMatch = text.match(/\b(\d+)\s*(h|hr|hrs|d|day|days|w|wk|wks|min|m)\b/i);
     if (relMatch) {
@@ -296,7 +262,7 @@ function extractSnippets(html) {
     }
 
     results.push({
-      url: normalizedUrl,
+      url,
       text: text.slice(0, 500),
       dateText,
     });
@@ -308,19 +274,19 @@ function extractSnippets(html) {
 async function searchBing(keyword) {
   const query = `site:facebook.com ${keyword}`;
   const encoded = encodeURIComponent(query);
-  const url = `https://www.bing.com/search?q=${encoded}&freshness=Week&count=20`;
+  const url = `https://www.bing.com/search?q=${encoded}&filters=ex1%3a"ez1"&count=20`;
 
   try {
-    const resp = await fetch(url, { headers: getHttpHeaders(randomFrom(BROWSER_USER_AGENTS)), redirect: "follow" });
+    const resp = await fetch(url, { headers: HTTP_HEADERS, redirect: "follow" });
     if (!resp.ok) {
       console.log(`  [debug] Bing returned ${resp.status}`);
-      return null;
+      return [];
     }
     const html = await resp.text();
 
     if (html.includes("captcha") || html.includes("unusual traffic")) {
       console.log("  [debug] Bing CAPTCHA detected");
-      return null;
+      return [];
     }
 
     return extractSnippets(html);
@@ -330,51 +296,26 @@ async function searchBing(keyword) {
   }
 }
 
-async function searchDDGLite(keyword, dateFilter = "w") {
+async function searchDDGLite(keyword) {
   const query = `site:facebook.com ${keyword}`;
-  const url = `https://lite.duckduckgo.com/lite/?q=${encodeURIComponent(query)}&df=${dateFilter}`;
+  const url = `https://lite.duckduckgo.com/lite/?q=${encodeURIComponent(query)}&df=w`;
 
   try {
     const resp = await fetch(url, {
-      headers: getHttpHeaders(randomFrom(TEXT_BROWSER_USER_AGENTS)),
+      headers: {
+        ...HTTP_HEADERS,
+        "User-Agent": "Lynx/2.9.2 libwww-FM/2.14",
+      },
       redirect: "follow",
     });
     if (!resp.ok) {
       console.log(`  [debug] DDG Lite returned ${resp.status}`);
-      return null;
+      return [];
     }
     const html = await resp.text();
     return extractSnippets(html);
   } catch (err) {
     console.warn(`  [debug] DDG Lite fetch failed:`, err.message);
-    return [];
-  }
-}
-
-async function searchGoogle(keyword) {
-  const query = `site:facebook.com ${keyword}`;
-  const encoded = encodeURIComponent(query);
-  const url = `https://www.google.com/search?q=${encoded}&tbs=qdr:w&num=20&hl=en`;
-
-  try {
-    const resp = await fetch(url, {
-      headers: getHttpHeaders(randomFrom(BROWSER_USER_AGENTS)),
-      redirect: "follow",
-    });
-    if (!resp.ok) {
-      console.log(`  [debug] Google returned ${resp.status}`);
-      return null;
-    }
-    const html = await resp.text();
-
-    if (html.includes("/sorry/") || html.includes("captcha") || html.includes("unusual traffic")) {
-      console.log("  [debug] Google CAPTCHA detected");
-      return null;
-    }
-
-    return extractSnippets(html);
-  } catch (err) {
-    console.warn(`  [debug] Google fetch failed:`, err.message);
     return [];
   }
 }
@@ -398,47 +339,34 @@ function parseSearchDate(text) {
   m = t.match(/(\d+)\s*(?:min(?:ute)?)s?\s*ago/);
   if (m) return Math.floor((now - parseInt(m[1]) * 60 * 1000) / 1000);
 
-  m = t.match(/(\d+)\s*(?:month)s?\s*ago/);
-  if (m) return Math.floor((now - parseInt(m[1]) * 30 * 86400 * 1000) / 1000);
-
-  if (/\byesterday\b/.test(t)) return Math.floor((now - 86400 * 1000) / 1000);
-  if (/\btoday\b/.test(t)) return Math.floor(now / 1000);
-  if (/\blast\s+week\b/.test(t)) return Math.floor((now - 7 * 86400 * 1000) / 1000);
-
-  const MONTHS = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
-  m = t.match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*\s+(\d{1,2})(?:\s*,?\s*(\d{4}))?\b/);
-  if (m) {
-    const month = MONTHS[m[1].slice(0, 3)];
-    const day = parseInt(m[2]);
-    const year = m[3] ? parseInt(m[3]) : new Date().getFullYear();
-    const d = new Date(year, month, day);
-    if (!isNaN(d.getTime())) return Math.floor(d.getTime() / 1000);
-  }
-
-  m = t.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/);
-  if (m) {
-    const d = new Date(parseInt(m[3]), parseInt(m[1]) - 1, parseInt(m[2]));
-    if (!isNaN(d.getTime())) return Math.floor(d.getTime() / 1000);
-  }
-
   const parsed = new Date(text.trim());
   if (!isNaN(parsed.getTime())) return Math.floor(parsed.getTime() / 1000);
 
   return null;
 }
 
-// ── URL validation — reject junk Facebook links, accept everything else ─────
+// ── URL validation — reject non-post Facebook links ────────────────────────
 
 const REJECT_URL_PATTERNS = [
   /facebook\.com\/?$/,
   /facebook\.com\/login/,
   /facebook\.com\/help/,
   /facebook\.com\/policies/,
+  /facebook\.com\/business/,
+  /facebook\.com\/marketplace/,
+  /facebook\.com\/events\/\d+\/?$/,
+  /facebook\.com\/groups\/[^/]+\/?$/,
+  /facebook\.com\/[^/]+\/?$/,
   /facebook\.com\/watch\/?$/,
   /facebook\.com\/(?:photo|video)\.php/,
-  /facebook\.com\/ads\//,
-  /facebook\.com\/privacy/,
-  /facebook\.com\/settings/,
+];
+
+const POST_URL_SIGNALS = [
+  /\/posts\//,
+  /\/permalink\//,
+  /story_fbid/,
+  /\/groups\/[^/]+\/posts\//,
+  /\/[^/]+\/(?:posts|videos|photos)\/\d+/,
 ];
 
 function isValidPostUrl(url) {
@@ -446,7 +374,7 @@ function isValidPostUrl(url) {
   for (const rx of REJECT_URL_PATTERNS) {
     if (rx.test(url)) return false;
   }
-  return true;
+  return POST_URL_SIGNALS.some((rx) => rx.test(url));
 }
 
 // ── Main crawler ────────────────────────────────────────────────────────────
@@ -463,52 +391,46 @@ async function main() {
     const seenSet = new Set(seenRaw || []);
     console.log(`Seen set: ${seenSet.size} previously seen posts`);
 
-    // ── 2. Build search queries (grouped roles, rotated across runs) ──
-    const { indices: rotationOrder, lastSearched } = await getRotationOrder();
-    const groupsThisRun = rotationOrder.slice(0, Math.ceil(QUERY_BUDGET / 2));
-    const searchQueries = buildSearchQueries(groupsThisRun);
-    console.log(
-      `Generated ${searchQueries.length} queries from ${groupsThisRun.length}/${ROLE_GROUPS.length} groups (budget: ${QUERY_BUDGET})`,
-    );
+    // ── 2. Build search queries (role × signal matrix, randomized each run) ──
+    const searchQueries = buildSearchQueries();
+    console.log(`Generated ${searchQueries.length} search queries (${ROLES.length} roles × 2 signals)`);
 
-    // Round-robin across 3 engines so no single one gets hammered
-    const blocked = { ddg: false, bing: false, google: false };
-    const ENGINE_ROTATIONS = [
-      ["ddg", "bing", "google"],
-      ["google", "ddg", "bing"],
-      ["bing", "google", "ddg"],
-    ];
-    let consecutiveEmpty = 0;
+    let ddgBlocked = false;
+    let bingBlocked = false;
 
     for (let i = 0; i < searchQueries.length; i++) {
       const { display, search } = searchQueries[i];
       let results = [];
-      let engine = "—";
 
-      const engineOrder = ENGINE_ROTATIONS[i % 3];
-
-      for (const eng of engineOrder) {
-        if (blocked[eng]) continue;
-
-        let res;
-        if (eng === "ddg") {
-          res = await searchDDGLite(search, "d");
-          if (res !== null && res.length === 0) {
-            res = await searchDDGLite(search, "w");
+      // Try DDG Lite first (unless already blocked)
+      if (!ddgBlocked) {
+        results = await searchDDGLite(search);
+        if (results.length === 0) {
+          // Check if it was a 403 (DDG rate limit)
+          const testResp = await fetch(
+            `https://lite.duckduckgo.com/lite/?q=${encodeURIComponent("test")}`,
+            { headers: { ...HTTP_HEADERS, "User-Agent": "Lynx/2.9.2 libwww-FM/2.14" } },
+          ).catch(() => null);
+          if (testResp && !testResp.ok) {
+            ddgBlocked = true;
+            console.log("  DDG Lite rate-limited — switching to Bing");
           }
-          if (res === null) { blocked.ddg = true; console.log("  DDG Lite rate-limited"); continue; }
-        } else if (eng === "bing") {
-          res = await searchBing(search);
-          if (res === null) { blocked.bing = true; console.log("  Bing rate-limited / CAPTCHA"); continue; }
-        } else {
-          res = await searchGoogle(search);
-          if (res === null) { blocked.google = true; console.log("  Google rate-limited / CAPTCHA"); continue; }
         }
+      }
 
-        if (res.length > 0) {
-          results = res;
-          engine = eng === "ddg" ? "DDG" : eng === "bing" ? "Bing" : "Google";
-          break;
+      // Fall back to Bing if DDG returned nothing
+      if (results.length === 0 && !bingBlocked) {
+        results = await searchBing(search);
+        if (results.length === 0 && i > 2) {
+          // After a few tries, check if Bing is also blocking
+          const testResp = await fetch(
+            "https://www.bing.com/search?q=test",
+            { headers: HTTP_HEADERS },
+          ).catch(() => null);
+          if (testResp && !testResp.ok) {
+            bingBlocked = true;
+            console.log("  Bing also rate-limited");
+          }
         }
       }
 
@@ -519,29 +441,20 @@ async function main() {
         allPosts.push({ ...r, searchQuery: display });
       }
 
+      const engine = results.length > 0 ? (ddgBlocked ? "Bing" : "DDG") : "—";
       console.log(`[${i + 1}/${searchQueries.length}] ${display} → ${results.length} [${engine}]`);
 
-      if (results.length === 0) {
-        consecutiveEmpty++;
-      } else {
-        consecutiveEmpty = 0;
-      }
-
-      if (blocked.ddg && blocked.bing && blocked.google) {
-        console.log("All search engines blocked — stopping early");
+      // If both engines are blocked, stop early
+      if (ddgBlocked && bingBlocked) {
+        console.log("Both search engines blocked — stopping early");
         break;
       }
 
-      // Longer delays to avoid triggering CAPTCHAs (12-20s base)
+      // Longer delays to avoid rate limiting (8-15s)
       if (i < searchQueries.length - 1) {
-        const extraDelay = Math.min(consecutiveEmpty * 3000, 15000);
-        await randomDelay(12000 + extraDelay, 20000 + extraDelay);
+        await randomDelay(8000, 15000);
       }
     }
-
-    // Update rotation tracking so next run picks different groups
-    const searchedGroupIndices = [...new Set(searchQueries.map((q) => q.groupIndex))];
-    await updateRotation(searchedGroupIndices, lastSearched);
 
     console.log(`\nTotal raw results: ${totalExtracted}`);
 
@@ -557,25 +470,9 @@ async function main() {
     const uniquePosts = Array.from(deduped.values());
     console.log(`After dedup: ${uniquePosts.length} unique posts`);
 
-    // ── 4a. Secondary dedup by text fingerprint (catches same post under different URLs) ──
-    const fingerprintSeen = new Set();
-    const fingerprintDeduped = [];
-    for (const p of uniquePosts) {
-      const alphaNum = (p.text || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-      const fp = alphaNum.slice(20, 170);
-      if (fp.length < 20 || !fingerprintSeen.has(fp)) {
-        if (fp.length >= 20) fingerprintSeen.add(fp);
-        fingerprintDeduped.push(p);
-      }
-    }
-    const fpRejected = uniquePosts.length - fingerprintDeduped.length;
-    if (fpRejected > 0) {
-      console.log(`Content dedup: removed ${fpRejected} near-duplicate posts`);
-    }
-
     // ── 5. URL validation — reject non-post links ──
-    const validPosts = fingerprintDeduped.filter((p) => isValidPostUrl(p.url));
-    const urlRejected = fingerprintDeduped.length - validPosts.length;
+    const validPosts = uniquePosts.filter((p) => isValidPostUrl(p.url));
+    const urlRejected = uniquePosts.length - validPosts.length;
     if (urlRejected > 0) {
       console.log(`URL filter: rejected ${urlRejected} non-post links`);
     }
@@ -681,11 +578,9 @@ async function main() {
     console.log("\n╔══════════════════════════════════════════════╗");
     console.log("║         FACEBOOK CRAWLER RESULTS             ║");
     console.log("╠══════════════════════════════════════════════╣");
-    console.log(`║ Groups searched       │ ${groupsThisRun.length.toString().padStart(3)}/${ROLE_GROUPS.length.toString().padEnd(2)}`);
     console.log(`║ Queries searched      │ ${searchQueries.length.toString().padStart(6)}`);
     console.log(`║ Raw results found     │ ${totalExtracted.toString().padStart(6)}`);
-    console.log(`║ After URL dedup       │ ${uniquePosts.length.toString().padStart(6)}`);
-    console.log(`║ After content dedup   │ ${fingerprintDeduped.length.toString().padStart(6)}`);
+    console.log(`║ After dedup           │ ${uniquePosts.length.toString().padStart(6)}`);
     console.log(`║ Valid post URLs       │ ${validPosts.length.toString().padStart(6)}`);
     console.log(`║ After freshness       │ ${freshPosts.length.toString().padStart(6)}`);
     console.log(`║ New (AI classified)   │ ${classifiedNew.length.toString().padStart(6)}`);
