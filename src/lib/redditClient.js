@@ -1506,6 +1506,15 @@ function computeScore(
     else if (ageHours < 6) score += 12;
     else if (ageHours < 24) score += 8;
     else if (ageHours < 72) score += 4;
+  } else if (
+    post._sub === "facebook" ||
+    post._source_platform === "Facebook" ||
+    post._sub === "linkedin" ||
+    post._source_platform === "LinkedIn"
+  ) {
+    // created_utc = 0 means date unknown — these posts were just scraped so
+    // treat them as "recently posted" and give the same baseline bonus as <72h.
+    score += 4;
   }
 
   // ── Engagement bonus (0-5 pts) ──
@@ -1841,9 +1850,9 @@ function matchAndScore(posts, lowerKws) {
       (clExtra ? " " + clExtra : "");
 
     // For Reddit: scan first 600 chars of body (where the actual job description is).
-    // For Craigslist/X: scan full body — CL bodies ARE the gig description, X tweets are short.
+    // For Craigslist/X/Facebook/LinkedIn: scan full body — these are short snippets or full descriptions.
     const bodyHead =
-      isCLPost || isXPost || isThreadsPost
+      isCLPost || isXPost || isThreadsPost || isFacebookPost || isLinkedInPost
         ? bodyLower
         : bodyLower.slice(0, 600);
 
@@ -1929,6 +1938,11 @@ function matchAndScore(posts, lowerKws) {
     if (isThreadsPost) score = Math.min(100, score + 8);
 
     if (isLinkedInPost) score = Math.min(100, score + 8);
+
+    // ── Facebook score boost ──
+    // Facebook posts come from gig-specific role+signal search queries and are
+    // AI-classified before storage, so keyword matches are high-signal.
+    if (isFacebookPost) score = Math.min(100, score + 8);
 
     // ── Skip low-relevance posts (spammy pitches that barely match) ──
     if (score < 22) continue;
