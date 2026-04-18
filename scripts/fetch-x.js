@@ -16,6 +16,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { classifyAndFilter } from "./gig-classifier.js";
+import { notifyUsersOfNewGigs } from "./lib/email-notifier.js";
 
 const UPSTASH_REDIS_REST_URL = process.env.UPSTASH_REDIS_REST_URL;
 const UPSTASH_REDIS_REST_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
@@ -911,6 +912,22 @@ async function main() {
     `\n[fetcher] Storing ${(payload.length / 1024).toFixed(0)} KB in Upstash...`,
   );
   await redisSet(REDIS_KEY, payload, REDIS_TTL);
+
+  // ── Email notifications for premium users ──
+  try {
+    if (freshGigs.length > 0) {
+      const platform = process.env.SKIP_NITTER === "true" ? "Craigslist" : "X";
+      await notifyUsersOfNewGigs(freshGigs, platform, {
+        redisUrl: UPSTASH_REDIS_REST_URL,
+        redisToken: UPSTASH_REDIS_REST_TOKEN,
+      });
+    }
+  } catch (err) {
+    console.warn(
+      "[fetcher] Email notification error (non-fatal):",
+      err.message,
+    );
+  }
 
   console.log(
     `[fetcher] ✅ Done. ${filteredPosts.length} gigs stored (${freshGigs.length} new, ${skipped} skipped, TTL ${REDIS_TTL}s).`,

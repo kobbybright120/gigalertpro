@@ -7,6 +7,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { classifyAndFilter } from "./gig-classifier.js";
+import { notifyUsersOfNewGigs } from "./lib/email-notifier.js";
 
 const MAX_AGE_DAYS = parseInt(process.env.FB_MAX_AGE_DAYS || "2", 10);
 const MAX_AGE_MS = MAX_AGE_DAYS * 86400 * 1000;
@@ -611,6 +612,19 @@ async function main() {
     console.log(
       `\nStored ${Math.min(finalPosts.length, 300)} posts to Redis (key: gigalertpro:facebook:latest, TTL 2h)`,
     );
+
+    // ── Email notifications for premium users ──
+    try {
+      if (classifiedNew.length > 0) {
+        const { url: redisUrl, token: redisToken } = getUpstashCredentials();
+        await notifyUsersOfNewGigs(classifiedNew, "Facebook", {
+          redisUrl,
+          redisToken,
+        });
+      }
+    } catch (err) {
+      console.warn("[fb-crawler] Email notification error (non-fatal):", err.message);
+    }
 
     // ── 11. Terminal metrics ──
     console.log("\n╔══════════════════════════════════════════════╗");

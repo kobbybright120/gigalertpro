@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Save,
   X,
@@ -12,6 +12,9 @@ import {
   CreditCard,
   AlertTriangle,
   ArrowUpRight,
+  Bell,
+  BellOff,
+  Lock,
 } from "lucide-react";
 import { useProfile } from "../lib/useSupabase";
 import { useAuth } from "../context/AuthContext";
@@ -49,6 +52,34 @@ export default function ProfilePage() {
   const [cancelError, setCancelError] = useState("");
   const [cancelSuccess, setCancelSuccess] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+
+  // Email notification toggle
+  const [emailNotifEnabled, setEmailNotifEnabled] = useState(
+    dbProfile?.email_notifications_enabled || false,
+  );
+  const [emailToggleLoading, setEmailToggleLoading] = useState(false);
+
+  const isPremium = ["basic", "basic_annual", "pro", "pro_annual"].includes(
+    dbProfile?.plan,
+  );
+
+  useEffect(() => {
+    setEmailNotifEnabled(dbProfile?.email_notifications_enabled || false);
+  }, [dbProfile?.email_notifications_enabled]);
+
+  async function handleEmailNotifToggle() {
+    if (!isPremium) return;
+    setEmailToggleLoading(true);
+    const newValue = !emailNotifEnabled;
+    const { error } = await supabase
+      .from("profiles")
+      .update({ email_notifications_enabled: newValue })
+      .eq("id", user.id);
+    if (!error) {
+      setEmailNotifEnabled(newValue);
+    }
+    setEmailToggleLoading(false);
+  }
 
   async function handleCancelSubscription() {
     setCancelling(true);
@@ -408,6 +439,67 @@ export default function ProfilePage() {
           </div>
 
           {/* Client Testimonials removed per request */}
+
+          {/* Email Notifications Card */}
+          {PAYMENTS_ENABLED && (
+            <div className="glass-card rounded-2xl p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                      isPremium && emailNotifEnabled
+                        ? "bg-[#00F0B5]/10"
+                        : "bg-white/[0.04]"
+                    }`}
+                  >
+                    {!isPremium ? (
+                      <Lock className="w-5 h-5 text-gray-600" />
+                    ) : emailNotifEnabled ? (
+                      <Bell className="w-5 h-5 text-[#00F0B5]" />
+                    ) : (
+                      <BellOff className="w-5 h-5 text-gray-500" />
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-white">
+                      Email Notifications
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {!isPremium
+                        ? "Upgrade to unlock email alerts"
+                        : emailNotifEnabled
+                          ? "You'll get emails when matching gigs are found"
+                          : "Get notified when new gigs match your keywords"}
+                    </p>
+                  </div>
+                </div>
+
+                {isPremium ? (
+                  <button
+                    onClick={handleEmailNotifToggle}
+                    disabled={emailToggleLoading}
+                    className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
+                      emailNotifEnabled ? "bg-[#00F0B5]" : "bg-white/[0.08]"
+                    } ${emailToggleLoading ? "opacity-50" : ""}`}
+                  >
+                    <span
+                      className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
+                        emailNotifEnabled ? "translate-x-5" : ""
+                      }`}
+                    />
+                  </button>
+                ) : (
+                  <a
+                    href="/#pricing"
+                    className="flex items-center gap-1 text-xs text-[#00F0B5] font-semibold hover:underline"
+                  >
+                    Upgrade
+                    <ArrowUpRight className="w-3 h-3" />
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Subscription Management Card */}
           {PAYMENTS_ENABLED && (

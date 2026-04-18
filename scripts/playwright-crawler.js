@@ -1,5 +1,6 @@
 import fs from "fs/promises";
 import { chromium } from "playwright";
+import { notifyUsersOfNewGigs } from "./lib/email-notifier.js";
 
 // Maximum age for Threads posts — anything older is stale
 const MAX_AGE_DAYS = parseInt(process.env.THREADS_MAX_AGE_DAYS || "7", 10);
@@ -394,6 +395,22 @@ async function main() {
     console.log(
       `Wrote ${results.length} threads posts to Upstash (key: gigalertpro:threads:latest, TTL 2.5h)`,
     );
+
+    // ── Email notifications for premium users ──
+    try {
+      if (results.length > 0) {
+        const { url: redisUrl, token: redisToken } = getUpstashCredentials();
+        await notifyUsersOfNewGigs(results, "Threads", {
+          redisUrl,
+          redisToken,
+        });
+      }
+    } catch (err) {
+      console.warn(
+        "[threads-crawler] Email notification error (non-fatal):",
+        err.message,
+      );
+    }
   } catch (err) {
     console.error(err);
     process.exit(1);

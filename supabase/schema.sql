@@ -20,6 +20,11 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   subscription_status      TEXT,   -- active, past_due, cancelled
   billing_period           TEXT,   -- monthly, yearly
   cancel_at_period_end     BOOLEAN NOT NULL DEFAULT false,
+  -- Email notification fields
+  email                    TEXT,
+  email_notifications_enabled BOOLEAN NOT NULL DEFAULT false,
+  last_emailed_at          TIMESTAMPTZ,
+  email_notification_count INTEGER NOT NULL DEFAULT 0,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
