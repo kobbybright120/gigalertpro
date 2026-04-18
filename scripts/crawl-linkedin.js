@@ -6,7 +6,6 @@
 // No LinkedIn login required — all posts are publicly indexed.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { classifyAndFilter } from "./gig-classifier.js";
 import { notifyUsersOfNewGigs } from "./lib/email-notifier.js";
 
 const MAX_AGE_DAYS = parseInt(process.env.LI_MAX_AGE_DAYS || "7", 10);
@@ -620,23 +619,41 @@ async function main() {
       `New: ${newPosts.length}, Previously seen: ${existingPosts.length}`,
     );
 
-    // ── 8. AI classify new posts ──
+    // ── 8. Filter new posts ──
+    // LinkedIn snippets from search engines are too thin for the AI classifier
+    // (which was designed for Reddit's rich post content). Instead, use a
+    // lightweight keyword filter: the search queries already provide strong
+    // hiring signal ("role" + hiring/wanted/needed site:linkedin.com), so we
+    // only reject obvious false positives like self-promotion.
     let classifiedNew = newPosts;
     if (newPosts.length > 0) {
-      const forClassifier = newPosts.map((p) => ({
-        id: p.id,
-        name: p.id,
-        title: (p.text || "").slice(0, 120),
-        selftext: (p.text || "").slice(0, 2000),
-        author: p.author || "unknown",
-      }));
+      classifiedNew = newPosts.filter((p) => {
+        const text = (p.text || "").toLowerCase();
+        // Reject obvious self-promotion / non-gig patterns
+        const rejectPatterns = [
+          /\bi(?:'m| am) a (?:developer|designer|writer|editor|freelancer)\b/,
+          /\bhire me\b/,
+          /\bportfolio inside\b/,
+          /\bavailable for (?:work|projects|hire)\b/,
+          /\bmy (?:portfolio|services|work)\b/,
+          /\btaking on (?:new )? clients\b/,
+          /\bdms? open\b/,
+          /\boffering (?:my )?services\b/,
+          /\bi (?:specialize|build|design|write|develop|create)\b/,
+          /\bopen for commissions\b/,
+          /\b(?:developer|designer|writer|editor) here\b/,
+          /\bcheck out my\b/,
+          /\b\d+\+? (?:projects?|clients?) completed\b/,
+        ];
+        for (const rx of rejectPatterns) {
+          if (rx.test(text)) return false;
+        }
+        return true;
+      });
 
-      const classified = await classifyAndFilter(forClassifier);
-      const classifiedIds = new Set(classified.map((c) => c.id));
-      classifiedNew = newPosts.filter((p) => classifiedIds.has(p.id));
-
+      const rejected = newPosts.length - classifiedNew.length;
       console.log(
-        `AI filter: kept ${classifiedNew.length}/${newPosts.length} new posts`,
+        `Keyword filter: kept ${classifiedNew.length}/${newPosts.length} new posts${rejected > 0 ? ` (rejected ${rejected} self-promotion)` : ""}`,
       );
 
       if (newPosts.length > 0) {
@@ -739,7 +756,7 @@ async function main() {
       `║ After freshness       │ ${freshPosts.length.toString().padStart(6)}`,
     );
     console.log(
-      `║ New (AI classified)   │ ${classifiedNew.length.toString().padStart(6)}`,
+      `║ New (filtered)        │ ${classifiedNew.length.toString().padStart(6)}`,
     );
     console.log(
       `║ Previously seen       │ ${existingPosts.length.toString().padStart(6)}`,
