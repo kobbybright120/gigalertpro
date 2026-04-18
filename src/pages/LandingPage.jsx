@@ -872,13 +872,13 @@ export default function LandingPage() {
               <p className="text-sm font-semibold text-gray-300 mb-3">Legal</p>
               <div className="space-y-2 text-sm text-gray-500">
                 <Link
-                  to="/landing"
+                  to="/privacy"
                   className="block hover:text-gray-300 transition-colors"
                 >
                   Privacy Policy
                 </Link>
                 <Link
-                  to="/landing"
+                  to="/terms"
                   className="block hover:text-gray-300 transition-colors"
                 >
                   Terms of Service

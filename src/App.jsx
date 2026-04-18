@@ -23,6 +23,8 @@ import DashboardPage from "./pages/DashboardPage";
 import GigAlertsPage from "./pages/GigAlertsPage";
 import ProposalsPage from "./pages/ProposalsPage";
 import ProfilePage from "./pages/ProfilePage";
+import TermsPage from "./pages/TermsPage";
+import PrivacyPage from "./pages/PrivacyPage";
 
 function ProtectedLayout() {
   const { user, loading } = useAuth();
@@ -75,6 +77,8 @@ export default function App() {
             <Route path="/" element={<PublicLanding />} />
             <Route path="/landing" element={<LandingPage />} />
             <Route path="/auth" element={<AuthGuard />} />
+            <Route path="/terms" element={<TermsPage />} />
+            <Route path="/privacy" element={<PrivacyPage />} />
 
             {/* Protected app routes */}
             <Route element={<ProtectedLayout />}>

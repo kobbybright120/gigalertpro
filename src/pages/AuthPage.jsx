@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { ArrowRight } from "lucide-react";
 
@@ -243,6 +243,19 @@ export default function AuthPage() {
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
               )}
             </button>
+
+            {isSignUp && (
+              <p className="text-xs text-gray-500 text-center mt-3">
+                By signing up you agree to our{" "}
+                <Link to="/terms" className="text-[#00F0B5] hover:underline">
+                  Terms of Service
+                </Link>{" "}
+                and{" "}
+                <Link to="/privacy" className="text-[#00F0B5] hover:underline">
+                  Privacy Policy
+                </Link>
+              </p>
+            )}
           </form>
 
           {/* Divider */}
