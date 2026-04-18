@@ -24,6 +24,9 @@ import { createHmac, timingSafeEqual } from "crypto";
 const DODO_WEBHOOK_KEY = process.env.DODO_PAYMENTS_WEBHOOK_KEY;
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const FROM_EMAIL = "GigAlertPro <notifications@gigalertpro.com>";
+const APP_URL = "https://gigalertpro.com";
 
 // Map Dodo product IDs to plan tiers
 const PRODUCT_TO_PLAN = {
@@ -217,6 +220,81 @@ async function upsertProfileByEmail(email, fields, userId, { subscriptionId, cus
 
 // ── Main handler ──────────────────────────────────────────────────────────────
 
+// ── Welcome email on subscription activation ─────────────────────────────────
+
+async function sendWelcomeEmail(email, name) {
+  if (!RESEND_API_KEY) return;
+  const displayName = name || "there";
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#020617;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <div style="max-width:600px;margin:0 auto;padding:32px 16px;">
+    <div style="text-align:center;margin-bottom:28px;">
+      <h1 style="margin:0;color:#00F0B5;font-size:24px;font-weight:800;letter-spacing:-0.5px;">GigAlertPro</h1>
+    </div>
+    <div style="background:#0B1120;border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:28px;">
+      <p style="color:#fff;font-size:16px;font-weight:700;margin:0 0 16px;">Hey ${displayName},</p>
+      <p style="color:#94a3b8;font-size:14px;line-height:1.7;margin:0 0 16px;">Welcome to GigAlertPro! We're already scanning Reddit, X, Threads, Craigslist, Facebook and LinkedIn for gigs matching your skills.</p>
+      <div style="background:rgba(0,240,181,0.08);border:1px solid rgba(0,240,181,0.15);border-radius:10px;padding:16px;margin:0 0 20px;">
+        <p style="color:#00F0B5;font-size:14px;font-weight:700;margin:0 0 6px;">🛡️ 3-Day Money Back Guarantee</p>
+        <p style="color:#94a3b8;font-size:13px;line-height:1.6;margin:0;">If GigAlertPro doesn't find you relevant gigs, just reply to this email and we'll refund you completely. No questions asked.</p>
+      </div>
+      <p style="color:#fff;font-size:14px;font-weight:600;margin:0 0 12px;">Here's what to do right now:</p>
+      <table style="width:100%;border-collapse:collapse;">
+        <tr><td style="padding:8px 0;color:#94a3b8;font-size:14px;line-height:1.6;vertical-align:top;"><span style="color:#00F0B5;font-weight:700;margin-right:8px;">1.</span> <a href="${APP_URL}/gig-alerts" style="color:#00F0B5;text-decoration:none;">Log in</a> and make sure your keywords are set correctly</td></tr>
+        <tr><td style="padding:8px 0;color:#94a3b8;font-size:14px;line-height:1.6;vertical-align:top;"><span style="color:#00F0B5;font-weight:700;margin-right:8px;">2.</span> Enable email notifications in your <a href="${APP_URL}/profile" style="color:#00F0B5;text-decoration:none;">profile</a> so you get alerted instantly</td></tr>
+        <tr><td style="padding:8px 0;color:#94a3b8;font-size:14px;line-height:1.6;vertical-align:top;"><span style="color:#00F0B5;font-weight:700;margin-right:8px;">3.</span> Check back in a few hours to see what we found for you</td></tr>
+      </table>
+      <p style="color:#94a3b8;font-size:14px;line-height:1.7;margin:24px 0 0;">We're rooting for you.</p>
+      <p style="color:#fff;font-size:14px;font-weight:600;margin:8px 0 0;">Kobby</p>
+      <p style="color:#64748b;font-size:12px;margin:2px 0 0;">Founder, GigAlertPro</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: FROM_EMAIL,
+        to: [email],
+        subject: "Welcome to GigAlertPro — your 3-day guarantee starts now",
+        html,
+        reply_to: "support@gigalertpro.com",
+      }),
+    });
+    if (res.ok) {
+      console.info(`[dodo-webhook] Welcome email sent to ${email}`);
+    } else {
+      const err = await res.text().catch(() => "unknown");
+      console.warn(`[dodo-webhook] Welcome email failed (${res.status}): ${err}`);
+    }
+  } catch (err) {
+    console.warn("[dodo-webhook] Welcome email error:", err.message);
+  }
+}
+
+async function fetchUserName(email) {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY || !email) return null;
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/profiles?email=eq.${encodeURIComponent(email)}&select=name`,
+      { headers: supabaseHeaders() },
+    );
+    if (!res.ok) return null;
+    const rows = await res.json();
+    return rows?.[0]?.name || null;
+  } catch {
+    return null;
+  }
+}
+
 export const config = { api: { bodyParser: false } };
 
 export default async function handler(req, res) {
@@ -277,6 +355,14 @@ export default async function handler(req, res) {
       console.info(
         `[dodo-webhook] Activated ${plan} subscription for ${email} (uid: ${authUserId}, cust: ${customerId})`,
       );
+
+      // Send welcome email with 3-day guarantee reminder
+      try {
+        const userName = await fetchUserName(email);
+        await sendWelcomeEmail(email, userName);
+      } catch (err) {
+        console.warn("[dodo-webhook] Welcome email failed (non-fatal):", err.message);
+      }
     }
 
     // ── subscription.renewed ────────────────────────────────────────────────

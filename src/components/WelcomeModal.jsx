@@ -7,6 +7,7 @@ import {
   Hash,
   X,
   PartyPopper,
+  ShieldCheck,
 } from "lucide-react";
 import {
   isNotificationSupported,
@@ -45,6 +46,24 @@ export default function WelcomeModal({ plan, onClose }) {
           <p className="text-gray-400 mt-2 text-sm">
             Your gig radar is now active. We'll alert you the moment a new gig
             matching your skills is posted.
+          </p>
+        </div>
+
+        {/* Money Back Guarantee Reminder */}
+        <div className="flex items-start gap-3 px-4 py-3.5 mb-5 bg-[#00F0B5]/[0.06] border border-[#00F0B5]/15 rounded-xl">
+          <ShieldCheck className="w-5 h-5 text-[#00F0B5] shrink-0 mt-0.5" />
+          <p className="text-xs text-gray-300 leading-relaxed">
+            <span className="text-[#00F0B5] font-semibold">
+              3-Day Money Back Guarantee.
+            </span>{" "}
+            If you're not satisfied for any reason, email us at{" "}
+            <a
+              href="mailto:support@gigalertpro.com"
+              className="text-[#00F0B5] underline"
+            >
+              support@gigalertpro.com
+            </a>{" "}
+            and we'll refund you immediately.
           </p>
         </div>
 

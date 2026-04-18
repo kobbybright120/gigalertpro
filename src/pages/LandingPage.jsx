@@ -16,6 +16,7 @@ import {
   Sparkles,
   CheckCircle2,
   Shield,
+  ShieldCheck,
   Clock,
   Check,
   Star,
@@ -338,7 +339,8 @@ export default function LandingPage() {
               <span className="relative inline-flex rounded-full h-2 w-2 bg-[#00F0B5]" />
             </span>
             <span className="text-sm text-[#00F0B5] font-medium tracking-wide">
-              Finding clients on Reddit, X, Threads, Facebook & Craigslist right now
+              Finding clients on Reddit, X, Threads, Facebook & Craigslist right
+              now
             </span>
           </div>
 
@@ -373,7 +375,7 @@ export default function LandingPage() {
           </div>
 
           <p className="mt-5 text-sm text-gray-500">
-            🔒 Secure checkout. Cancel anytime.
+            🛡️ 3-Day Money Back Guarantee. Cancel anytime.
           </p>
 
           {/* Social proof: avatar stack */}
@@ -1539,10 +1541,17 @@ function PricingSection({ priceRef, priceVis, handleCheckout }) {
           ))}
         </div>
 
-        {/* No credit card note */}
-        <p className="text-center text-gray-400 text-sm mt-6">
-          No credit card required to explore. Cancel anytime.
-        </p>
+        {/* Money Back Guarantee Badge */}
+        <div className="flex items-center justify-center gap-3 mt-8 px-5 py-4 bg-[#00F0B5]/[0.06] border border-[#00F0B5]/15 rounded-2xl max-w-2xl mx-auto">
+          <ShieldCheck className="w-6 h-6 text-[#00F0B5] shrink-0" />
+          <p className="text-sm text-gray-300 text-left">
+            <span className="text-[#00F0B5] font-bold">
+              3-Day Money Back Guarantee
+            </span>{" "}
+            — If GigAlertPro doesn't find you relevant gigs in 3 days, we'll
+            refund you completely. No questions asked.
+          </p>
+        </div>
 
         {/* Trust strip */}
         <div

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight, Check, ShieldCheck } from "lucide-react";
 import { PAYMENTS_ENABLED } from "../../payments.config.js";
 import {
   trackPricingModalViewed,
@@ -146,6 +146,17 @@ export default function PricingModal({ open, onClose }) {
       <div className="bg-[#020617] border border-white/10 max-w-5xl w-full rounded-2xl p-8 my-auto">
         <div className="flex items-center justify-between mb-8">
           <h3 className="text-2xl font-bold text-white">Choose a plan</h3>
+
+          {/* Guarantee banner */}
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-[#00F0B5] shrink-0" />
+            <p className="text-sm text-gray-400">
+              <span className="text-[#00F0B5] font-semibold">
+                3-Day Money Back Guarantee
+              </span>{" "}
+              — Try risk-free. Full refund if you're not satisfied.
+            </p>
+          </div>
           <button
             onClick={() => {
               trackPricingModalClosed();

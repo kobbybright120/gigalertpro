@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import { ArrowRight, Check, X, Bell } from "lucide-react";
+import { ArrowRight, Check, X, Bell, ShieldCheck } from "lucide-react";
 
 export default function UpgradeModal({ open, onClose, gigCount = 0 }) {
   const { user } = useAuth();
@@ -142,10 +142,21 @@ export default function UpgradeModal({ open, onClose, gigCount = 0 }) {
             <span className="text-gradient">{gigCount} gigs</span> right now 🔔
           </h3>
           <p className="text-gray-400 mt-3 text-sm sm:text-base max-w-2xl mx-auto">
-            Clients are posting on Reddit, X, Threads, Facebook & Craigslist looking for
-            your skills. Upgrade to get instant alerts and AI proposals before
-            anyone else applies.
+            Clients are posting on Reddit, X, Threads, Facebook & Craigslist
+            looking for your skills. Upgrade to get instant alerts and AI
+            proposals before anyone else applies.
           </p>
+
+          {/* Guarantee banner */}
+          <div className="flex items-center justify-center gap-2 mt-4">
+            <ShieldCheck className="w-4 h-4 text-[#00F0B5] shrink-0" />
+            <p className="text-sm text-gray-400">
+              <span className="text-[#00F0B5] font-semibold">
+                3-Day Money Back Guarantee
+              </span>{" "}
+              — Try risk-free. Full refund if you're not satisfied.
+            </p>
+          </div>
         </div>
 
         {/* Monthly / Annual toggle */}
@@ -263,8 +274,8 @@ export default function UpgradeModal({ open, onClose, gigCount = 0 }) {
             Cancel anytime
           </span>
           <span className="flex items-center gap-1.5">
-            <Check className="w-4 h-4 text-[#00F0B5]" />
-            No hidden fees
+            <ShieldCheck className="w-4 h-4 text-[#00F0B5]" />
+            3-day money back guarantee
           </span>
         </div>
 

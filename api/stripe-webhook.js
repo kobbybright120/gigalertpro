@@ -5,7 +5,7 @@
 //
 // Events handled:
 //   checkout.session.completed      → activate subscription on Supabase profile
-//   customer.subscription.updated   → update plan/status (e.g. trial → active)
+//   customer.subscription.updated   → update plan/status (e.g. payment → active)
 //   customer.subscription.deleted   → downgrade to 'free' on cancellation
 //
 // Required env vars (set in Vercel dashboard):
@@ -119,7 +119,7 @@ export default async function handler(req, res) {
 
   try {
     switch (event.type) {
-      // ── User completes checkout (trial starts, or immediate subscription) ──
+      // ── User completes checkout (subscription starts) ──
       case "checkout.session.completed": {
         const session = event.data.object;
         if (session.mode !== "subscription") break;
@@ -161,7 +161,7 @@ export default async function handler(req, res) {
                 stripe_customer_id: customerId,
                 stripe_subscription_id: subscriptionId,
                 billing_period: isYearly ? "yearly" : "monthly",
-                subscription_status: sub.status, // "trialing" or "active"
+                subscription_status: sub.status, // "active"
                 updated_at: new Date().toISOString(),
               }),
             });
@@ -171,7 +171,7 @@ export default async function handler(req, res) {
         break;
       }
 
-      // ── Subscription status changes (trial → active, payment failed, etc.) ──
+      // ── Subscription status changes (payment → active, payment failed, etc.) ──
       case "customer.subscription.updated": {
         const sub = event.data.object;
         const priceId = sub.items?.data?.[0]?.price?.id;
