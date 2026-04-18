@@ -65,7 +65,6 @@ export default function ProfilePage() {
   const [emailNotifEnabled, setEmailNotifEnabled] = useState(
     dbProfile?.email_notifications_enabled || false,
   );
-  const [emailToggleLoading, setEmailToggleLoading] = useState(false);
 
   const isPremium = ["basic", "basic_annual", "pro", "pro_annual"].includes(
     dbProfile?.plan,
@@ -77,10 +76,25 @@ export default function ProfilePage() {
 
   async function handleEmailNotifToggle() {
     if (!isPremium) return;
-    setEmailToggleLoading(true);
     const newValue = !emailNotifEnabled;
 
-    // Update email notifications via server endpoint (bypasses RLS)
+    // Optimistic: flip UI instantly
+    setEmailNotifEnabled(newValue);
+
+    // Toggle browser push notifications immediately
+    if (isNotificationSupported()) {
+      if (newValue) {
+        if (getPermission() === "granted") {
+          enableBrowserNotif();
+        } else {
+          await requestPermission();
+        }
+      } else {
+        disableBrowserNotif();
+      }
+    }
+
+    // Persist to server in background (bypasses RLS)
     try {
       const {
         data: { session },
@@ -94,27 +108,14 @@ export default function ProfilePage() {
         },
         body: JSON.stringify({ enabled: newValue }),
       });
-      if (res.ok) {
-        setEmailNotifEnabled(newValue);
+      if (!res.ok) {
+        // Roll back on failure
+        setEmailNotifEnabled(!newValue);
       }
     } catch (err) {
       console.error("[ProfilePage] notification toggle failed:", err);
+      setEmailNotifEnabled(!newValue);
     }
-
-    // Also toggle browser push notifications
-    if (isNotificationSupported()) {
-      if (newValue) {
-        if (getPermission() === "granted") {
-          enableBrowserNotif();
-        } else {
-          await requestPermission();
-        }
-      } else {
-        disableBrowserNotif();
-      }
-    }
-
-    setEmailToggleLoading(false);
   }
 
   async function handleCancelSubscription() {
@@ -513,10 +514,9 @@ export default function ProfilePage() {
                 {isPremium ? (
                   <button
                     onClick={handleEmailNotifToggle}
-                    disabled={emailToggleLoading}
                     className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
                       emailNotifEnabled ? "bg-[#00F0B5]" : "bg-white/[0.08]"
-                    } ${emailToggleLoading ? "opacity-50" : ""}`}
+                    }`}
                   >
                     <span
                       className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
