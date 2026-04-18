@@ -19,7 +19,7 @@ export default function UpgradeBanner({ gigCount = 0, onUpgrade }) {
         </p>
         <button
           onClick={onUpgrade}
-          className="shrink-0 px-5 py-2 bg-[#00F0B5] text-[#020617] text-sm font-bold rounded-xl hover:bg-[#00dba5] hover:shadow-[0_0_16px_rgba(0,240,181,0.2)] transition-all duration-200"
+          className="shrink-0 px-5 py-2 bg-[#00F0B5] text-[#020617] text-sm font-bold rounded-xl hover:bg-[#00dba5] hover:shadow-[0_0_16px_rgba(0,240,181,0.2)] transition-all duration-200 w-full sm:w-auto min-h-[44px]"
         >
           Unlock All Gigs
         </button>

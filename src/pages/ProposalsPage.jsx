@@ -70,7 +70,7 @@ export default function ProposalsPage() {
           <Loader2 className="w-6 h-6 text-[#00F0B5] animate-spin" />
         </div>
       ) : proposals.length === 0 ? (
-        <div className="glass-card rounded-2xl p-16 text-center">
+        <div className="glass-card rounded-2xl p-10 sm:p-16 text-center">
           <div className="w-16 h-16 rounded-2xl bg-white/[0.04] flex items-center justify-center mx-auto mb-5">
             <Bot className="w-8 h-8 text-gray-600" />
           </div>
@@ -137,7 +137,7 @@ export default function ProposalsPage() {
                           if (newOutcome)
                             trackProposalOutcomeMarked(newOutcome);
                         }}
-                        className={`inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all duration-200 ${
+                        className={`inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all duration-200 min-h-[44px] ${
                           isActive
                             ? active
                             : `bg-white/[0.03] border-white/[0.07] text-gray-600 ${hover}`
@@ -155,7 +155,7 @@ export default function ProposalsPage() {
               <div className="flex items-center gap-2.5 mt-auto pt-3 border-t border-white/[0.04]">
                 <button
                   onClick={() => handleCopy(p.id, p.text)}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-white/[0.04] border border-white/[0.08] text-gray-300 text-sm font-semibold rounded-xl hover:bg-white/[0.08] hover:border-white/[0.12] transition-all duration-200"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-white/[0.04] border border-white/[0.08] text-gray-300 text-sm font-semibold rounded-xl hover:bg-white/[0.08] hover:border-white/[0.12] transition-all duration-200 min-h-[44px]"
                 >
                   {copiedId === p.id ? (
                     <Check className="w-3.5 h-3.5 text-[#00F0B5]" />
@@ -166,7 +166,7 @@ export default function ProposalsPage() {
                 </button>
                 <button
                   onClick={() => deleteProposal(p.id)}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 text-gray-500 hover:text-red-400 hover:bg-red-500/[0.06] rounded-xl transition-all duration-200 text-sm"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 text-gray-500 hover:text-red-400 hover:bg-red-500/[0.06] rounded-xl transition-all duration-200 text-sm min-h-[44px]"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   Delete

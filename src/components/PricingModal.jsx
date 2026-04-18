@@ -143,8 +143,8 @@ export default function PricingModal({ open, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 overflow-y-auto">
-      <div className="bg-[#020617] border border-white/10 max-w-5xl w-full rounded-2xl p-8 my-auto">
-        <div className="flex items-center justify-between mb-8">
+      <div className="bg-[#020617] border border-white/10 max-w-5xl w-full rounded-2xl p-5 sm:p-8 my-auto max-h-[90vh] overflow-y-auto">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <h3 className="text-2xl font-bold text-white">Choose a plan</h3>
 
           {/* Guarantee banner */}
@@ -154,7 +154,7 @@ export default function PricingModal({ open, onClose }) {
               <span className="text-[#00F0B5] font-semibold">
                 3-Day Money Back Guarantee
               </span>{" "}
-              Try risk-free. Full refund if you're not satisfied.
+              <span className="hidden sm:inline">Try risk-free. Full refund if you're not satisfied.</span>
             </p>
           </div>
           <button
@@ -162,7 +162,7 @@ export default function PricingModal({ open, onClose }) {
               trackPricingModalClosed();
               onClose();
             }}
-            className="text-gray-400 hover:text-white text-sm px-3 py-1.5 rounded-lg border border-white/10 hover:border-white/20 transition-colors"
+            className="text-gray-400 hover:text-white text-sm px-3 py-1.5 rounded-lg border border-white/10 hover:border-white/20 transition-colors shrink-0 self-start sm:self-auto min-h-[44px]"
           >
             Close
           </button>
@@ -198,7 +198,7 @@ export default function PricingModal({ open, onClose }) {
           {plans.map((plan) => (
             <div
               key={plan.tier}
-              className={`relative flex flex-col p-6 rounded-2xl border ${
+              className={`relative flex flex-col p-5 sm:p-6 rounded-2xl border ${
                 plan.popular
                   ? "border-[#00F0B5] shadow-[0_0_30px_rgba(0,240,181,0.1)]"
                   : "border-white/10"
@@ -222,7 +222,7 @@ export default function PricingModal({ open, onClose }) {
                   </p>
                 )}
                 <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-extrabold text-white">
+                  <span className="text-3xl sm:text-4xl font-extrabold text-white">
                     ${plan.price}
                   </span>
                   <span className="text-gray-400 text-sm">

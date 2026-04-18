@@ -175,19 +175,19 @@ export default function DashboardPage() {
           return (
             <div
               key={stat.label}
-              className="glass-card rounded-2xl p-5 hover:border-white/10 transition-all duration-300"
+              className="glass-card rounded-2xl p-4 sm:p-5 hover:border-white/10 transition-all duration-300"
             >
               <div className="flex items-center justify-between mb-3">
                 <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
                   {stat.label}
                 </span>
                 <div
-                  className={`w-9 h-9 rounded-xl ${stat.bg} flex items-center justify-center`}
+                  className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl ${stat.bg} flex items-center justify-center`}
                 >
                   <Icon className={`w-[18px] h-[18px] ${stat.color}`} />
                 </div>
               </div>
-              <p className="text-3xl font-extrabold text-white tracking-tight">
+              <p className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
                 {stat.value}
               </p>
             </div>

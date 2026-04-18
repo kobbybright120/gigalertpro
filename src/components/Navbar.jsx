@@ -70,7 +70,7 @@ export default function Navbar() {
           {isLocked ? (
             <button
               onClick={onUpgrade}
-              className="relative text-gray-500 hover:text-gray-300 transition-colors p-1"
+              className="relative text-gray-500 hover:text-gray-300 transition-colors p-2"
               title="Upgrade to unlock notifications"
             >
               <Bell className="w-5 h-5" />
@@ -100,7 +100,7 @@ export default function Navbar() {
           )}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="text-gray-400 hover:text-white transition-colors p-1"
+            className="text-gray-400 hover:text-white transition-colors p-2"
           >
             {mobileOpen ? (
               <X className="w-6 h-6" />
@@ -141,7 +141,7 @@ export default function Navbar() {
 
         {/* Nav section label */}
         <div className="px-5 pt-6 pb-2">
-          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.15em]">
+          <p className="text-[11px] font-bold text-gray-500 uppercase tracking-[0.15em]">
             Menu
           </p>
         </div>
@@ -187,7 +187,7 @@ export default function Navbar() {
         </nav>
 
         {/* Bottom section */}
-        <div className="px-3 py-4 border-t border-white/[0.04] shrink-0 space-y-2">
+        <div className="px-3 py-4 border-t border-white/[0.04] shrink-0 space-y-2 safe-bottom">
           <Link
             to="/profile"
             onClick={() => setMobileOpen(false)}

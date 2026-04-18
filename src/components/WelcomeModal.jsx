@@ -27,8 +27,8 @@ export default function WelcomeModal({ plan, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className="bg-[#020617] border border-white/10 max-w-md w-full rounded-2xl p-6 sm:p-8 relative animate-slideIn">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm overflow-y-auto">
+      <div className="bg-[#020617] border border-white/10 max-w-md w-full rounded-2xl p-6 sm:p-8 relative animate-slideIn my-auto max-h-[90vh] overflow-y-auto">
         {/* Close */}
         <button
           onClick={onClose}
@@ -103,7 +103,7 @@ export default function WelcomeModal({ plan, onClose }) {
             {!notifEnabled && isNotificationSupported() && (
               <button
                 onClick={handleEnableNotifications}
-                className="px-3 py-1.5 bg-[#00F0B5] text-[#020617] text-xs font-bold rounded-lg hover:bg-[#00dba5] transition-all"
+                className="px-4 py-2 bg-[#00F0B5] text-[#020617] text-xs font-bold rounded-lg hover:bg-[#00dba5] transition-all min-h-[44px]"
               >
                 Enable
               </button>
@@ -122,7 +122,7 @@ export default function WelcomeModal({ plan, onClose }) {
                 <MessageSquare className="w-3.5 h-3.5 text-gray-500" />
                 Connect Telegram
                 {!isPro && (
-                  <span className="text-[10px] text-gray-500 bg-white/[0.04] px-1.5 py-0.5 rounded">
+                  <span className="text-[11px] text-gray-500 bg-white/[0.04] px-1.5 py-0.5 rounded">
                     Pro+
                   </span>
                 )}
@@ -139,7 +139,7 @@ export default function WelcomeModal({ plan, onClose }) {
               <span className="text-sm flex items-center gap-1.5 text-gray-600">
                 <Hash className="w-3.5 h-3.5 text-gray-500" />
                 Connect Slack
-                <span className="text-[10px] text-gray-500 bg-white/[0.04] px-1.5 py-0.5 rounded">
+                <span className="text-[11px] text-gray-500 bg-white/[0.04] px-1.5 py-0.5 rounded">
                   Coming Soon
                 </span>
               </span>

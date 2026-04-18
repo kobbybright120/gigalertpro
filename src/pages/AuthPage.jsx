@@ -176,7 +176,7 @@ export default function AuthPage() {
         </div>
 
         {/* Card */}
-        <div className="glass-card rounded-2xl p-8 glow-green">
+        <div className="glass-card rounded-2xl p-6 sm:p-8 glow-green">
           <h2 className="text-2xl font-extrabold text-white mb-1.5 tracking-tight">
             {isSignUp ? "Create your account" : "Welcome back"}
           </h2>

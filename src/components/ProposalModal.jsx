@@ -154,7 +154,7 @@ export default function ProposalModal({ gig, profile, onSave, onClose }) {
           </div>
 
           {/* Tone selector */}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs text-gray-500 font-medium">Tone:</span>
             {TONES.map((t) => (
               <button
@@ -204,7 +204,7 @@ export default function ProposalModal({ gig, profile, onSave, onClose }) {
               <textarea
                 value={proposal}
                 onChange={(e) => setProposal(e.target.value)}
-                className="w-full h-64 bg-white/[0.03] border border-white/[0.08] rounded-xl p-4 text-sm text-gray-200 leading-relaxed resize-y focus:outline-none focus:border-[#00F0B5]/30 focus:bg-white/[0.05] transition-all placeholder-gray-600"
+                className="w-full h-40 sm:h-64 bg-white/[0.03] border border-white/[0.08] rounded-xl p-4 text-sm text-gray-200 leading-relaxed resize-y focus:outline-none focus:border-[#00F0B5]/30 focus:bg-white/[0.05] transition-all placeholder-gray-600"
                 spellCheck
               />
             </>
@@ -254,11 +254,11 @@ export default function ProposalModal({ gig, profile, onSave, onClose }) {
         )}
 
         {/* ── Footer ── */}
-        <div className="flex items-center justify-between gap-3 px-5 py-4 border-t border-white/[0.06] shrink-0">
+        <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 px-5 py-4 border-t border-white/[0.06] shrink-0">
           <button
             onClick={generate}
             disabled={loading}
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-white/[0.04] border border-white/[0.08] text-gray-400 text-sm font-semibold rounded-xl hover:bg-white/[0.08] hover:text-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-white/[0.04] border border-white/[0.08] text-gray-400 text-sm font-semibold rounded-xl hover:bg-white/[0.08] hover:text-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all w-full sm:w-auto min-h-[44px]"
           >
             <RefreshCw
               className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`}
@@ -266,11 +266,11 @@ export default function ProposalModal({ gig, profile, onSave, onClose }) {
             Regenerate
           </button>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             {proposal && !loading && (
               <button
                 onClick={handleCopy}
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-white/[0.04] border border-white/[0.08] text-gray-300 text-sm font-semibold rounded-xl hover:bg-white/[0.08] transition-all"
+                className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-white/[0.04] border border-white/[0.08] text-gray-300 text-sm font-semibold rounded-xl hover:bg-white/[0.08] transition-all flex-1 sm:flex-initial min-h-[44px]"
               >
                 {copied ? (
                   <Check className="w-3.5 h-3.5 text-[#00F0B5]" />
@@ -283,7 +283,7 @@ export default function ProposalModal({ gig, profile, onSave, onClose }) {
             {proposal && !loading && (
               <button
                 onClick={handleSave}
-                className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-[#00F0B5] text-[#020617] text-sm font-bold rounded-xl hover:bg-[#00dba5] hover:shadow-[0_0_16px_rgba(0,240,181,0.2)] transition-all"
+                className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 bg-[#00F0B5] text-[#020617] text-sm font-bold rounded-xl hover:bg-[#00dba5] hover:shadow-[0_0_16px_rgba(0,240,181,0.2)] transition-all flex-1 sm:flex-initial min-h-[44px]"
               >
                 <Save className="w-3.5 h-3.5" />
                 Save Proposal

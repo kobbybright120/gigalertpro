@@ -198,7 +198,7 @@ export default function ProfilePage() {
             className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             onClick={() => setEditing(false)}
           />
-          <div className="relative w-full max-w-2xl glass-card rounded-2xl p-8 shadow-2xl max-h-[90vh] overflow-y-auto border border-white/[0.08]">
+          <div className="relative w-full max-w-2xl glass-card rounded-2xl p-6 sm:p-8 shadow-2xl max-h-[90vh] overflow-y-auto border border-white/[0.08]">
             <button
               onClick={() => setEditing(false)}
               className="absolute top-6 right-6 text-gray-500 hover:text-white transition-colors"
@@ -335,13 +335,13 @@ export default function ProfilePage() {
       )}
 
       {/* Gradient Banner */}
-      <div className="relative h-44 rounded-t-2xl bg-gradient-to-r from-[#0B1120] via-[#0a3d2e] to-[#0d4f5a] overflow-hidden">
+      <div className="relative h-32 sm:h-44 rounded-t-2xl bg-gradient-to-r from-[#0B1120] via-[#0a3d2e] to-[#0d4f5a] overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-transparent via-[#00F0B5]/5 to-[#00D4FF]/10" />
         <div className="absolute -top-10 -right-10 w-40 h-40 bg-[#00F0B5]/10 rounded-full blur-3xl" />
         <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-[#00D4FF]/10 rounded-full blur-3xl" />
         <button
           onClick={openEditor}
-          className="absolute top-4 right-4 inline-flex items-center gap-1.5 px-4 py-2 bg-white/[0.08] backdrop-blur-sm border border-white/[0.08] text-gray-200 text-sm font-medium rounded-xl hover:bg-white/[0.14] hover:border-white/[0.12] transition-all duration-200"
+          className="absolute top-4 right-4 inline-flex items-center gap-1.5 px-4 py-2 bg-white/[0.08] backdrop-blur-sm border border-white/[0.08] text-gray-200 text-sm font-medium rounded-xl hover:bg-white/[0.14] hover:border-white/[0.12] transition-all duration-200 min-h-[44px]"
         >
           <Pencil className="w-4 h-4" />
           Edit Profile
@@ -480,8 +480,8 @@ export default function ProfilePage() {
           {/* Email Notifications Card */}
           {PAYMENTS_ENABLED && (
             <div className="glass-card rounded-2xl p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
                   <div
                     className={`w-10 h-10 rounded-xl flex items-center justify-center ${
                       isPremium && emailNotifEnabled
@@ -596,11 +596,11 @@ export default function ProfilePage() {
                               {cancelError}
                             </p>
                           )}
-                          <div className="flex gap-3">
+                          <div className="flex flex-col sm:flex-row gap-3">
                             <button
                               onClick={handleCancelSubscription}
                               disabled={cancelling}
-                              className="px-4 py-2 bg-red-500 text-white font-semibold text-sm rounded-xl hover:bg-red-600 transition-colors disabled:opacity-50"
+                              className="px-4 py-2 bg-red-500 text-white font-semibold text-sm rounded-xl hover:bg-red-600 transition-colors disabled:opacity-50 min-h-[44px]"
                             >
                               {cancelling
                                 ? "Cancelling..."
@@ -608,7 +608,7 @@ export default function ProfilePage() {
                             </button>
                             <button
                               onClick={() => setShowCancelConfirm(false)}
-                              className="px-4 py-2 text-gray-400 text-sm hover:text-white transition-colors"
+                              className="px-4 py-2 text-gray-400 text-sm hover:text-white transition-colors min-h-[44px]"
                             >
                               Keep My Plan
                             </button>

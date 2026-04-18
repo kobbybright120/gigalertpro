@@ -379,7 +379,7 @@ export default function LandingPage() {
           </p>
 
           {/* Social proof: avatar stack */}
-          <div className="flex items-center justify-center gap-3 mt-14">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-14">
             <div className="flex -space-x-2.5">
               {[
                 "https://randomuser.me/api/portraits/women/44.jpg",
@@ -396,7 +396,7 @@ export default function LandingPage() {
                 />
               ))}
             </div>
-            <div className="text-left">
+            <div className="text-left sm:text-left text-center">
               <div className="flex items-center gap-1">
                 {[...Array(5)].map((_, i) => (
                   <Star
@@ -1043,7 +1043,7 @@ function LiveDemo() {
         </div>
 
         {/* Panel 2: Gig Feed */}
-        <div className="lg:col-span-5 glass-card rounded-2xl p-5 flex flex-col min-h-[260px] sm:min-h-[380px]">
+        <div className="lg:col-span-5 glass-card rounded-2xl p-5 flex flex-col min-h-[200px] sm:min-h-[380px]">
           <div className="flex items-center gap-2 mb-4">
             <Radio className="w-4 h-4 text-[#00F0B5]" />
             <h3 className="text-sm font-bold text-white">Gig Feed</h3>
@@ -1122,7 +1122,7 @@ function LiveDemo() {
         </div>
 
         {/* Panel 3: Gig Details + Generate Proposal */}
-        <div className="lg:col-span-4 glass-card rounded-2xl p-5 flex flex-col min-h-[260px] sm:min-h-[380px]">
+        <div className="lg:col-span-4 glass-card rounded-2xl p-5 flex flex-col min-h-[200px] sm:min-h-[380px]">
           <div className="flex items-center gap-2 mb-4">
             <TrendingUp className="w-4 h-4 text-yellow-400" />
             <h3 className="text-sm font-bold text-white">Gig Details</h3>
@@ -1487,7 +1487,7 @@ function PricingSection({ priceRef, priceVis, handleCheckout }) {
                   </p>
                 )}
                 <div className="flex items-end gap-1">
-                  <span className="text-5xl font-extrabold text-white">
+                  <span className="text-4xl sm:text-5xl font-extrabold text-white">
                     ${plan.price}
                   </span>
                   <span className="text-gray-500 text-sm pb-2">
@@ -1668,7 +1668,7 @@ function FaqItem({ question, answer, visible, index, defaultOpen }) {
         />
       </button>
       <div
-        className={`overflow-hidden transition-all duration-300 ${open ? "max-h-60 pb-5" : "max-h-0"}`}
+        className={`overflow-hidden transition-all duration-300 ${open ? "max-h-80 pb-5" : "max-h-0"}`}
       >
         <p className="text-sm text-gray-400 leading-relaxed px-5">{answer}</p>
       </div>

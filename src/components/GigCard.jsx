@@ -149,7 +149,7 @@ export default function GigCard({
             {gig.flair}
           </span>
         )}
-        <div className="ml-auto">
+        <div className="ml-auto shrink-0">
           {gig.score != null && <ScoreBadge score={gig.score} />}
         </div>
       </div>
@@ -173,10 +173,9 @@ export default function GigCard({
             {"$" + cleanBudget}
           </span>
         )}
-        {gig.source &&
-          gig.source !== gig.source_platform && (
-            <span className="text-gray-500">{gig.source}</span>
-          )}
+        {gig.source && gig.source !== gig.source_platform && (
+          <span className="text-gray-500">{gig.source}</span>
+        )}
         {gig.postedAt && (
           <span className="inline-flex items-center gap-1 text-gray-500">
             <Clock className="w-3.5 h-3.5" />
@@ -218,19 +217,19 @@ export default function GigCard({
       )}
 
       {/* Actions */}
-      <div className="flex flex-wrap items-center gap-2.5 mt-5 pt-4 border-t border-white/[0.04]">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2.5 mt-5 pt-4 border-t border-white/[0.04]">
         <a
           href={gig.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-[#00F0B5] text-[#020617] text-sm font-bold rounded-xl hover:bg-[#00dba5] hover:shadow-[0_0_16px_rgba(0,240,181,0.2)] transition-all duration-200"
+          className="inline-flex items-center justify-center gap-1.5 px-5 py-3 sm:py-2.5 bg-[#00F0B5] text-[#020617] text-sm font-bold rounded-xl hover:bg-[#00dba5] hover:shadow-[0_0_16px_rgba(0,240,181,0.2)] transition-all duration-200 w-full sm:w-auto min-h-[44px]"
         >
           <ExternalLink className="w-4 h-4" />
           Apply Now
         </a>
         <button
           onClick={() => onGenerateProposal(gig)}
-          className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-white/[0.04] border border-white/[0.08] text-gray-300 text-sm font-semibold rounded-xl hover:bg-white/[0.08] hover:border-white/[0.12] transition-all duration-200"
+          className="inline-flex items-center justify-center gap-1.5 px-5 py-3 sm:py-2.5 bg-white/[0.04] border border-white/[0.08] text-gray-300 text-sm font-semibold rounded-xl hover:bg-white/[0.08] hover:border-white/[0.12] transition-all duration-200 w-full sm:w-auto min-h-[44px]"
         >
           <Sparkles className="w-4 h-4" />
           Generate Proposal
@@ -238,7 +237,7 @@ export default function GigCard({
         {onSaveGig && (
           <button
             onClick={() => onSaveGig(gig)}
-            className={`ml-auto inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
+            className={`sm:ml-auto inline-flex items-center justify-center gap-1.5 px-3 py-3 sm:py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 w-full sm:w-auto min-h-[44px] ${
               isSaved
                 ? "bg-[#00D4FF]/[0.1] border border-[#00D4FF]/20 text-[#00D4FF]"
                 : "bg-white/[0.04] border border-white/[0.08] text-gray-500 hover:text-gray-300 hover:bg-white/[0.08]"
@@ -246,6 +245,7 @@ export default function GigCard({
             title={isSaved ? "Unsave gig" : "Save gig"}
           >
             <Bookmark className={`w-4 h-4 ${isSaved ? "fill-current" : ""}`} />
+            <span className="sm:hidden">{isSaved ? "Saved" : "Save Gig"}</span>
           </button>
         )}
       </div>

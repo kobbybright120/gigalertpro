@@ -195,7 +195,7 @@ export default function OnboardingFlow({ onComplete }) {
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-[#00F0B5] to-[#00D4FF] mb-5">
                 <Search className="w-8 h-8 text-[#020617]" />
               </div>
-              <h1 className="text-3xl font-extrabold text-white tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
                 What kind of gigs are you looking for?
               </h1>
               <p className="text-gray-400 mt-3 text-base">
@@ -359,7 +359,7 @@ export default function OnboardingFlow({ onComplete }) {
               <Sparkles className="w-8 h-8 text-[#020617]" />
             </div>
 
-            <h1 className="text-3xl font-extrabold text-white tracking-tight mb-3">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-3">
               {gigCount > 0 ? (
                 <>
                   We found{" "}
@@ -382,8 +382,8 @@ export default function OnboardingFlow({ onComplete }) {
 
             {/* Animated counter */}
             {gigCount > 0 && (
-              <div className="glass-card rounded-2xl p-6 mb-8 glow-green">
-                <div className="text-5xl font-extrabold text-gradient mb-2">
+              <div className="glass-card rounded-2xl p-5 sm:p-6 mb-8 glow-green">
+                <div className="text-4xl sm:text-5xl font-extrabold text-gradient mb-2">
                   {gigCount}
                 </div>
                 <p className="text-sm text-gray-400">

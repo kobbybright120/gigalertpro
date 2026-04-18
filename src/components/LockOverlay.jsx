@@ -43,7 +43,7 @@ export default function LockOverlay({ children, onUpgrade, onSeePlans }) {
 
       {/* Tooltip */}
       {showTooltip && (
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-64">
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-56 sm:w-64 max-w-[calc(100vw-3rem)]">
           <div className="glass-card rounded-xl p-4 border border-[#00F0B5]/20 shadow-[0_0_30px_rgba(0,240,181,0.1)]">
             <p className="text-sm text-white font-semibold mb-3">
               Upgrade to Basic for $12/month to unlock this
@@ -54,7 +54,7 @@ export default function LockOverlay({ children, onUpgrade, onSeePlans }) {
                   e.stopPropagation();
                   onUpgrade?.();
                 }}
-                className="flex-1 py-2 bg-[#00F0B5] text-[#020617] text-xs font-bold rounded-lg hover:bg-[#00dba5] transition-all"
+                className="flex-1 py-2 bg-[#00F0B5] text-[#020617] text-xs font-bold rounded-lg hover:bg-[#00dba5] transition-all min-h-[44px]"
               >
                 Upgrade Now
               </button>
@@ -63,7 +63,7 @@ export default function LockOverlay({ children, onUpgrade, onSeePlans }) {
                   e.stopPropagation();
                   onSeePlans?.();
                 }}
-                className="flex-1 py-2 bg-white/[0.06] border border-white/[0.08] text-white text-xs font-bold rounded-lg hover:bg-white/[0.1] transition-all"
+                className="flex-1 py-2 bg-white/[0.06] border border-white/[0.08] text-white text-xs font-bold rounded-lg hover:bg-white/[0.1] transition-all min-h-[44px]"
               >
                 See All Plans
               </button>

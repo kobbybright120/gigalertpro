@@ -195,7 +195,8 @@ export default function GigAlertsPage() {
             Gig Alerts
           </h1>
           <p className="text-gray-500 mt-1.5 text-sm">
-            Real-time gig matching across Reddit, Craigslist, X, Threads, Facebook & LinkedIn
+            Real-time gig matching across Reddit, Craigslist, X, Threads,
+            Facebook & LinkedIn
           </p>
         </div>
         <span className="inline-flex items-center gap-2 px-4 py-2 glass-card rounded-full border border-[#00F0B5]/15 shrink-0">
@@ -274,7 +275,7 @@ export default function GigAlertsPage() {
       {/* Filter tabs + sort */}
       <div className="space-y-3">
         {/* Platform filter tabs */}
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide pb-1">
             {[
               {
@@ -336,7 +337,7 @@ export default function GigAlertsPage() {
                   }
                   setActiveFilter(key);
                 }}
-                className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 relative ${
+                className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 relative whitespace-nowrap shrink-0 ${
                   locked
                     ? "text-gray-600 border border-white/[0.04] cursor-pointer hover:border-[#00F0B5]/15"
                     : activeFilter === key && gold
@@ -357,7 +358,7 @@ export default function GigAlertsPage() {
           </div>
           <button
             onClick={() => setSortNewest((v) => !v)}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 flex items-center gap-1.5 ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 flex items-center gap-1.5 shrink-0 self-start min-h-[44px] ${
               sortNewest
                 ? "bg-[#00F0B5] text-[#020617] shadow-[0_0_14px_rgba(0,240,181,0.25)]"
                 : "bg-[#00F0B5]/[0.1] text-[#00F0B5] border border-[#00F0B5]/25 hover:bg-[#00F0B5]/[0.18] animate-pulse"
@@ -439,7 +440,8 @@ export default function GigAlertsPage() {
                 Scanning Sources...
               </h3>
               <p className="text-gray-500 text-sm mt-1">
-                Searching Reddit, Craigslist, X, Threads, Facebook & LinkedIn for matching gigs
+                Searching Reddit, Craigslist, X, Threads, Facebook & LinkedIn
+                for matching gigs
               </p>
             </div>
             {[1, 2, 3].map((i) => (
@@ -472,7 +474,8 @@ export default function GigAlertsPage() {
             </h3>
             <p className="text-gray-500 text-sm max-w-md mx-auto">
               Type a keyword or skill above to start finding matching gigs from
-              Reddit, Craigslist, X, Threads, Facebook & LinkedIn. Be the first to apply!
+              Reddit, Craigslist, X, Threads, Facebook & LinkedIn. Be the first
+              to apply!
             </p>
           </div>
         ) : filtered.length > 0 ? (

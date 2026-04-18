@@ -190,7 +190,7 @@ export default function UpgradeModal({ open, onClose, gigCount = 0 }) {
           {plans.map((plan) => (
             <div
               key={plan.tier}
-              className={`relative flex flex-col p-6 rounded-2xl border transition-all duration-200 ${
+              className={`relative flex flex-col p-5 sm:p-6 rounded-2xl border transition-all duration-200 ${
                 plan.popular
                   ? "border-[#00F0B5] shadow-[0_0_30px_rgba(0,240,181,0.1)] bg-[#00F0B5]/[0.02]"
                   : "border-white/10 hover:border-white/15"
@@ -214,7 +214,7 @@ export default function UpgradeModal({ open, onClose, gigCount = 0 }) {
                   </p>
                 )}
                 <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-extrabold text-white">
+                  <span className="text-3xl sm:text-4xl font-extrabold text-white">
                     ${plan.price}
                   </span>
                   <span className="text-gray-400 text-sm">

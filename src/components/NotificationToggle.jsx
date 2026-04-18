@@ -36,7 +36,7 @@ export default function NotificationToggle() {
 
   return (
     <div className="glass-card rounded-2xl p-5">
-      <div className="flex items-center justify-between">
+      <div className="flex items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div
             className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${

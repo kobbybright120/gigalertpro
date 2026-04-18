@@ -24,7 +24,7 @@ export default function PrivacyPage() {
         <div className="max-w-3xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-3">
           <Link
             to="/"
-            className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm"
+            className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm min-h-[44px]"
           >
             <ArrowLeft className="w-4 h-4" />
             Back
@@ -54,7 +54,7 @@ export default function PrivacyPage() {
               <li key={s.id}>
                 <a
                   href={`#${s.id}`}
-                  className="text-sm text-gray-400 hover:text-[#00F0B5] transition-colors"
+                  className="text-sm text-gray-400 hover:text-[#00F0B5] transition-colors block py-1"
                 >
                   {i + 1}. {s.label}
                 </a>
