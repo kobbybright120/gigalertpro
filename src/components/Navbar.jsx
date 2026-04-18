@@ -184,18 +184,6 @@ export default function Navbar() {
               </Link>
             );
           })}
-
-          {/* Contact Us */}
-          <button
-            onClick={() => {
-              setMobileOpen(false);
-              setContactOpen(true);
-            }}
-            className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-400 hover:bg-white/[0.04] hover:text-gray-200 transition-all duration-200 w-full"
-          >
-            <MessageCircle className="w-[18px] h-[18px] text-gray-500 group-hover:text-gray-300 transition-colors" />
-            <span className="flex-1 text-left">Contact Us</span>
-          </button>
         </nav>
 
         {/* Bottom section */}
@@ -225,6 +213,18 @@ export default function Navbar() {
               </div>
             </div>
           </Link>
+
+          {/* Contact Us */}
+          <button
+            onClick={() => {
+              setMobileOpen(false);
+              setContactOpen(true);
+            }}
+            className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-400 hover:bg-white/[0.04] hover:text-gray-200 transition-all duration-200 w-full"
+          >
+            <MessageCircle className="w-[18px] h-[18px] text-gray-500 group-hover:text-gray-300 transition-colors" />
+            <span className="flex-1 text-left">Contact Us</span>
+          </button>
 
           <button
             onClick={handleSignOut}
