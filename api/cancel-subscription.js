@@ -126,23 +126,61 @@ export default async function handler(req, res) {
 
     if (!dodoRes.ok) {
       const err = await dodoRes.json().catch(() => ({}));
-      console.error("[cancel-subscription] Dodo error:", err);
+      console.error("[cancel-subscription] Dodo error:", JSON.stringify(err));
       return res.status(502).json({
         error: err.message || "Failed to cancel subscription with Dodo",
       });
     }
 
     // 4. Update Supabase profile — downgrade to free immediately
-    await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${supabaseUser.id}`, {
-      method: "PATCH",
-      headers: supabaseHeaders(),
-      body: JSON.stringify({
-        plan: "free",
-        subscription_status: "cancelled",
-        cancel_at_period_end: true,
-        updated_at: new Date().toISOString(),
-      }),
-    });
+    const updateFields = {
+      plan: "free",
+      subscription_status: "cancelled",
+      cancel_at_period_end: true,
+      updated_at: new Date().toISOString(),
+    };
+
+    console.info(
+      `[cancel-subscription] Updating Supabase profile ${supabaseUser.id} with:`,
+      JSON.stringify(updateFields),
+    );
+
+    const patchRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/profiles?id=eq.${supabaseUser.id}`,
+      {
+        method: "PATCH",
+        headers: supabaseHeaders(),
+        body: JSON.stringify(updateFields),
+      },
+    );
+
+    if (!patchRes.ok) {
+      const patchErr = await patchRes.text().catch(() => "unknown");
+      console.error(
+        `[cancel-subscription] Supabase PATCH failed: ${patchRes.status} — ${patchErr}`,
+      );
+      return res.status(500).json({
+        error: "Cancelled on Dodo but failed to update profile",
+      });
+    }
+
+    // 5. Verify the update actually persisted
+    const verifyRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/profiles?id=eq.${supabaseUser.id}&select=plan,subscription_status`,
+      { headers: supabaseHeaders() },
+    );
+    const verifyRows = await verifyRes.json().catch(() => []);
+    const verified = verifyRows?.[0];
+
+    console.info(
+      `[cancel-subscription] Verify after update: plan=${verified?.plan}, status=${verified?.subscription_status}`,
+    );
+
+    if (verified?.subscription_status !== "cancelled") {
+      console.error(
+        `[cancel-subscription] UPDATE DID NOT PERSIST! Profile still shows: ${JSON.stringify(verified)}`,
+      );
+    }
 
     console.info(
       `[cancel-subscription] Cancelled subscription ${subscriptionId} for user ${supabaseUser.id}`,
