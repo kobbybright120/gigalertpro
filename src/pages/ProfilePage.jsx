@@ -19,7 +19,7 @@ import { supabase } from "../lib/supabase";
 import { PAYMENTS_ENABLED } from "../../payments.config.js";
 
 export default function ProfilePage() {
-  const { profile: dbProfile, loading, updateProfile } = useProfile();
+  const { profile: dbProfile, loading, updateProfile, refetch } = useProfile();
   const { user } = useAuth();
 
   const profile = {
@@ -69,6 +69,8 @@ export default function ProfilePage() {
       if (!res.ok) throw new Error(data.error || "Failed to cancel");
       setCancelSuccess(true);
       setShowCancelConfirm(false);
+      // Refetch profile so UI immediately reflects the cancellation
+      await refetch();
     } catch (err) {
       setCancelError(err.message);
     } finally {

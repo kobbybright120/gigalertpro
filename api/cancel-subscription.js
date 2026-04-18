@@ -132,11 +132,12 @@ export default async function handler(req, res) {
       });
     }
 
-    // 4. Update Supabase profile
+    // 4. Update Supabase profile — downgrade to free immediately
     await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${supabaseUser.id}`, {
       method: "PATCH",
       headers: supabaseHeaders(),
       body: JSON.stringify({
+        plan: "free",
         subscription_status: "cancelled",
         cancel_at_period_end: true,
         updated_at: new Date().toISOString(),
