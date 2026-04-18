@@ -20,7 +20,8 @@ const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const SCORE_THRESHOLD = 50;
-const COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes
+const COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes between emails
+const MAX_EMAILS_PER_DAY = 5;       // never more than 5 emails/day per user
 const MAX_GIGS_PER_EMAIL = 3;
 const DEDUP_TTL = 172_800; // 48 hours in seconds
 const FROM_EMAIL = "GigAlertPro <notifications@gigalertpro.com>";
@@ -107,6 +108,30 @@ async function markGigsEmailed(redisUrl, redisToken, userId, gigIds) {
   const key = `gigalertpro:emailed:${userId}`;
   await redisCmd(redisUrl, redisToken, ["SADD", key, ...gigIds]);
   await redisCmd(redisUrl, redisToken, ["EXPIRE", key, DEDUP_TTL]);
+}
+
+// ── Daily email cap (tracked in Redis, resets at midnight UTC) ───────────────
+
+function dailyKey(userId) {
+  const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+  return `gigalertpro:daily:${userId}:${today}`;
+}
+
+async function getDailyEmailCount(redisUrl, redisToken, userId) {
+  const result = await redisCmd(redisUrl, redisToken, ["GET", dailyKey(userId)]);
+  return result ? parseInt(result, 10) : 0;
+}
+
+async function incrementDailyEmailCount(redisUrl, redisToken, userId) {
+  const key = dailyKey(userId);
+  await redisCmd(redisUrl, redisToken, ["INCR", key]);
+  await redisCmd(redisUrl, redisToken, ["EXPIREAT", key, secondsUntilMidnightUtc()]);
+}
+
+function secondsUntilMidnightUtc() {
+  const now = new Date();
+  const midnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+  return Math.floor(midnight.getTime() / 1000); // Unix timestamp of next midnight UTC
 }
 
 // ── Unsubscribe URL ──────────────────────────────────────────────────────────
@@ -299,11 +324,18 @@ export async function notifyUsersOfNewGigs(
         }
       }
 
-      // 3b. Fetch user's keywords
+      // 3b. Check daily cap
+      const dailyCount = await getDailyEmailCount(redisUrl, redisToken, user.id);
+      if (dailyCount >= MAX_EMAILS_PER_DAY) {
+        totalSkipped++;
+        continue;
+      }
+
+      // 3d. Fetch user's keywords
       const keywords = await fetchUserKeywords(user.id);
       if (keywords.length === 0) continue;
 
-      // 3c. Score gigs against this user's keywords
+      // 3e. Score gigs against this user's keywords
       const scored = normalizedGigs
         .map((gig) => {
           const result = scoreGoldLead(gig, keywords);
@@ -313,16 +345,16 @@ export async function notifyUsersOfNewGigs(
 
       if (scored.length === 0) continue;
 
-      // 3d. Filter out already-emailed gigs
+      // 3f. Filter out already-emailed gigs
       const emailedIds = await getEmailedGigIds(redisUrl, redisToken, user.id);
       const unsent = scored.filter((g) => !emailedIds.has(String(g.id)));
       if (unsent.length === 0) continue;
 
-      // 3e. Pick top gigs by score
+      // 3g. Pick top gigs by score
       unsent.sort((a, b) => (b.quality_score || 0) - (a.quality_score || 0));
       const topGigs = unsent.slice(0, MAX_GIGS_PER_EMAIL);
 
-      // 3f. Build and send email
+      // 3h. Build and send email
       const unsubUrl = generateUnsubscribeUrl(user.id);
       const subject =
         topGigs.length === 1
@@ -334,7 +366,7 @@ export async function notifyUsersOfNewGigs(
 
       if (sent) {
         totalSent++;
-        // 3g. Update Supabase + Redis dedup
+        // 3i. Update Supabase + Redis dedup + daily count
         await updateLastEmailed(
           user.id,
           (user.email_notification_count || 0) + 1,
@@ -345,6 +377,7 @@ export async function notifyUsersOfNewGigs(
           user.id,
           topGigs.map((g) => String(g.id)),
         );
+        await incrementDailyEmailCount(redisUrl, redisToken, user.id);
       }
     } catch (err) {
       console.warn(
