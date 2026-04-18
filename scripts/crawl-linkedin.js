@@ -106,8 +106,14 @@ const SIGNALS = [
 ];
 
 function buildSearchQueries() {
+  // Sample a subset of roles per run for time budget (~40 queries @ 12-20s = 8-13 min)
+  // Full role coverage is maintained over multiple runs via randomization
+  const ROLES_PER_RUN = parseInt(process.env.LI_ROLES_PER_RUN || "20", 10);
+  const shuffledRoles = [...ROLES].sort(() => Math.random() - 0.5);
+  const selectedRoles = shuffledRoles.slice(0, ROLES_PER_RUN);
+
   const queries = [];
-  for (const role of ROLES) {
+  for (const role of selectedRoles) {
     const shuffled = [...SIGNALS].sort(() => Math.random() - 0.5);
     for (const signal of shuffled.slice(0, 2)) {
       queries.push({
@@ -162,6 +168,14 @@ async function redisSmembers(key) {
 
 async function redisExpire(key, ttl) {
   return redisCommand("EXPIRE", key, ttl);
+}
+
+async function redisGet(key) {
+  try {
+    return await redisCommand("GET", key);
+  } catch {
+    return null;
+  }
 }
 
 function encodeId(str) {
@@ -447,7 +461,7 @@ async function main() {
     // ── 2. Build search queries (role × signal matrix, randomized each run) ──
     const searchQueries = buildSearchQueries();
     console.log(
-      `Generated ${searchQueries.length} search queries (${ROLES.length} roles × 2 signals)`,
+      `Generated ${searchQueries.length} search queries (${searchQueries.length / 2} sampled roles × 2 signals, from ${ROLES.length} total)`,
     );
 
     // Engine order: cycle DDG → Google → Bing to spread load
@@ -456,7 +470,7 @@ async function main() {
       { name: "Google", fn: searchGoogle },
       { name: "Bing", fn: searchBing },
     ];
-    const blocked = new Set();
+    const engineState = new Map(); // name -> { blockedAt, retried }
 
     for (let i = 0; i < searchQueries.length; i++) {
       const { display, search } = searchQueries[i];
@@ -466,14 +480,32 @@ async function main() {
       // Try engines in round-robin order, starting from i % 3
       for (let attempt = 0; attempt < engines.length; attempt++) {
         const eng = engines[(i + attempt) % engines.length];
-        if (blocked.has(eng.name)) continue;
+        const state = engineState.get(eng.name);
+
+        if (state) {
+          if (state.retried) continue; // already retried and failed — permanently blocked
+          const elapsed = Date.now() - state.blockedAt;
+          const cooldownMs = 60000 + Math.random() * 30000; // 60-90s
+          if (elapsed < cooldownMs) continue; // still cooling down
+          console.log(`  [cooldown] Retrying ${eng.name} after ${Math.round(elapsed / 1000)}s cooldown`);
+        }
 
         results = await eng.fn(search);
         if (results === null) {
-          // null = engine blocked (CAPTCHA / rate limit)
-          blocked.add(eng.name);
-          console.log(`  ${eng.name} blocked — ${engines.length - blocked.size} engines remaining`);
+          if (state) {
+            state.retried = true;
+            console.log(`  ${eng.name} blocked again after retry — permanently blocked`);
+          } else {
+            engineState.set(eng.name, { blockedAt: Date.now(), retried: false });
+            console.log(`  ${eng.name} blocked — cooling down (60-90s before retry)`);
+          }
           continue;
+        }
+
+        // Success — clear cooldown state if engine recovered
+        if (state) {
+          engineState.delete(eng.name);
+          console.log(`  ${eng.name} recovered after cooldown`);
         }
         usedEngine = eng.name;
         break;
@@ -493,9 +525,12 @@ async function main() {
         `[${i + 1}/${searchQueries.length}] ${display} → ${results.length} [${usedEngine}]`,
       );
 
-      // If all engines are blocked, stop early
-      if (blocked.size >= engines.length) {
-        console.log("All search engines blocked — stopping early");
+      // If all engines are permanently blocked, stop early
+      const permanentlyBlocked = engines.filter(
+        (e) => engineState.get(e.name)?.retried === true
+      ).length;
+      if (permanentlyBlocked >= engines.length) {
+        console.log("All search engines permanently blocked — stopping early");
         break;
       }
 
@@ -506,6 +541,26 @@ async function main() {
     }
 
     console.log(`\nTotal raw results: ${totalExtracted}`);
+
+    // ── Fallback: if 0 posts scraped, preserve existing Redis data ──
+    const REDIS_KEY = "gigalertpro:linkedin:latest";
+    const REDIS_TTL = 7200;
+
+    if (allPosts.length === 0) {
+      console.warn("[li-crawler] 0 posts fetched — all engines likely blocked");
+      try {
+        const existingRaw = await redisGet(REDIS_KEY);
+        if (existingRaw) {
+          await redisSet(REDIS_KEY, existingRaw, REDIS_TTL);
+          console.warn("[li-crawler] Refreshed TTL on existing Redis data (2h)");
+        } else {
+          console.warn("[li-crawler] No existing Redis data to refresh");
+        }
+      } catch {
+        /* best effort */
+      }
+      return;
+    }
 
     // ── 4. Deduplicate by URL ──
     const deduped = new Map();
@@ -613,19 +668,43 @@ async function main() {
 
     finalPosts.sort((a, b) => (b.created_utc || 0) - (a.created_utc || 0));
 
-    // ── 10. Store to Redis ──
-    const payload = JSON.stringify({
-      posts: finalPosts.slice(0, 300),
-      post_count: Math.min(finalPosts.length, 300),
-      cached_at: new Date().toISOString(),
-      feed: "linkedin-ddg",
-      sources: { linkedin: finalPosts.length },
-    });
+    // ── 10. Merge with existing Redis data, then store ──
+    let existingGigs = [];
+    try {
+      const existingRaw = await redisGet(REDIS_KEY);
+      if (existingRaw) {
+        const parsed = JSON.parse(existingRaw);
+        existingGigs = parsed.posts || [];
+      }
+    } catch {
+      /* start fresh if read fails */
+    }
 
-    await redisSet("gigalertpro:linkedin:latest", payload, 7200);
-    console.log(
-      `\nStored ${Math.min(finalPosts.length, 300)} posts to Redis (key: gigalertpro:linkedin:latest, TTL 2h)`,
-    );
+    // Merge: this run's posts take priority, then existing, dedup by ID
+    const mergedMap = new Map();
+    for (const g of [...finalPosts, ...existingGigs]) {
+      if (!mergedMap.has(g.id)) mergedMap.set(g.id, g);
+    }
+    const mergedPosts = [...mergedMap.values()]
+      .sort((a, b) => (b.created_utc || 0) - (a.created_utc || 0))
+      .slice(0, 300);
+
+    if (mergedPosts.length === 0) {
+      console.warn("[li-crawler] 0 posts after merge — skipping Redis write to preserve last-good data");
+    } else {
+      const payload = JSON.stringify({
+        posts: mergedPosts,
+        post_count: mergedPosts.length,
+        cached_at: new Date().toISOString(),
+        feed: "linkedin-ddg",
+        sources: { linkedin: finalPosts.length, existing: existingGigs.length },
+      });
+
+      await redisSet(REDIS_KEY, payload, REDIS_TTL);
+      console.log(
+        `\nStored ${mergedPosts.length} posts to Redis (${finalPosts.length} from this run + ${existingGigs.length} existing, key: ${REDIS_KEY}, TTL 2h)`,
+      );
+    }
 
     // ── Email notifications for premium users ──
     try {
@@ -666,7 +745,10 @@ async function main() {
       `║ Previously seen       │ ${existingPosts.length.toString().padStart(6)}`,
     );
     console.log(
-      `║ Final stored          │ ${Math.min(finalPosts.length, 300).toString().padStart(6)}`,
+      `║ Carried from Redis    │ ${existingGigs.length.toString().padStart(6)}`,
+    );
+    console.log(
+      `║ Final stored          │ ${mergedPosts.length.toString().padStart(6)}`,
     );
     console.log("╚══════════════════════════════════════════════╝");
 
@@ -680,9 +762,9 @@ async function main() {
       }
     }
 
-    if (finalPosts.length > 0) {
+    if (mergedPosts.length > 0) {
       console.log("\nSample posts:");
-      for (const p of finalPosts.slice(0, 10)) {
+      for (const p of mergedPosts.slice(0, 10)) {
         const age =
           p.created_utc > 0
             ? `${Math.round((Date.now() / 1000 - p.created_utc) / 3600)}h ago`
