@@ -5,7 +5,7 @@ const sections = [
   { id: "data-we-collect", label: "Data We Collect" },
   { id: "how-we-collect", label: "How We Collect It" },
   { id: "why-we-collect", label: "Why We Collect It" },
-  { id: "third-parties", label: "Third-Party Services" },
+  { id: "third-parties", label: "Who We Share It With" },
   { id: "platforms", label: "Platforms We Scan" },
   { id: "data-protection", label: "Data Protection" },
   { id: "your-rights", label: "Your Rights" },
@@ -177,59 +177,36 @@ export default function PrivacyPage() {
 
           <section id="third-parties">
             <h2 className="text-xl font-bold text-white mb-3">
-              4. Third-Party Services
+              4. Who We Share It With
             </h2>
-            <p className="mb-4">
-              We use the following services to operate GigAlertPro. Each has its
-              own privacy policy.
+            <p className="mb-3">
+              We do not sell your personal data. We share limited information
+              with trusted third-party services only as necessary to operate
+              GigAlertPro:
             </p>
-            <div className="space-y-3">
-              <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
-                <p className="font-bold text-white">Supabase</p>
-                <p className="text-gray-400 mt-1">
-                  Database and authentication. Stores your account, profile,
-                  keywords, gig history, proposals, and bookmarks.
-                </p>
-              </div>
-              <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
-                <p className="font-bold text-white">Dodo Payments</p>
-                <p className="text-gray-400 mt-1">
-                  Payment processing. Handles subscription billing. We share
-                  your email address and subscription tier with Dodo to process
-                  payments. We do not store credit card numbers.
-                </p>
-              </div>
-              <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
-                <p className="font-bold text-white">Resend</p>
-                <p className="text-gray-400 mt-1">
-                  Email delivery. Sends gig alert notifications and welcome
-                  emails to your email address. Maximum 5 emails per day, with a
-                  30-minute cooldown between emails.
-                </p>
-              </div>
-              <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
-                <p className="font-bold text-white">Upstash Redis</p>
-                <p className="text-gray-400 mt-1">
-                  Caching and deduplication. Temporarily stores gig IDs to
-                  prevent sending you the same alert twice. Data expires
-                  automatically after 48 hours.
-                </p>
-              </div>
-              <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
-                <p className="font-bold text-white">Umami</p>
-                <p className="text-gray-400 mt-1">
-                  Privacy-focused analytics. Collects anonymous, aggregated
-                  usage data. No personal information is tracked or stored.
-                </p>
-              </div>
-              <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
-                <p className="font-bold text-white">Cloudflare Turnstile</p>
-                <p className="text-gray-400 mt-1">
-                  Bot protection on our signup page. Verifies you are a human.
-                  No personal data is stored from this process.
-                </p>
-              </div>
-            </div>
+            <ul className="space-y-2 list-disc list-inside text-gray-400">
+              <li>
+                <span className="text-white font-medium">Payment processor</span>{" "}
+                — your email and subscription tier are shared to handle billing.
+                We never see or store your credit card details.
+              </li>
+              <li>
+                <span className="text-white font-medium">Email delivery service</span>{" "}
+                — your email address is used to send gig alert notifications.
+              </li>
+              <li>
+                <span className="text-white font-medium">
+                  Authentication &amp; database provider
+                </span>{" "}
+                — your account and profile data is securely stored with our
+                database provider.
+              </li>
+              <li>
+                <span className="text-white font-medium">Analytics</span>{" "}
+                — we use privacy-focused, anonymous analytics to understand
+                product usage. No personal information is collected.
+              </li>
+            </ul>
           </section>
 
           <section id="platforms">
