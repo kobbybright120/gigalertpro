@@ -20,6 +20,14 @@ import { useProfile } from "../lib/useSupabase";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../lib/supabase";
 import { PAYMENTS_ENABLED } from "../../payments.config.js";
+import {
+  isNotificationSupported,
+  isEnabled as isBrowserNotifEnabled,
+  getPermission,
+  requestPermission,
+  disableNotifications as disableBrowserNotif,
+  enableNotifications as enableBrowserNotif,
+} from "../lib/gigNotifications";
 
 export default function ProfilePage() {
   const { profile: dbProfile, loading, updateProfile, refetch } = useProfile();
@@ -71,6 +79,8 @@ export default function ProfilePage() {
     if (!isPremium) return;
     setEmailToggleLoading(true);
     const newValue = !emailNotifEnabled;
+
+    // Update email notifications in Supabase
     const { error } = await supabase
       .from("profiles")
       .update({ email_notifications_enabled: newValue })
@@ -78,6 +88,20 @@ export default function ProfilePage() {
     if (!error) {
       setEmailNotifEnabled(newValue);
     }
+
+    // Also toggle browser push notifications
+    if (isNotificationSupported()) {
+      if (newValue) {
+        if (getPermission() === "granted") {
+          enableBrowserNotif();
+        } else {
+          await requestPermission();
+        }
+      } else {
+        disableBrowserNotif();
+      }
+    }
+
     setEmailToggleLoading(false);
   }
 
@@ -462,14 +486,14 @@ export default function ProfilePage() {
                   </div>
                   <div>
                     <h3 className="text-sm font-bold text-white">
-                      Email Notifications
+                      Notifications
                     </h3>
                     <p className="text-xs text-gray-500 mt-0.5">
                       {!isPremium
-                        ? "Upgrade to unlock email alerts"
+                        ? "Upgrade to unlock notifications"
                         : emailNotifEnabled
-                          ? "You'll get emails when matching gigs are found"
-                          : "Get notified when new gigs match your keywords"}
+                          ? "Email & browser alerts when matching gigs are found"
+                          : "Get email & browser alerts when gigs match your keywords"}
                     </p>
                   </div>
                 </div>

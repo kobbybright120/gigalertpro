@@ -16,7 +16,7 @@ import {
   Lightbulb,
 } from "lucide-react";
 import GigCard from "../components/GigCard";
-import NotificationToggle from "../components/NotificationToggle";
+
 import ProposalModal from "../components/ProposalModal";
 import LockOverlay from "../components/LockOverlay";
 import { useLockedDashboard } from "../context/LockedDashboardContext";
@@ -195,8 +195,8 @@ export default function DashboardPage() {
         })}
       </div>
 
-      {/* Notification Toggle + Quick keyword add */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* Quick keyword add */}
+      <div>
         <div className="glass-card rounded-2xl p-5">
           <h2 className="font-bold text-white mb-3 flex items-center gap-2 text-sm">
             <Zap className="w-4 h-4 text-[#00F0B5]" />
@@ -258,7 +258,6 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
-        <NotificationToggle />
       </div>
 
       {/* Gig counter for locked state */}
@@ -296,8 +295,8 @@ export default function DashboardPage() {
                 Scanning Sources...
               </h3>
               <p className="text-gray-500 text-sm mt-1">
-                Searching Reddit, X, Threads, Facebook, LinkedIn & Craigslist for gigs matching your
-                keywords
+                Searching Reddit, X, Threads, Facebook, LinkedIn & Craigslist
+                for gigs matching your keywords
               </p>
             </div>
           ) : isLocked && topAlerts.length > 0 ? (
