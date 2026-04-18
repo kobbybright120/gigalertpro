@@ -2,7 +2,7 @@ name: Crawl Threads (Playwright)
 
 on:
   schedule:
-    - cron: "*/15 * * * *" # every 15 min (Playwright takes ~8min per run — can't go faster)
+    - cron: "0 */2 * * *" # every 2 hours
   workflow_dispatch: {}
 
 jobs:
