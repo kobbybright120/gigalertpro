@@ -58,7 +58,9 @@ export default function WelcomeModal({ plan, onClose }) {
             </span>{" "}
             If you're not satisfied for any reason, email us at{" "}
             <a
-              href="mailto:support@gigalertpro.com"
+              href="https://mail.google.com/mail/?view=cm&fs=1&to=support@gigalertpro.com"
+              target="_blank"
+              rel="noopener noreferrer"
               className="text-[#00F0B5] underline"
             >
               support@gigalertpro.com

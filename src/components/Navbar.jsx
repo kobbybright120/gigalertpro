@@ -269,55 +269,34 @@ export default function Navbar() {
               </div>
             </div>
 
-            {/* Gmail */}
+            {/* Email */}
             <a
-              href="https://mail.google.com/mail/?view=cm&fs=1&to=brightadenyo05@gmail.com"
+              href="https://mail.google.com/mail/?view=cm&fs=1&to=support@gigalertpro.com"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.06] text-gray-300 hover:text-[#00F0B5] hover:border-[#00F0B5]/20 transition-all duration-200 mb-3"
             >
-              {/* Gmail icon */}
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
                 className="w-5 h-5 shrink-0"
                 fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               >
-                <path
-                  d="M2 6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6Z"
-                  fill="#F2F2F2"
-                  stroke="none"
-                />
-                <path d="M2 6l10 7L22 6" stroke="none" fill="none" />
-                <path
-                  d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z"
-                  fill="#fff"
-                  stroke="none"
-                />
-                <path d="M2 6.5 12 13l10-6.5" fill="none" stroke="none" />
-                {/* Gmail M shape */}
-                <path
-                  d="M2 8.5V18a2 2 0 0 0 2 2h1.5V9.5L12 14.5l6.5-5V20H20a2 2 0 0 0 2-2V8.5L12 14 2 8.5Z"
-                  fill="#EA4335"
-                  stroke="none"
-                />
-                <path
-                  d="M2 8.5 12 14l10-5.5V6a2 2 0 0 0-2-2L12 9.5 4 4a2 2 0 0 0-2 2v2.5Z"
-                  fill="#4285F4"
-                  stroke="none"
-                />
-                <path
-                  d="M18.5 9.5V20H20a2 2 0 0 0 2-2V8.5l-3.5 1Z"
-                  fill="#34A853"
-                  stroke="none"
-                />
-                <path
-                  d="M2 8.5 5.5 9.5V20H4a2 2 0 0 1-2-2V8.5Z"
-                  fill="#FBBC04"
-                  stroke="none"
-                />
+                <rect x="2" y="4" width="20" height="16" rx="2" />
+                <path d="m2 7 10 7 10-7" />
               </svg>
-              <span className="text-sm font-medium">Gmail</span>
+              <div>
+                <span className="text-sm font-medium block">
+                  support@gigalertpro.com
+                </span>
+                <span className="text-xs text-gray-500">
+                  We typically respond within 24 hours
+                </span>
+              </div>
             </a>
 
             {/* LinkedIn */}

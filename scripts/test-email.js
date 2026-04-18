@@ -12,7 +12,7 @@
 import { buildEmailHtml } from "./lib/email-notifier.js";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const TO_EMAIL = process.argv[2] || "brightadenyo05@gmail.com";
+const TO_EMAIL = process.argv[2] || "support@gigalertpro.com";
 
 if (!RESEND_API_KEY) {
   console.error("RESEND_API_KEY not set. Pass it as an env var.");
