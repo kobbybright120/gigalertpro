@@ -347,6 +347,7 @@ export default async function handler(req, res) {
           dodo_subscription_id: subscriptionId || null,
           dodo_customer_id: customerId,
           cancel_at_period_end: false,
+          email_notifications_enabled: true,
           ...(email ? { email } : {}),
         },
         authUserId,
