@@ -154,7 +154,7 @@ export default function PricingModal({ open, onClose }) {
               <span className="text-[#00F0B5] font-semibold">
                 3-Day Money Back Guarantee
               </span>{" "}
-              — Try risk-free. Full refund if you're not satisfied.
+              Try risk-free. Full refund if you're not satisfied.
             </p>
           </div>
           <button

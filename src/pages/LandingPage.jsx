@@ -1548,7 +1548,7 @@ function PricingSection({ priceRef, priceVis, handleCheckout }) {
             <span className="text-[#00F0B5] font-bold">
               3-Day Money Back Guarantee
             </span>{" "}
-            — If GigAlertPro doesn't find you relevant gigs in 3 days, we'll
+            If GigAlertPro doesn't find you relevant gigs in 3 days, we'll
             refund you completely. No questions asked.
           </p>
         </div>

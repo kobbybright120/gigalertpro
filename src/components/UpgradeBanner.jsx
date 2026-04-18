@@ -14,7 +14,7 @@ export default function UpgradeBanner({ gigCount = 0, onUpgrade }) {
           match your skills across communities including Facebook. You're only
           seeing 1.{" "}
           <span className="text-gray-400">
-            Unlock all from $12/month — 3-day money back guarantee.
+            Unlock all from $12/month. 3-day money back guarantee.
           </span>
         </p>
         <button

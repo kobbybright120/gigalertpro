@@ -154,7 +154,7 @@ export default function UpgradeModal({ open, onClose, gigCount = 0 }) {
               <span className="text-[#00F0B5] font-semibold">
                 3-Day Money Back Guarantee
               </span>{" "}
-              — Try risk-free. Full refund if you're not satisfied.
+              Try risk-free. Full refund if you're not satisfied.
             </p>
           </div>
         </div>
