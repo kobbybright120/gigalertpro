@@ -21,7 +21,7 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const SCORE_THRESHOLD = 50;
 const COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes between emails
-const MAX_EMAILS_PER_DAY = 5;       // never more than 5 emails/day per user
+const MAX_EMAILS_PER_DAY = 5; // never more than 5 emails/day per user
 const MAX_GIGS_PER_EMAIL = 3;
 const DEDUP_TTL = 172_800; // 48 hours in seconds
 const FROM_EMAIL = "GigAlertPro <notifications@gigalertpro.com>";
@@ -41,7 +41,7 @@ function svcHeaders() {
 async function fetchPremiumUsers() {
   const params = new URLSearchParams({
     select: "id,email,plan,last_emailed_at",
-    email_notifications_enabled: "eq.true",
+    email_notifications_enabled: "is.true",
     email: "not.is.null",
     plan: `in.(${PAID_PLANS.join(",")})`,
   });
@@ -118,19 +118,28 @@ function dailyKey(userId) {
 }
 
 async function getDailyEmailCount(redisUrl, redisToken, userId) {
-  const result = await redisCmd(redisUrl, redisToken, ["GET", dailyKey(userId)]);
+  const result = await redisCmd(redisUrl, redisToken, [
+    "GET",
+    dailyKey(userId),
+  ]);
   return result ? parseInt(result, 10) : 0;
 }
 
 async function incrementDailyEmailCount(redisUrl, redisToken, userId) {
   const key = dailyKey(userId);
   await redisCmd(redisUrl, redisToken, ["INCR", key]);
-  await redisCmd(redisUrl, redisToken, ["EXPIREAT", key, secondsUntilMidnightUtc()]);
+  await redisCmd(redisUrl, redisToken, [
+    "EXPIREAT",
+    key,
+    secondsUntilMidnightUtc(),
+  ]);
 }
 
 function secondsUntilMidnightUtc() {
   const now = new Date();
-  const midnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+  const midnight = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1),
+  );
   return Math.floor(midnight.getTime() / 1000); // Unix timestamp of next midnight UTC
 }
 
@@ -319,21 +328,36 @@ export async function notifyUsersOfNewGigs(
       if (user.last_emailed_at) {
         const elapsed = Date.now() - new Date(user.last_emailed_at).getTime();
         if (elapsed < COOLDOWN_MS) {
+          console.debug(
+            `[email-notifier] User ${user.id} in cooldown (${Math.round(elapsed / 60000)}m elapsed)`,
+          );
           totalSkipped++;
           continue;
         }
       }
 
       // 3b. Check daily cap
-      const dailyCount = await getDailyEmailCount(redisUrl, redisToken, user.id);
+      const dailyCount = await getDailyEmailCount(
+        redisUrl,
+        redisToken,
+        user.id,
+      );
       if (dailyCount >= MAX_EMAILS_PER_DAY) {
+        console.debug(
+          `[email-notifier] User ${user.id} hit daily cap (${dailyCount}/${MAX_EMAILS_PER_DAY})`,
+        );
         totalSkipped++;
         continue;
       }
 
       // 3d. Fetch user's keywords
       const keywords = await fetchUserKeywords(user.id);
-      if (keywords.length === 0) continue;
+      if (keywords.length === 0) {
+        console.debug(
+          `[email-notifier] User ${user.id} has no keywords, skipping`,
+        );
+        continue;
+      }
 
       // 3e. Score gigs against this user's keywords
       const scored = normalizedGigs
@@ -343,12 +367,22 @@ export async function notifyUsersOfNewGigs(
         })
         .filter((g) => g.quality_score >= SCORE_THRESHOLD);
 
-      if (scored.length === 0) continue;
+      if (scored.length === 0) {
+        console.debug(
+          `[email-notifier] No gigs scored >= ${SCORE_THRESHOLD} for user ${user.id} (keywords: ${keywords.join(", ")})`,
+        );
+        continue;
+      }
 
       // 3f. Filter out already-emailed gigs
       const emailedIds = await getEmailedGigIds(redisUrl, redisToken, user.id);
       const unsent = scored.filter((g) => !emailedIds.has(String(g.id)));
-      if (unsent.length === 0) continue;
+      if (unsent.length === 0) {
+        console.debug(
+          `[email-notifier] All ${scored.length} matching gigs already emailed to user ${user.id}`,
+        );
+        continue;
+      }
 
       // 3g. Pick top gigs by score
       unsent.sort((a, b) => (b.quality_score || 0) - (a.quality_score || 0));
