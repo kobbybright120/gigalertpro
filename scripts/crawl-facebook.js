@@ -1,14 +1,14 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// GigAlertPro — Facebook Gig Crawler (via DuckDuckGo Lite + Bing)
+// GigAlertPro — Facebook Gig Crawler (via DuckDuckGo Lite + Bing + Google)
 //
-// Searches DuckDuckGo Lite and Bing for public Facebook posts containing
-// freelance gig keywords. Uses plain HTTP fetch (no browser needed for search).
+// Searches DuckDuckGo Lite, Bing, and Google for public Facebook posts
+// containing freelance gig keywords. Uses plain HTTP fetch (no browser).
 // No Facebook login required — all posts are publicly indexed.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { classifyAndFilter } from "./gig-classifier.js";
 
-const MAX_AGE_DAYS = parseInt(process.env.FB_MAX_AGE_DAYS || "7", 10);
+const MAX_AGE_DAYS = parseInt(process.env.FB_MAX_AGE_DAYS || "2", 10);
 const MAX_AGE_MS = MAX_AGE_DAYS * 86400 * 1000;
 
 // ── Dynamic query generation — role × signal matrix ─────────────────────────
@@ -183,11 +183,30 @@ function randomDelay(minMs, maxMs) {
 
 // ── Search via plain HTTP fetch (no browser) ────────────────────────────────
 
-const HTTP_HEADERS = {
-  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
-  Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-  "Accept-Language": "en-US,en;q=0.9",
-};
+// ── User-Agent rotation ────────────────────────────────────────────────────
+const BROWSER_USER_AGENTS = [
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0",
+  "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15",
+];
+const TEXT_BROWSER_USER_AGENTS = [
+  "Lynx/2.9.2 libwww-FM/2.14",
+  "Lynx/2.8.9rel.1 libwww-FM/2.14",
+  "w3m/0.5.3+git20230718",
+  "Links (2.29; Linux x86_64; GNU C; text)",
+];
+
+function randomFrom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function getHttpHeaders(ua) {
+  return {
+    "User-Agent": ua || randomFrom(BROWSER_USER_AGENTS),
+    Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+  };
+}
 
 function decodeHtmlEntities(str) {
   return str
@@ -218,35 +237,46 @@ function cleanSearchText(text) {
 
 function extractSnippets(html) {
   const results = [];
-  // Generic pattern: find text blocks near Facebook links
-  // Split HTML by result-like boundaries
-  const chunks = html.split(/<(?:li|div|article|tr)[^>]*>/i);
+  const seenUrls = new Set();
+  const urlPattern = /href="([^"]*facebook\.com[^"]*)"/gi;
+  let match;
 
-  for (const chunk of chunks) {
-    // Check if chunk contains a Facebook URL
-    const fbMatch = chunk.match(/href="([^"]*facebook\.com[^"]*)"/i);
-    if (!fbMatch) continue;
+  while ((match = urlPattern.exec(html)) !== null) {
+    let url = match[1];
 
-    let url = fbMatch[1];
+    // Unwrap DDG redirect
     if (url.includes("uddg=")) {
       try { url = decodeURIComponent(url.split("uddg=")[1].split("&")[0]); } catch {}
     }
+    // Unwrap Google redirect
+    if (url.includes("/url?")) {
+      try {
+        const qMatch = url.match(/[?&](?:q|url)=([^&]+)/);
+        if (qMatch) url = decodeURIComponent(qMatch[1]);
+      } catch {}
+    }
+
     if (!url.includes("facebook.com")) continue;
 
-    // Extract visible text (strip HTML tags + search artifacts)
-    const text = cleanSearchText(
-      decodeHtmlEntities(
-        chunk
-          .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
-          .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
-          .replace(/<[^>]+>/g, " ")
-      )
-    );
+    const normalizedUrl = url.replace(/\/+$/, "");
+    if (seenUrls.has(normalizedUrl)) continue;
+    seenUrls.add(normalizedUrl);
+
+    // Extract text from a 1700-char context window around the URL match
+    const start = Math.max(0, match.index - 200);
+    const end = Math.min(html.length, match.index + 1500);
+    const context = html.slice(start, end);
+
+    const text = cleanSearchText(decodeHtmlEntities(
+      context
+        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+        .replace(/<[^>]+>/g, " ")
+    ));
 
     if (text.length < 20) continue;
 
-    // Try to extract a date — check short relative formats first ("3h", "2d"),
-    // then long relative ("3 hours ago"), then absolute ("June 5, 2024")
+    // Try to extract a date
     let dateText = null;
     const relMatch = text.match(/\b(\d+)\s*(h|hr|hrs|d|day|days|w|wk|wks|min|m)\b/i);
     if (relMatch) {
@@ -262,7 +292,7 @@ function extractSnippets(html) {
     }
 
     results.push({
-      url,
+      url: normalizedUrl,
       text: text.slice(0, 500),
       dateText,
     });
@@ -274,19 +304,19 @@ function extractSnippets(html) {
 async function searchBing(keyword) {
   const query = `site:facebook.com ${keyword}`;
   const encoded = encodeURIComponent(query);
-  const url = `https://www.bing.com/search?q=${encoded}&filters=ex1%3a"ez1"&count=20`;
+  const url = `https://www.bing.com/search?q=${encoded}&freshness=Week&count=20`;
 
   try {
-    const resp = await fetch(url, { headers: HTTP_HEADERS, redirect: "follow" });
+    const resp = await fetch(url, { headers: getHttpHeaders(), redirect: "follow" });
     if (!resp.ok) {
       console.log(`  [debug] Bing returned ${resp.status}`);
-      return [];
+      return null;
     }
     const html = await resp.text();
 
     if (html.includes("captcha") || html.includes("unusual traffic")) {
       console.log("  [debug] Bing CAPTCHA detected");
-      return [];
+      return null;
     }
 
     return extractSnippets(html);
@@ -302,20 +332,44 @@ async function searchDDGLite(keyword) {
 
   try {
     const resp = await fetch(url, {
-      headers: {
-        ...HTTP_HEADERS,
-        "User-Agent": "Lynx/2.9.2 libwww-FM/2.14",
-      },
+      headers: getHttpHeaders(randomFrom(TEXT_BROWSER_USER_AGENTS)),
       redirect: "follow",
     });
     if (!resp.ok) {
       console.log(`  [debug] DDG Lite returned ${resp.status}`);
-      return [];
+      return null;
     }
     const html = await resp.text();
     return extractSnippets(html);
   } catch (err) {
     console.warn(`  [debug] DDG Lite fetch failed:`, err.message);
+    return [];
+  }
+}
+
+async function searchGoogle(keyword) {
+  const query = `site:facebook.com ${keyword}`;
+  const url = `https://www.google.com/search?q=${encodeURIComponent(query)}&tbs=qdr:w&num=20&hl=en`;
+
+  try {
+    const resp = await fetch(url, {
+      headers: getHttpHeaders(randomFrom(BROWSER_USER_AGENTS)),
+      redirect: "follow",
+    });
+    if (!resp.ok) {
+      console.log(`  [debug] Google returned ${resp.status}`);
+      return null;
+    }
+    const html = await resp.text();
+
+    if (html.includes("/sorry/") || html.includes("captcha") || html.includes("unusual traffic")) {
+      console.log("  [debug] Google CAPTCHA detected");
+      return null;
+    }
+
+    return extractSnippets(html);
+  } catch (err) {
+    console.warn(`  [debug] Google fetch failed:`, err.message);
     return [];
   }
 }
@@ -347,26 +401,18 @@ function parseSearchDate(text) {
 
 // ── URL validation — reject non-post Facebook links ────────────────────────
 
+// ── URL validation — reject known junk, accept everything else ────────────
+
 const REJECT_URL_PATTERNS = [
   /facebook\.com\/?$/,
   /facebook\.com\/login/,
   /facebook\.com\/help/,
   /facebook\.com\/policies/,
-  /facebook\.com\/business/,
-  /facebook\.com\/marketplace/,
-  /facebook\.com\/events\/\d+\/?$/,
-  /facebook\.com\/groups\/[^/]+\/?$/,
-  /facebook\.com\/[^/]+\/?$/,
   /facebook\.com\/watch\/?$/,
   /facebook\.com\/(?:photo|video)\.php/,
-];
-
-const POST_URL_SIGNALS = [
-  /\/posts\//,
-  /\/permalink\//,
-  /story_fbid/,
-  /\/groups\/[^/]+\/posts\//,
-  /\/[^/]+\/(?:posts|videos|photos)\/\d+/,
+  /facebook\.com\/ads\//,
+  /facebook\.com\/privacy/,
+  /facebook\.com\/settings/,
 ];
 
 function isValidPostUrl(url) {
@@ -374,7 +420,7 @@ function isValidPostUrl(url) {
   for (const rx of REJECT_URL_PATTERNS) {
     if (rx.test(url)) return false;
   }
-  return POST_URL_SIGNALS.some((rx) => rx.test(url));
+  return true;
 }
 
 // ── Main crawler ────────────────────────────────────────────────────────────
@@ -395,44 +441,37 @@ async function main() {
     const searchQueries = buildSearchQueries();
     console.log(`Generated ${searchQueries.length} search queries (${ROLES.length} roles × 2 signals)`);
 
-    let ddgBlocked = false;
-    let bingBlocked = false;
+    // Engine order: cycle DDG → Google → Bing to spread load
+    const engines = [
+      { name: "DDG", fn: searchDDGLite },
+      { name: "Google", fn: searchGoogle },
+      { name: "Bing", fn: searchBing },
+    ];
+    const blocked = new Set();
 
     for (let i = 0; i < searchQueries.length; i++) {
       const { display, search } = searchQueries[i];
-      let results = [];
+      let results = null;
+      let usedEngine = "—";
 
-      // Try DDG Lite first (unless already blocked)
-      if (!ddgBlocked) {
-        results = await searchDDGLite(search);
-        if (results.length === 0) {
-          // Check if it was a 403 (DDG rate limit)
-          const testResp = await fetch(
-            `https://lite.duckduckgo.com/lite/?q=${encodeURIComponent("test")}`,
-            { headers: { ...HTTP_HEADERS, "User-Agent": "Lynx/2.9.2 libwww-FM/2.14" } },
-          ).catch(() => null);
-          if (testResp && !testResp.ok) {
-            ddgBlocked = true;
-            console.log("  DDG Lite rate-limited — switching to Bing");
-          }
+      // Try engines in round-robin order, starting from i % 3
+      for (let attempt = 0; attempt < engines.length; attempt++) {
+        const eng = engines[(i + attempt) % engines.length];
+        if (blocked.has(eng.name)) continue;
+
+        results = await eng.fn(search);
+        if (results === null) {
+          // null = engine blocked (CAPTCHA / rate limit)
+          blocked.add(eng.name);
+          console.log(`  ${eng.name} blocked — ${engines.length - blocked.size} engines remaining`);
+          continue;
         }
+        usedEngine = eng.name;
+        break;
       }
 
-      // Fall back to Bing if DDG returned nothing
-      if (results.length === 0 && !bingBlocked) {
-        results = await searchBing(search);
-        if (results.length === 0 && i > 2) {
-          // After a few tries, check if Bing is also blocking
-          const testResp = await fetch(
-            "https://www.bing.com/search?q=test",
-            { headers: HTTP_HEADERS },
-          ).catch(() => null);
-          if (testResp && !testResp.ok) {
-            bingBlocked = true;
-            console.log("  Bing also rate-limited");
-          }
-        }
-      }
+      // If all engines blocked or no results
+      if (results === null) results = [];
 
       keywordStats[display] = results.length;
       totalExtracted += results.length;
@@ -441,18 +480,17 @@ async function main() {
         allPosts.push({ ...r, searchQuery: display });
       }
 
-      const engine = results.length > 0 ? (ddgBlocked ? "Bing" : "DDG") : "—";
-      console.log(`[${i + 1}/${searchQueries.length}] ${display} → ${results.length} [${engine}]`);
+      console.log(`[${i + 1}/${searchQueries.length}] ${display} → ${results.length} [${usedEngine}]`);
 
-      // If both engines are blocked, stop early
-      if (ddgBlocked && bingBlocked) {
-        console.log("Both search engines blocked — stopping early");
+      // If all engines are blocked, stop early
+      if (blocked.size >= engines.length) {
+        console.log("All search engines blocked — stopping early");
         break;
       }
 
-      // Delays to avoid rate limiting (4-7s)
+      // Delays to avoid rate limiting (12-20s for Google safety)
       if (i < searchQueries.length - 1) {
-        await randomDelay(4000, 7000);
+        await randomDelay(12000, 20000);
       }
     }
 
