@@ -222,6 +222,7 @@ export default function PrivacyPage() {
               <li>X (Twitter)</li>
               <li>Threads</li>
               <li>Facebook (public job groups)</li>
+              <li>LinkedIn</li>
               <li>Craigslist (gigs section)</li>
             </ul>
             <p className="mt-3">

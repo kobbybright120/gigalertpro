@@ -37,7 +37,7 @@ export default function PricingModal({ open, onClose }) {
           saveBadge: "Save $22 — 15% off",
           features: [
             "25 daily alerts",
-            "Reddit, X and Threads",
+            "Reddit, X, Threads and LinkedIn",
             "5 keyword trackers",
             "Gig quality scoring",
             "10 AI proposals per day",
@@ -76,7 +76,7 @@ export default function PricingModal({ open, onClose }) {
           priceSuffix: "/month",
           features: [
             "25 daily alerts",
-            "Reddit, X and Threads",
+            "Reddit, X, Threads and LinkedIn",
             "5 keyword trackers",
             "Gig quality scoring",
             "10 AI proposals per day",

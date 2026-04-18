@@ -70,7 +70,7 @@ export default function TermsPage() {
             <p>
               GigAlertPro is a gig-matching service for freelancers and
               independent professionals. We scan public posts across platforms
-              like Reddit, X (Twitter), Threads, Facebook, and Craigslist to
+              like Reddit, X (Twitter), Threads, Facebook, LinkedIn, and Craigslist to
               find freelance opportunities that match your skills and keywords.
             </p>
             <p className="mt-3">
@@ -124,7 +124,7 @@ export default function TermsPage() {
                   Basic — $12/month or $122/year
                 </p>
                 <p className="mt-1 text-gray-400">
-                  25 daily alerts, Reddit/X/Threads scanning, 5 keyword
+                  25 daily alerts, Reddit/X/Threads/LinkedIn scanning, 5 keyword
                   trackers, gig quality scoring, 10 AI proposals per day,
                   browser and email notifications, profile builder.
                 </p>
@@ -237,7 +237,7 @@ export default function TermsPage() {
             <h2 className="text-xl font-bold text-white mb-3">8. Disclaimer</h2>
             <p>
               GigAlertPro scans publicly available posts across Reddit, X,
-              Threads, Facebook, and Craigslist. We provide this information as
+              Threads, Facebook, LinkedIn, and Craigslist. We provide this information as
               a convenience to help you find freelance opportunities.
             </p>
             <p className="mt-3 font-semibold text-white">We do not:</p>

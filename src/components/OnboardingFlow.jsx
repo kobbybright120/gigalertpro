@@ -200,7 +200,7 @@ export default function OnboardingFlow({ onComplete }) {
               </h1>
               <p className="text-gray-400 mt-3 text-base">
                 Add your skills or keywords and we'll find matching gigs across
-                Reddit, X/Twitter, Threads & Craigslist.
+                Reddit, X/Twitter, Threads, LinkedIn & Craigslist.
               </p>
             </div>
 
@@ -321,7 +321,8 @@ export default function OnboardingFlow({ onComplete }) {
               Scanning for your gigs...
             </h1>
             <p className="text-gray-400 text-base mb-8">
-              Scanning Reddit, X/Twitter, Threads & Craigslist for your gigs
+              Scanning Reddit, X/Twitter, Threads, LinkedIn & Craigslist for
+              your gigs
             </p>
 
             {/* Progress bar */}
