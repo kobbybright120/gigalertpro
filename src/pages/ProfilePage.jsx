@@ -80,13 +80,25 @@ export default function ProfilePage() {
     setEmailToggleLoading(true);
     const newValue = !emailNotifEnabled;
 
-    // Update email notifications in Supabase
-    const { error } = await supabase
-      .from("profiles")
-      .update({ email_notifications_enabled: newValue })
-      .eq("id", user.id);
-    if (!error) {
-      setEmailNotifEnabled(newValue);
+    // Update email notifications via server endpoint (bypasses RLS)
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      const res = await fetch("/api/update-notifications", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ enabled: newValue }),
+      });
+      if (res.ok) {
+        setEmailNotifEnabled(newValue);
+      }
+    } catch (err) {
+      console.error("[ProfilePage] notification toggle failed:", err);
     }
 
     // Also toggle browser push notifications
