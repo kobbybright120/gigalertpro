@@ -179,8 +179,13 @@ export default function SubscriptionGate({ children }) {
   const plan = profile?.plan;
   const hasPaidPlan = plan && PAID_PLANS.includes(plan);
   const isActive = status && ACTIVE_STATUSES.includes(status);
+  // Cancelled but still within billing period — retain full access
+  const isCancelledButActive =
+    status === "cancelled" &&
+    profile?.cancel_at_period_end === true &&
+    hasPaidPlan;
 
-  if (isActive && hasPaidPlan) {
+  if ((isActive && hasPaidPlan) || isCancelledButActive) {
     return (
       <>
         {showWelcome && (

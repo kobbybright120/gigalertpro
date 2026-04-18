@@ -498,30 +498,69 @@ export default function ProfilePage() {
                   </div>
                 )}
 
-              {/* Cancelled subscription */}
-              {dbProfile?.subscription_status === "cancelled" && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-4 bg-[#020617]/50 border border-white/[0.04] rounded-xl">
-                    <span className="text-gray-400 text-sm">Plan</span>
-                    <span className="text-white font-semibold text-sm">
-                      Free
-                    </span>
+              {/* Cancelling — paid, cancelled but still within billing period */}
+              {dbProfile?.subscription_status === "cancelled" &&
+                dbProfile?.cancel_at_period_end === true &&
+                ["basic", "basic_annual", "pro", "pro_annual"].includes(
+                  dbProfile?.plan,
+                ) && (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-4 bg-[#020617]/50 border border-white/[0.04] rounded-xl">
+                      <span className="text-gray-400 text-sm">Plan</span>
+                      <span className="text-white font-semibold text-sm capitalize">
+                        {(dbProfile.plan || "").replace("_", " ")}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-[#020617]/50 border border-white/[0.04] rounded-xl">
+                      <span className="text-gray-400 text-sm">Status</span>
+                      <span className="text-amber-400 text-sm font-semibold">
+                        Cancels at end of billing period
+                      </span>
+                    </div>
+                    {dbProfile.billing_period && (
+                      <div className="flex items-center justify-between p-4 bg-[#020617]/50 border border-white/[0.04] rounded-xl">
+                        <span className="text-gray-400 text-sm">Billing</span>
+                        <span className="text-white font-semibold text-sm capitalize">
+                          {dbProfile.billing_period}
+                        </span>
+                      </div>
+                    )}
+                    <p className="text-xs text-gray-500 mt-1">
+                      You still have full access until your current billing period ends.
+                    </p>
                   </div>
-                  <div className="flex items-center justify-between p-4 bg-[#020617]/50 border border-white/[0.04] rounded-xl">
-                    <span className="text-gray-400 text-sm">Status</span>
-                    <span className="text-red-400 text-sm font-semibold">
-                      Cancelled
-                    </span>
+                )}
+
+              {/* Truly cancelled — period ended or no paid plan */}
+              {dbProfile?.subscription_status === "cancelled" &&
+                !(
+                  dbProfile?.cancel_at_period_end === true &&
+                  ["basic", "basic_annual", "pro", "pro_annual"].includes(
+                    dbProfile?.plan,
+                  )
+                ) && (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-4 bg-[#020617]/50 border border-white/[0.04] rounded-xl">
+                      <span className="text-gray-400 text-sm">Plan</span>
+                      <span className="text-white font-semibold text-sm">
+                        Free
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-[#020617]/50 border border-white/[0.04] rounded-xl">
+                      <span className="text-gray-400 text-sm">Status</span>
+                      <span className="text-red-400 text-sm font-semibold">
+                        Cancelled
+                      </span>
+                    </div>
+                    <a
+                      href="/#pricing"
+                      className="mt-3 flex items-center justify-center gap-2 w-full py-3 bg-[#00F0B5] text-black font-bold text-sm rounded-xl hover:bg-[#00D9A3] transition-colors"
+                    >
+                      Reactivate your plan
+                      <ArrowUpRight className="w-4 h-4" />
+                    </a>
                   </div>
-                  <a
-                    href="/#pricing"
-                    className="mt-3 flex items-center justify-center gap-2 w-full py-3 bg-[#00F0B5] text-black font-bold text-sm rounded-xl hover:bg-[#00D9A3] transition-colors"
-                  >
-                    Reactivate your plan
-                    <ArrowUpRight className="w-4 h-4" />
-                  </a>
-                </div>
-              )}
+                )}
 
               {/* Free tier (never subscribed or past_due) */}
               {(!dbProfile?.subscription_status ||

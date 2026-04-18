@@ -132,9 +132,11 @@ export default async function handler(req, res) {
       });
     }
 
-    // 4. Update Supabase profile — downgrade to free immediately
+    // 4. Update Supabase profile — mark for cancellation but KEEP plan active
+    // User retains access until end of billing period.
+    // Dodo will send subscription.expired when the period actually ends,
+    // at which point we downgrade plan to "free".
     const updateFields = {
-      plan: "free",
       subscription_status: "cancelled",
       cancel_at_period_end: true,
       updated_at: new Date().toISOString(),

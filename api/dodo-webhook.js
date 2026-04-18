@@ -308,18 +308,20 @@ export default async function handler(req, res) {
     }
 
     // ── subscription.cancelled ──────────────────────────────────────────────
+    // Fired immediately when user cancels. Keep plan active — user has paid
+    // for the rest of the billing period. subscription.expired fires at
+    // period end and will downgrade to free then.
     else if (eventType === "subscription.cancelled") {
       await upsertProfileByEmail(
         email,
         {
-          plan: "free",
           subscription_status: "cancelled",
           cancel_at_period_end: true,
         },
         authUserId,
         { subscriptionId, customerId },
       );
-      console.info(`[dodo-webhook] Subscription cancelled for ${email}`);
+      console.info(`[dodo-webhook] Subscription cancelled for ${email} — access retained until period end`);
     }
 
     // ── subscription.paused ─────────────────────────────────────────────────
