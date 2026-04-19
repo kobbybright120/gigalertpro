@@ -27,7 +27,7 @@ export default function UpgradeModal({ open, onClose, gigCount = 0 }) {
           saveBadge: "Save $22 — 15% off",
           features: [
             "25 daily alerts",
-            "Reddit, X, Threads, Facebook, LinkedIn & Craigslist",
+            "Reddit, X, Threads, Facebook & Craigslist",
             "5 keyword trackers",
             "Gig quality scoring",
             "10 AI proposals per day",
@@ -66,7 +66,7 @@ export default function UpgradeModal({ open, onClose, gigCount = 0 }) {
           priceSuffix: "/month",
           features: [
             "25 daily alerts",
-            "Reddit, X, Threads, Facebook, LinkedIn & Craigslist",
+            "Reddit, X, Threads, Facebook & Craigslist",
             "5 keyword trackers",
             "Gig quality scoring",
             "10 AI proposals per day",
@@ -142,7 +142,7 @@ export default function UpgradeModal({ open, onClose, gigCount = 0 }) {
             <span className="text-gradient">{gigCount} gigs</span> right now 🔔
           </h3>
           <p className="text-gray-400 mt-3 text-sm sm:text-base max-w-2xl mx-auto">
-            Clients are posting on Reddit, X, Threads, Facebook, LinkedIn & Craigslist
+            Clients are posting on Reddit, X, Threads, Facebook & Craigslist
             looking for your skills. Upgrade to get instant alerts and AI
             proposals before anyone else applies.
           </p>

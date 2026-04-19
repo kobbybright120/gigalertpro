@@ -37,7 +37,7 @@ export default function PricingModal({ open, onClose }) {
           saveBadge: "Save $22 — 15% off",
           features: [
             "25 daily alerts",
-            "Reddit, X, Threads and LinkedIn",
+            "Reddit, X, Threads and Facebook",
             "5 keyword trackers",
             "Gig quality scoring",
             "10 AI proposals per day",
@@ -76,7 +76,7 @@ export default function PricingModal({ open, onClose }) {
           priceSuffix: "/month",
           features: [
             "25 daily alerts",
-            "Reddit, X, Threads and LinkedIn",
+            "Reddit, X, Threads and Facebook",
             "5 keyword trackers",
             "Gig quality scoring",
             "10 AI proposals per day",
@@ -154,7 +154,9 @@ export default function PricingModal({ open, onClose }) {
               <span className="text-[#00F0B5] font-semibold">
                 3-Day Money Back Guarantee
               </span>{" "}
-              <span className="hidden sm:inline">Try risk-free. Full refund if you're not satisfied.</span>
+              <span className="hidden sm:inline">
+                Try risk-free. Full refund if you're not satisfied.
+              </span>
             </p>
           </div>
           <button

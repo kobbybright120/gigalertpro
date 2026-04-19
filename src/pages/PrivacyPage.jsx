@@ -186,12 +186,16 @@ export default function PrivacyPage() {
             </p>
             <ul className="space-y-2 list-disc list-inside text-gray-400">
               <li>
-                <span className="text-white font-medium">Payment processor</span>{" "}
+                <span className="text-white font-medium">
+                  Payment processor
+                </span>{" "}
                 — your email and subscription tier are shared to handle billing.
                 We never see or store your credit card details.
               </li>
               <li>
-                <span className="text-white font-medium">Email delivery service</span>{" "}
+                <span className="text-white font-medium">
+                  Email delivery service
+                </span>{" "}
                 — your email address is used to send gig alert notifications.
               </li>
               <li>
@@ -202,9 +206,9 @@ export default function PrivacyPage() {
                 database provider.
               </li>
               <li>
-                <span className="text-white font-medium">Analytics</span>{" "}
-                — we use privacy-focused, anonymous analytics to understand
-                product usage. No personal information is collected.
+                <span className="text-white font-medium">Analytics</span> — we
+                use privacy-focused, anonymous analytics to understand product
+                usage. No personal information is collected.
               </li>
             </ul>
           </section>
@@ -222,7 +226,6 @@ export default function PrivacyPage() {
               <li>X (Twitter)</li>
               <li>Threads</li>
               <li>Facebook (public job groups)</li>
-              <li>LinkedIn</li>
               <li>Craigslist (gigs section)</li>
             </ul>
             <p className="mt-3">

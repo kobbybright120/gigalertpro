@@ -295,8 +295,8 @@ export default function DashboardPage() {
                 Scanning Sources...
               </h3>
               <p className="text-gray-500 text-sm mt-1">
-                Searching Reddit, X, Threads, Facebook, LinkedIn & Craigslist
-                for gigs matching your keywords
+                Searching Reddit, X, Threads, Facebook & Craigslist for gigs
+                matching your keywords
               </p>
             </div>
           ) : isLocked && topAlerts.length > 0 ? (
