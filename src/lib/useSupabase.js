@@ -195,7 +195,7 @@ const POLL_INTERVALS = [
 ];
 
 // Premium sources — only paid users should get notifications for these
-const PREMIUM_SOURCES = new Set(["X", "Threads"]);
+const PREMIUM_SOURCES = new Set(["X", "Threads", "Facebook", "LinkedIn"]);
 
 // ── Gig Alerts (matched posts) with keyword filtering + auto-poll ──
 export function useGigAlerts(keywordList, { isPaid = true } = {}) {

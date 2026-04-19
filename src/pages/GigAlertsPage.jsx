@@ -303,7 +303,7 @@ export default function GigAlertsPage() {
                 key: "facebook",
                 label: "Facebook",
                 count: facebookCount,
-                locked: false,
+                locked: isLocked,
               },
               {
                 key: "x",
