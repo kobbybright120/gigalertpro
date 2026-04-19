@@ -223,6 +223,7 @@ function extractSnippets(html) {
       url: normalizedUrl,
       text: text.slice(0, 500),
       dateText,
+      author: extractAuthorFromUrl(normalizedUrl),
     });
   }
 
@@ -350,6 +351,11 @@ const REJECT_URL_PATTERNS = [
   /linkedin\.com\/jobs\/view\//,
   /linkedin\.com\/privacy/,
   /linkedin\.com\/settings/,
+  /linkedin\.com\/groups\//,
+  /linkedin\.com\/company\//,
+  /linkedin\.com\/events\//,
+  /linkedin\.com\/pulse\//,
+  /linkedin\.com\/newsletters\//,
 ];
 
 function isValidPostUrl(url) {
@@ -358,6 +364,16 @@ function isValidPostUrl(url) {
     if (rx.test(url)) return false;
   }
   return true;
+}
+
+function extractAuthorFromUrl(url) {
+  if (!url) return null;
+  // Match linkedin.com/in/{username}/... or linkedin.com/posts/{username}_...
+  let m = url.match(/linkedin\.com\/in\/([A-Za-z0-9._-]+)/);
+  if (m) return m[1];
+  m = url.match(/linkedin\.com\/posts\/([A-Za-z0-9._-]+?)_/);
+  if (m) return m[1];
+  return null;
 }
 
 // ── Main crawler ────────────────────────────────────────────────────────────
