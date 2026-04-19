@@ -213,6 +213,7 @@ function extractSnippets(html) {
       url: normalizedUrl,
       text: text.slice(0, 500),
       dateText,
+      author: extractAuthorFromUrl(normalizedUrl),
     });
   }
 
@@ -338,6 +339,10 @@ const REJECT_URL_PATTERNS = [
   /facebook\.com\/ads\//,
   /facebook\.com\/privacy/,
   /facebook\.com\/settings/,
+  /facebook\.com\/groups\//,
+  /facebook\.com\/marketplace/,
+  /facebook\.com\/events\//,
+  /facebook\.com\/reel\//,
 ];
 
 function isValidPostUrl(url) {
@@ -346,6 +351,14 @@ function isValidPostUrl(url) {
     if (rx.test(url)) return false;
   }
   return true;
+}
+
+function extractAuthorFromUrl(url) {
+  if (!url) return null;
+  // Match facebook.com/{username}/posts/... or facebook.com/{username}/permalink/...
+  const m = url.match(/facebook\.com\/([A-Za-z0-9._-]+)\/(?:posts|permalink)\//);
+  if (m && m[1] !== "permalink.php" && m[1] !== "story.php") return m[1];
+  return null;
 }
 
 // ── Main crawler ────────────────────────────────────────────────────────────
