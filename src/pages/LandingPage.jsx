@@ -1351,7 +1351,7 @@ function PricingSection({ priceRef, priceVis, handleCheckout }) {
           popular: true,
           features: [
             { text: "Everything in Basic" },
-            { text: "100 daily alerts" },
+            { text: "Unlimited daily alerts" },
             { text: "20 keyword trackers" },
             { text: "Unlimited AI proposals" },
             { text: "AI learns from winning proposals" },
@@ -1395,7 +1395,7 @@ function PricingSection({ priceRef, priceVis, handleCheckout }) {
           popular: true,
           features: [
             { text: "Everything in Basic" },
-            { text: "100 daily alerts" },
+            { text: "Unlimited daily alerts" },
             { text: "20 keyword trackers" },
             { text: "Unlimited AI proposals" },
             { text: "AI learns from winning proposals" },

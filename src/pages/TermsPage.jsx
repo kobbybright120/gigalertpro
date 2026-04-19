@@ -134,7 +134,7 @@ export default function TermsPage() {
                   Pro — $29/month or $296/year
                 </p>
                 <p className="mt-1 text-gray-400">
-                  Everything in Basic plus 100 daily alerts, 20 keyword
+                  Everything in Basic plus unlimited daily alerts, 20 keyword
                   trackers, unlimited AI proposals, AI learns from winning
                   proposals, priority scanning every 10 minutes, and
                   won/reply/no response analytics.

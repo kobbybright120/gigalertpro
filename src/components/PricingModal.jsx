@@ -57,7 +57,7 @@ export default function PricingModal({ open, onClose }) {
           popular: true,
           features: [
             "Everything in Basic",
-            "100 daily alerts",
+            "Unlimited daily alerts",
             "20 keyword trackers",
             "Unlimited AI proposals",
             "AI learns from winning proposals",
@@ -94,7 +94,7 @@ export default function PricingModal({ open, onClose }) {
           popular: true,
           features: [
             "Everything in Basic",
-            "100 daily alerts",
+            "Unlimited daily alerts",
             "20 keyword trackers",
             "Unlimited AI proposals",
             "AI learns from winning proposals",

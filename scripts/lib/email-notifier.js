@@ -20,8 +20,19 @@ const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const SCORE_THRESHOLD = 50;
-const COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes between emails
-const MAX_EMAILS_PER_DAY = 5; // never more than 5 emails/day per user
+const PLAN_COOLDOWN_MS = {
+  basic: 30 * 60 * 1000, // 30 minutes
+  basic_annual: 30 * 60 * 1000,
+  pro: 10 * 60 * 1000, // 10 minutes (priority scanning)
+  pro_annual: 10 * 60 * 1000,
+};
+
+const PLAN_DAILY_GIG_LIMITS = {
+  basic: 25,
+  basic_annual: 25,
+  pro: Infinity,
+  pro_annual: Infinity,
+};
 const MAX_GIGS_PER_EMAIL = 3;
 const DEDUP_TTL = 172_800; // 48 hours in seconds
 const FROM_EMAIL = "GigAlertPro <notifications@gigalertpro.com>";
@@ -40,7 +51,7 @@ function svcHeaders() {
 
 async function fetchPremiumUsers() {
   const params = new URLSearchParams({
-    select: "id,email,plan,last_emailed_at",
+    select: "id,email,plan,last_emailed_at,email_notification_count",
     email_notifications_enabled: "is.true",
     email: "not.is.null",
     plan: `in.(${PAID_PLANS.join(",")})`,
@@ -110,24 +121,24 @@ async function markGigsEmailed(redisUrl, redisToken, userId, gigIds) {
   await redisCmd(redisUrl, redisToken, ["EXPIRE", key, DEDUP_TTL]);
 }
 
-// ── Daily email cap (tracked in Redis, resets at midnight UTC) ───────────────
+// ── Daily gig cap (tracked in Redis, resets at midnight UTC) ────────────────
 
-function dailyKey(userId) {
+function dailyGigKey(userId) {
   const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
-  return `gigalertpro:daily:${userId}:${today}`;
+  return `gigalertpro:daily-gigs:${userId}:${today}`;
 }
 
-async function getDailyEmailCount(redisUrl, redisToken, userId) {
+async function getDailyGigCount(redisUrl, redisToken, userId) {
   const result = await redisCmd(redisUrl, redisToken, [
     "GET",
-    dailyKey(userId),
+    dailyGigKey(userId),
   ]);
   return result ? parseInt(result, 10) : 0;
 }
 
-async function incrementDailyEmailCount(redisUrl, redisToken, userId) {
-  const key = dailyKey(userId);
-  await redisCmd(redisUrl, redisToken, ["INCR", key]);
+async function incrementDailyGigCount(redisUrl, redisToken, userId, count) {
+  const key = dailyGigKey(userId);
+  await redisCmd(redisUrl, redisToken, ["INCRBY", key, count]);
   await redisCmd(redisUrl, redisToken, [
     "EXPIREAT",
     key,
@@ -324,10 +335,11 @@ export async function notifyUsersOfNewGigs(
   // 3. Process each user
   for (const user of users) {
     try {
-      // 3a. Check 30-minute cooldown
+      // 3a. Check plan-based cooldown
+      const cooldownMs = PLAN_COOLDOWN_MS[user.plan] ?? 30 * 60 * 1000;
       if (user.last_emailed_at) {
         const elapsed = Date.now() - new Date(user.last_emailed_at).getTime();
-        if (elapsed < COOLDOWN_MS) {
+        if (elapsed < cooldownMs) {
           console.debug(
             `[email-notifier] User ${user.id} in cooldown (${Math.round(elapsed / 60000)}m elapsed)`,
           );
@@ -336,15 +348,15 @@ export async function notifyUsersOfNewGigs(
         }
       }
 
-      // 3b. Check daily cap
-      const dailyCount = await getDailyEmailCount(
-        redisUrl,
-        redisToken,
-        user.id,
-      );
-      if (dailyCount >= MAX_EMAILS_PER_DAY) {
+      // 3b. Check plan-based daily gig cap
+      const gigLimit = PLAN_DAILY_GIG_LIMITS[user.plan] ?? 0;
+      const dailyGigCount =
+        gigLimit === Infinity
+          ? 0
+          : await getDailyGigCount(redisUrl, redisToken, user.id);
+      if (dailyGigCount >= gigLimit) {
         console.debug(
-          `[email-notifier] User ${user.id} hit daily cap (${dailyCount}/${MAX_EMAILS_PER_DAY})`,
+          `[email-notifier] User ${user.id} hit daily gig cap (${dailyGigCount}/${gigLimit})`,
         );
         totalSkipped++;
         continue;
@@ -384,9 +396,13 @@ export async function notifyUsersOfNewGigs(
         continue;
       }
 
-      // 3g. Pick top gigs by score
+      // 3g. Pick top gigs by score, clamped to remaining daily quota
       unsent.sort((a, b) => (b.quality_score || 0) - (a.quality_score || 0));
-      const topGigs = unsent.slice(0, MAX_GIGS_PER_EMAIL);
+      const remaining =
+        gigLimit === Infinity
+          ? MAX_GIGS_PER_EMAIL
+          : Math.min(MAX_GIGS_PER_EMAIL, gigLimit - dailyGigCount);
+      const topGigs = unsent.slice(0, remaining);
 
       // 3h. Build and send email
       const unsubUrl = generateUnsubscribeUrl(user.id);
@@ -400,7 +416,7 @@ export async function notifyUsersOfNewGigs(
 
       if (sent) {
         totalSent++;
-        // 3i. Update Supabase + Redis dedup + daily count
+        // 3i. Update Supabase + Redis dedup + daily gig count
         await updateLastEmailed(
           user.id,
           (user.email_notification_count || 0) + 1,
@@ -411,7 +427,14 @@ export async function notifyUsersOfNewGigs(
           user.id,
           topGigs.map((g) => String(g.id)),
         );
-        await incrementDailyEmailCount(redisUrl, redisToken, user.id);
+        if (gigLimit !== Infinity) {
+          await incrementDailyGigCount(
+            redisUrl,
+            redisToken,
+            user.id,
+            topGigs.length,
+          );
+        }
       }
     } catch (err) {
       console.warn(
@@ -422,6 +445,6 @@ export async function notifyUsersOfNewGigs(
   }
 
   console.info(
-    `[email-notifier] Done. Sent: ${totalSent}, Skipped (cooldown): ${totalSkipped}`,
+    `[email-notifier] Done. Sent: ${totalSent}, Skipped: ${totalSkipped}`,
   );
 }

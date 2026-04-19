@@ -14,6 +14,13 @@ import { readFile } from "node:fs/promises";
 const MAX_AGE_DAYS = parseInt(process.env.LI_MAX_AGE_DAYS || "7", 10);
 const MAX_AGE_MS = MAX_AGE_DAYS * 86400 * 1000;
 
+// ── Detail page fetching config ────────────────────────────────────────────
+const DETAIL_LIMIT = parseInt(process.env.LI_DETAIL_LIMIT || "30", 10);
+const DETAIL_CONCURRENCY = 5;
+const DETAIL_BATCH_DELAY_MS = 500;
+const DETAIL_TIMEOUT_MS = 10000;
+const DETAIL_MAX_RETRIES = 1;
+
 // ── Load seed queries from JSON ──────────────────────────────────────────────
 
 const raw = await readFile(
@@ -376,6 +383,208 @@ function extractAuthorFromUrl(url) {
   return null;
 }
 
+// ── Meta tag extraction helpers ────────────────────────────────────────────
+
+function extractMeta(html, property) {
+  const rx = new RegExp(
+    `<meta[^>]*property=["']${property}["'][^>]*content=["']([^"']*?)["'][^>]*/?>` +
+    `|<meta[^>]*content=["']([^"']*?)["'][^>]*property=["']${property}["'][^>]*/?>`,
+    "i",
+  );
+  const m = html.match(rx);
+  if (!m) return null;
+  const raw = m[1] || m[2] || "";
+  return decodeHtmlEntities(raw.trim()) || null;
+}
+
+function extractMetaName(html, name) {
+  const rx = new RegExp(
+    `<meta[^>]*name=["']${name}["'][^>]*content=["']([^"']*?)["'][^>]*/?>` +
+    `|<meta[^>]*content=["']([^"']*?)["'][^>]*name=["']${name}["'][^>]*/?>`,
+    "i",
+  );
+  const m = html.match(rx);
+  if (!m) return null;
+  const raw = m[1] || m[2] || "";
+  return decodeHtmlEntities(raw.trim()) || null;
+}
+
+// ── Detail page fetching — enrich posts with OG tags + visible HTML ───────
+
+const GENERIC_LI_DESCRIPTIONS = [
+  /^See this post on LinkedIn/i,
+  /^Join now to see/i,
+  /^Sign in to view/i,
+  /^LinkedIn$/i,
+  /^\d+ comments on LinkedIn$/i,
+];
+
+async function fetchDetailPage(url) {
+  for (let attempt = 0; attempt <= DETAIL_MAX_RETRIES; attempt++) {
+    try {
+      const resp = await fetch(url, {
+        headers: { ...getHttpHeaders(), "Accept-Encoding": "identity" },
+        redirect: "follow",
+        signal: AbortSignal.timeout(DETAIL_TIMEOUT_MS),
+      });
+
+      if (resp.status === 429 || resp.status === 503) {
+        if (attempt < DETAIL_MAX_RETRIES) {
+          await sleep(Math.pow(2, attempt + 1) * 1000 + Math.random() * 500);
+          continue;
+        }
+        return null;
+      }
+      if (resp.status === 999) return null; // LinkedIn bot detection
+
+      if (!resp.ok) return null;
+
+      const html = await resp.text();
+
+      // Extract OG meta tags
+      const ogTitle = extractMeta(html, "og:title");
+      const ogDescription = extractMeta(html, "og:description");
+      const ogImage = extractMeta(html, "og:image");
+
+      const isGenericDesc = GENERIC_LI_DESCRIPTIONS.some((rx) =>
+        rx.test((ogDescription || "").trim()),
+      );
+
+      // Extract timestamp — JSON-LD first
+      let timestamp = null;
+      const jsonLdMatch = html.match(
+        /<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/i,
+      );
+      if (jsonLdMatch) {
+        try {
+          const ld = JSON.parse(jsonLdMatch[1]);
+          const dateStr = ld.datePublished || ld.dateCreated;
+          if (dateStr) {
+            const d = new Date(dateStr);
+            if (!isNaN(d.getTime())) timestamp = Math.floor(d.getTime() / 1000);
+          }
+        } catch { /* invalid JSON-LD */ }
+      }
+      if (!timestamp) {
+        const publishedTime = extractMeta(html, "article:published_time");
+        if (publishedTime) {
+          const d = new Date(publishedTime);
+          if (!isNaN(d.getTime())) timestamp = Math.floor(d.getTime() / 1000);
+        }
+      }
+      if (!timestamp) {
+        const dtMatch = html.match(/datetime="(\d{4}-\d{2}-\d{2}T[^"]+)"/);
+        if (dtMatch) {
+          const d = new Date(dtMatch[1]);
+          if (!isNaN(d.getTime())) timestamp = Math.floor(d.getTime() / 1000);
+        }
+      }
+
+      // Extract author — from og:title "Author on LinkedIn: ..."
+      let author = null;
+      if (ogTitle) {
+        const liAuthorMatch = ogTitle.match(/^(.+?)\s+on\s+LinkedIn[:\s]/i);
+        if (liAuthorMatch) author = liAuthorMatch[1].trim();
+      }
+      if (!author) {
+        const metaAuthor = extractMetaName(html, "author");
+        if (metaAuthor) author = metaAuthor;
+      }
+      if (!author && jsonLdMatch) {
+        try {
+          const ld = JSON.parse(jsonLdMatch[1]);
+          if (ld.author?.name) author = ld.author.name;
+        } catch { /* ignore */ }
+      }
+      if (!author) author = extractAuthorFromUrl(url);
+
+      // Extract body text from visible HTML
+      let bodyText = null;
+      const descDivMatch = html.match(
+        /<div[^>]*class="[^"]*(?:description|attributed-text|feed-shared-text)[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
+      );
+      if (descDivMatch) {
+        bodyText = decodeHtmlEntities(
+          descDivMatch[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " "),
+        ).trim();
+      }
+
+      if (!ogDescription && !bodyText && !ogTitle) return null;
+
+      return {
+        ogTitle: ogTitle || null,
+        ogDescription: isGenericDesc ? null : (ogDescription || null),
+        ogImage: ogImage || null,
+        author,
+        timestamp,
+        bodyText: bodyText || null,
+      };
+    } catch (err) {
+      if (err.name === "TimeoutError" || err.name === "AbortError") return null;
+      if (attempt < DETAIL_MAX_RETRIES) {
+        await sleep(1000 * (attempt + 1));
+        continue;
+      }
+      return null;
+    }
+  }
+  return null;
+}
+
+async function fetchDetailsBatch(posts) {
+  const toFetch = posts.slice(0, DETAIL_LIMIT);
+  if (toFetch.length === 0) return posts;
+
+  console.log(`\n[detail] Fetching ${toFetch.length} detail pages (concurrency=${DETAIL_CONCURRENCY})...`);
+  const start = Date.now();
+  let enriched = 0;
+  let failed = 0;
+
+  for (let i = 0; i < toFetch.length; i += DETAIL_CONCURRENCY) {
+    const batch = toFetch.slice(i, i + DETAIL_CONCURRENCY);
+    const results = await Promise.allSettled(
+      batch.map(async (post) => {
+        if (!post.url) return { post, detail: null };
+        const detail = await fetchDetailPage(post.url);
+        return { post, detail };
+      }),
+    );
+
+    for (const r of results) {
+      if (r.status === "fulfilled" && r.value.detail) {
+        const { post, detail } = r.value;
+        if (detail.ogDescription && detail.ogDescription.length > (post.text || "").length) {
+          post.text = detail.ogDescription;
+        }
+        if (detail.bodyText && detail.bodyText.length > (post.text || "").length) {
+          post.text = detail.bodyText;
+        }
+        if (detail.timestamp && !post.created_utc) {
+          post.dateText = null;
+          post.created_utc = detail.timestamp;
+        }
+        if (detail.author && !post.author) {
+          post.author = detail.author;
+        }
+        if (detail.ogImage) {
+          post.ogImage = detail.ogImage;
+        }
+        enriched++;
+      } else {
+        failed++;
+      }
+    }
+
+    if (i + DETAIL_CONCURRENCY < toFetch.length) {
+      await sleep(DETAIL_BATCH_DELAY_MS);
+    }
+  }
+
+  const elapsed = ((Date.now() - start) / 1000).toFixed(1);
+  console.log(`[detail] Done in ${elapsed}s — ${enriched} enriched, ${failed} failed/skipped`);
+  return posts;
+}
+
 // ── Main crawler ────────────────────────────────────────────────────────────
 
 async function main() {
@@ -525,6 +734,11 @@ async function main() {
       console.log(`URL filter: rejected ${urlRejected} non-post links`);
     }
     console.log(`Valid post URLs: ${validPosts.length}`);
+
+    // ── 5.5. Fetch detail pages for richer content ──
+    if (validPosts.length > 0) {
+      await fetchDetailsBatch(validPosts);
+    }
 
     // ── 6. Parse timestamps and freshness filter ──
     const now = Date.now();
