@@ -21,7 +21,7 @@ const TIMEOUT_MS = 20_000; // per-batch timeout
 
 // ── System prompt — tuned for precision across all freelancing niches ─────────
 
-const SYSTEM_PROMPT = `You are a strict job/gig post classifier for GigAlertPro, a paid freelancing platform. Users pay money to see REAL gig opportunities. Showing irrelevant posts makes users cancel their subscription.
+const SYSTEM_PROMPT_DEFAULT = `You are a strict job/gig post classifier for GigAlertPro, a paid freelancing platform. Users pay money to see REAL gig opportunities. Showing irrelevant posts makes users cancel their subscription.
 
 For each post, decide: is a CLIENT actively looking to HIRE or PAY a freelancer for work?
 
@@ -78,6 +78,39 @@ Example:
 2:0
 3:1`;
 
+// ── Social prompt — more permissive for informal Facebook/LinkedIn posts ──────
+
+const SYSTEM_PROMPT_SOCIAL = `You are classifying social media posts from Facebook and LinkedIn to determine if they are genuine client requests looking to hire a freelancer for a specific task or project.
+
+MARK AS GIG (is_gig: true) if the post:
+- Is someone looking to HIRE or find a freelancer, designer, developer, editor, writer, marketer or any skilled person
+- Contains phrases like "need a", "looking for a", "hiring a", "who can", "anyone know a good", "DM me if you", "tag someone who", "recommend me a"
+- Is a business or individual posting that they need help with a specific task
+- Mentions a project, task or ongoing work they need done
+- Has a budget or mentions payment even vaguely like "will pay", "paid opportunity", "budget available"
+- Is an individual founder or small business owner asking for help
+
+MARK AS NOT GIG (is_gig: false) if the post:
+- Is someone OFFERING their own services — "I am a designer available for hire"
+- Is a job listing from a large corporation requiring office attendance
+- Is completely unrelated to hiring or finding skilled help
+- Is spam, promotional content or an advertisement
+- Is a motivational post, news article or general discussion
+- Contains CSS code, HTML or technical web content
+
+Important: Facebook and LinkedIn posts are often informal and short. A post saying just "Need a video editor DM me" IS a genuine gig. Do not reject posts for being too short or informal.
+
+Respond with ONLY index:classification pairs, one per line.
+Format: NUMBER:0 or NUMBER:1
+Example:
+1:1
+2:0
+3:1`;
+
+function getSystemPrompt(platform) {
+  return platform === "social" ? SYSTEM_PROMPT_SOCIAL : SYSTEM_PROMPT_DEFAULT;
+}
+
 // ── Core classifier ──────────────────────────────────────────────────────────
 
 /**
@@ -85,7 +118,7 @@ Example:
  * Returns a new array with `_ai_is_gig` boolean added to each post.
  * Posts that couldn't be classified get `_ai_is_gig: undefined`.
  */
-export async function classifyPosts(posts) {
+export async function classifyPosts(posts, platform) {
   if (!OPENAI_API_KEY) {
     console.log(
       "[classifier] ⚠ No OPENAI_API_KEY set — skipping AI classification",
@@ -112,7 +145,7 @@ export async function classifyPosts(posts) {
   // Process batches with limited concurrency
   for (let i = 0; i < batches.length; i += CONCURRENCY) {
     const chunk = batches.slice(i, i + CONCURRENCY);
-    await Promise.all(chunk.map((b) => classifyBatch(b.posts)));
+    await Promise.all(chunk.map((b) => classifyBatch(b.posts, platform)));
   }
 
   // Stats
@@ -132,8 +165,8 @@ export async function classifyPosts(posts) {
  * Classify posts and return ONLY the real gigs (+ unclassified as safety net).
  * This is the main function to call from fetch scripts.
  */
-export async function classifyAndFilter(posts) {
-  const tagged = await classifyPosts(posts);
+export async function classifyAndFilter(posts, platform) {
+  const tagged = await classifyPosts(posts, platform);
 
   // Keep: real gigs + unclassified (safety net — don't drop posts AI couldn't reach)
   const kept = tagged.filter((p) => p._ai_is_gig !== false);
@@ -150,7 +183,7 @@ export async function classifyAndFilter(posts) {
 
 // ── Batch processing ─────────────────────────────────────────────────────────
 
-async function classifyBatch(batch) {
+async function classifyBatch(batch, platform) {
   // Build compact post descriptions for the API
   const descriptions = batch
     .map((p, i) => {
@@ -176,7 +209,7 @@ async function classifyBatch(batch) {
         body: JSON.stringify({
           model: OPENAI_MODEL,
           messages: [
-            { role: "system", content: SYSTEM_PROMPT },
+            { role: "system", content: getSystemPrompt(platform) },
             { role: "user", content: userMessage },
           ],
           temperature: 0.05, // near-deterministic for classification

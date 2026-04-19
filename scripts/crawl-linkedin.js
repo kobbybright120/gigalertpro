@@ -6,122 +6,24 @@
 // No LinkedIn login required — all posts are publicly indexed.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { classifyAndFilter } from "./gig-classifier.js";
 import { notifyUsersOfNewGigs } from "./lib/email-notifier.js";
+import { preFilterPost, isValidLength } from "./lib/social-pre-filter.js";
+import { readFile } from "node:fs/promises";
 
 const MAX_AGE_DAYS = parseInt(process.env.LI_MAX_AGE_DAYS || "7", 10);
 const MAX_AGE_MS = MAX_AGE_DAYS * 86400 * 1000;
 
-// ── Dynamic query generation — role × signal matrix ─────────────────────────
+// ── Load seed queries from JSON ──────────────────────────────────────────────
 
-const ROLES = [
-  // ── Design & Creative ──
-  "graphic designer",
-  "UI UX designer",
-  "illustrator",
-  "video editor",
-  "motion graphics",
-  "animator",
-  "logo designer",
-  "thumbnail designer",
-  "brand designer",
-  // ── Development & Tech ──
-  "web developer",
-  "frontend developer",
-  "backend developer",
-  "mobile app developer",
-  "software engineer",
-  "AI developer",
-  "game developer",
-  "blockchain developer",
-  "Shopify developer",
-  "React developer",
-  "Python developer",
-  "WordPress developer",
-  "flutter developer",
-  "iOS developer",
-  "Android developer",
-  "DevOps engineer",
-  "full stack developer",
-  "Webflow developer",
-  "no-code developer",
-  // ── Writing & Content ──
-  "copywriter",
-  "content writer",
-  "technical writer",
-  "ghostwriter",
-  "editor proofreader",
-  "SEO writer",
-  "scriptwriter",
-  "content creator",
-  "blogger",
-  // ── Marketing & Sales ──
-  "social media manager",
-  "SEO specialist",
-  "digital marketer",
-  "growth hacker",
-  "email marketer",
-  "PPC specialist",
-  "Google Ads expert",
-  "community manager",
-  // ── Business & Admin ──
-  "virtual assistant",
-  "data entry",
-  "project manager",
-  "customer support",
-  "executive assistant",
-  "bookkeeper",
-  "accountant freelance",
-  // ── Video & Audio ──
-  "podcast editor",
-  "voiceover artist",
-  "voice actor",
-  "music producer",
-  "audio engineer",
-  "sound designer",
-  "YouTube editor",
-  // ── Data & AI ──
-  "data analyst",
-  "data scientist",
-  "automation expert",
-  "chatbot developer",
-  // ── Specialized Niches ──
-  "translator",
-  "photographer",
-  "3D artist",
-  "transcriptionist",
-  "CAD designer",
-  "Blender artist",
-  "tutor online",
-];
-
-const SIGNALS = [
-  "hiring",
-  "wanted",
-  "needed",
-  "looking for",
-  "seeking",
-  "freelance",
-  "remote",
-];
-
-function buildSearchQueries() {
-  // Sample a subset of roles per run for time budget (~40 queries @ 12-20s = 8-13 min)
-  // Full role coverage is maintained over multiple runs via randomization
-  const ROLES_PER_RUN = parseInt(process.env.LI_ROLES_PER_RUN || "20", 10);
-  const shuffledRoles = [...ROLES].sort(() => Math.random() - 0.5);
-  const selectedRoles = shuffledRoles.slice(0, ROLES_PER_RUN);
-
-  const queries = [];
-  for (const role of selectedRoles) {
-    const shuffled = [...SIGNALS].sort(() => Math.random() - 0.5);
-    for (const signal of shuffled.slice(0, 2)) {
-      queries.push({
-        display: `${role} + ${signal}`,
-        search: `"${role}" ${signal}`,
-      });
-    }
-  }
-  return queries.sort(() => Math.random() - 0.5);
+const raw = await readFile(
+  new URL("./linkedin-seeds.json", import.meta.url),
+  "utf-8",
+);
+const SEEDS = JSON.parse(raw || "[]");
+if (!Array.isArray(SEEDS) || SEEDS.length === 0) {
+  console.error("No seeds configured. Edit scripts/linkedin-seeds.json.");
+  process.exit(1);
 }
 
 // ── Upstash Redis helpers ───────────────────────────────────────────────────
@@ -210,7 +112,9 @@ const TEXT_BROWSER_USER_AGENTS = [
   "Links (2.29; Linux x86_64; GNU C; text)",
 ];
 
-function randomFrom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function randomFrom(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
 
 function getHttpHeaders(ua) {
   return {
@@ -262,7 +166,9 @@ function extractSnippets(html) {
 
     // Unwrap DDG redirect
     if (url.includes("uddg=")) {
-      try { url = decodeURIComponent(url.split("uddg=")[1].split("&")[0]); } catch {}
+      try {
+        url = decodeURIComponent(url.split("uddg=")[1].split("&")[0]);
+      } catch {}
     }
     // Unwrap Google redirect
     if (url.includes("/url?")) {
@@ -283,23 +189,30 @@ function extractSnippets(html) {
     const end = Math.min(html.length, match.index + 1500);
     const context = html.slice(start, end);
 
-    const text = cleanSearchText(decodeHtmlEntities(
-      context
-        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
-        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
-        .replace(/<[^>]+>/g, " ")
-    ));
+    const text = cleanSearchText(
+      decodeHtmlEntities(
+        context
+          .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+          .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+          .replace(/<[^>]+>/g, " "),
+      ),
+    );
 
     if (text.length < 20) continue;
 
     let dateText = null;
-    const relMatch = text.match(/\b(\d+)\s*(h|hr|hrs|d|day|days|w|wk|wks|min|m)\b/i);
+    const relMatch = text.match(
+      /\b(\d+)\s*(h|hr|hrs|d|day|days|w|wk|wks|min|m)\b/i,
+    );
     if (relMatch) {
       const num = relMatch[1];
       const unit = relMatch[2].toLowerCase();
-      if (unit === "h" || unit === "hr" || unit === "hrs") dateText = `${num} hours ago`;
-      else if (unit === "d" || unit === "day" || unit === "days") dateText = `${num} days ago`;
-      else if (unit === "w" || unit === "wk" || unit === "wks") dateText = `${num} weeks ago`;
+      if (unit === "h" || unit === "hr" || unit === "hrs")
+        dateText = `${num} hours ago`;
+      else if (unit === "d" || unit === "day" || unit === "days")
+        dateText = `${num} days ago`;
+      else if (unit === "w" || unit === "wk" || unit === "wks")
+        dateText = `${num} weeks ago`;
       else if (unit === "min" || unit === "m") dateText = `${num} minutes ago`;
     } else {
       const dateMatch = text.match(/(\w+ \d+, \d{4})/);
@@ -380,7 +293,11 @@ async function searchGoogle(keyword) {
     }
     const html = await resp.text();
 
-    if (html.includes("/sorry/") || html.includes("captcha") || html.includes("unusual traffic")) {
+    if (
+      html.includes("/sorry/") ||
+      html.includes("captcha") ||
+      html.includes("unusual traffic")
+    ) {
       console.log("  [debug] Google CAPTCHA detected");
       return null;
     }
@@ -457,10 +374,11 @@ async function main() {
     const seenSet = new Set(seenRaw || []);
     console.log(`Seen set: ${seenSet.size} previously seen posts`);
 
-    // ── 2. Build search queries (role × signal matrix, randomized each run) ──
-    const searchQueries = buildSearchQueries();
+    // ── 2. Build search queries from seed file ──
+    const shuffled = [...SEEDS].sort(() => Math.random() - 0.5);
+    const searchQueries = shuffled.map((q) => ({ display: q, search: q }));
     console.log(
-      `Generated ${searchQueries.length} search queries (${searchQueries.length / 2} sampled roles × 2 signals, from ${ROLES.length} total)`,
+      `Loaded ${searchQueries.length} seed queries from linkedin-seeds.json`,
     );
 
     // Engine order: cycle DDG → Google → Bing to spread load
@@ -486,17 +404,26 @@ async function main() {
           const elapsed = Date.now() - state.blockedAt;
           const cooldownMs = 60000 + Math.random() * 30000; // 60-90s
           if (elapsed < cooldownMs) continue; // still cooling down
-          console.log(`  [cooldown] Retrying ${eng.name} after ${Math.round(elapsed / 1000)}s cooldown`);
+          console.log(
+            `  [cooldown] Retrying ${eng.name} after ${Math.round(elapsed / 1000)}s cooldown`,
+          );
         }
 
         results = await eng.fn(search);
         if (results === null) {
           if (state) {
             state.retried = true;
-            console.log(`  ${eng.name} blocked again after retry — permanently blocked`);
+            console.log(
+              `  ${eng.name} blocked again after retry — permanently blocked`,
+            );
           } else {
-            engineState.set(eng.name, { blockedAt: Date.now(), retried: false });
-            console.log(`  ${eng.name} blocked — cooling down (60-90s before retry)`);
+            engineState.set(eng.name, {
+              blockedAt: Date.now(),
+              retried: false,
+            });
+            console.log(
+              `  ${eng.name} blocked — cooling down (60-90s before retry)`,
+            );
           }
           continue;
         }
@@ -526,7 +453,7 @@ async function main() {
 
       // If all engines are permanently blocked, stop early
       const permanentlyBlocked = engines.filter(
-        (e) => engineState.get(e.name)?.retried === true
+        (e) => engineState.get(e.name)?.retried === true,
       ).length;
       if (permanentlyBlocked >= engines.length) {
         console.log("All search engines permanently blocked — stopping early");
@@ -551,7 +478,9 @@ async function main() {
         const existingRaw = await redisGet(REDIS_KEY);
         if (existingRaw) {
           await redisSet(REDIS_KEY, existingRaw, REDIS_TTL);
-          console.warn("[li-crawler] Refreshed TTL on existing Redis data (2h)");
+          console.warn(
+            "[li-crawler] Refreshed TTL on existing Redis data (2h)",
+          );
         } else {
           console.warn("[li-crawler] No existing Redis data to refresh");
         }
@@ -619,41 +548,52 @@ async function main() {
       `New: ${newPosts.length}, Previously seen: ${existingPosts.length}`,
     );
 
-    // ── 8. Filter new posts ──
-    // LinkedIn snippets from search engines are too thin for the AI classifier
-    // (which was designed for Reddit's rich post content). Instead, use a
-    // lightweight keyword filter: the search queries already provide strong
-    // hiring signal ("role" + hiring/wanted/needed site:linkedin.com), so we
-    // only reject obvious false positives like self-promotion.
+    // ── 8. Pre-filter + AI classify new posts ──
     let classifiedNew = newPosts;
     if (newPosts.length > 0) {
-      classifiedNew = newPosts.filter((p) => {
-        const text = (p.text || "").toLowerCase();
-        // Reject obvious self-promotion / non-gig patterns
-        const rejectPatterns = [
-          /\bi(?:'m| am) a (?:developer|designer|writer|editor|freelancer)\b/,
-          /\bhire me\b/,
-          /\bportfolio inside\b/,
-          /\bavailable for (?:work|projects|hire)\b/,
-          /\bmy (?:portfolio|services|work)\b/,
-          /\btaking on (?:new )? clients\b/,
-          /\bdms? open\b/,
-          /\boffering (?:my )?services\b/,
-          /\bi (?:specialize|build|design|write|develop|create)\b/,
-          /\bopen for commissions\b/,
-          /\b(?:developer|designer|writer|editor) here\b/,
-          /\bcheck out my\b/,
-          /\b\d+\+? (?:projects?|clients?) completed\b/,
-        ];
-        for (const rx of rejectPatterns) {
-          if (rx.test(text)) return false;
-        }
-        return true;
-      });
+      // Pre-filter: length + regex before AI
+      const autoKept = [];
+      const autoRejected = [];
+      const toClassify = [];
 
-      const rejected = newPosts.length - classifiedNew.length;
+      for (const p of newPosts) {
+        const text = p.text || "";
+        if (!isValidLength(text)) {
+          autoRejected.push(p);
+          continue;
+        }
+        const verdict = preFilterPost(text);
+        if (verdict === "keep") autoKept.push(p);
+        else if (verdict === "reject") autoRejected.push(p);
+        else toClassify.push(p);
+      }
+
       console.log(
-        `Keyword filter: kept ${classifiedNew.length}/${newPosts.length} new posts${rejected > 0 ? ` (rejected ${rejected} self-promotion)` : ""}`,
+        `Pre-filter: ${autoKept.length} auto-kept, ${autoRejected.length} auto-rejected, ${toClassify.length} to AI`,
+      );
+
+      // AI classify only ambiguous posts (with social prompt)
+      let aiKept = [];
+      if (toClassify.length > 0) {
+        const forClassifier = toClassify.map((p) => ({
+          id: p.id,
+          name: p.id,
+          title: (p.text || "").slice(0, 120),
+          selftext: (p.text || "").slice(0, 2000),
+          author: p.author || "unknown",
+        }));
+
+        const classified = await classifyAndFilter(forClassifier, "social");
+        const classifiedIds = new Set(classified.map((c) => c.id));
+        aiKept = toClassify.filter((p) => classifiedIds.has(p.id));
+      }
+
+      classifiedNew = [...autoKept, ...aiKept];
+      console.log(
+        `AI filter: kept ${aiKept.length}/${toClassify.length} posts sent to AI`,
+      );
+      console.log(
+        `Total kept: ${classifiedNew.length}/${newPosts.length} new posts`,
       );
 
       if (newPosts.length > 0) {
@@ -707,7 +647,9 @@ async function main() {
       .slice(0, 300);
 
     if (mergedPosts.length === 0) {
-      console.warn("[li-crawler] 0 posts after merge — skipping Redis write to preserve last-good data");
+      console.warn(
+        "[li-crawler] 0 posts after merge — skipping Redis write to preserve last-good data",
+      );
     } else {
       const payload = JSON.stringify({
         posts: mergedPosts,
@@ -733,7 +675,10 @@ async function main() {
         });
       }
     } catch (err) {
-      console.warn("[li-crawler] Email notification error (non-fatal):", err.message);
+      console.warn(
+        "[li-crawler] Email notification error (non-fatal):",
+        err.message,
+      );
     }
 
     // ── 11. Terminal metrics ──
@@ -756,7 +701,7 @@ async function main() {
       `║ After freshness       │ ${freshPosts.length.toString().padStart(6)}`,
     );
     console.log(
-      `║ New (filtered)        │ ${classifiedNew.length.toString().padStart(6)}`,
+      `║ New (AI classified)   │ ${classifiedNew.length.toString().padStart(6)}`,
     );
     console.log(
       `║ Previously seen       │ ${existingPosts.length.toString().padStart(6)}`,

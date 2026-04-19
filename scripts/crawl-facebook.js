@@ -8,119 +8,23 @@
 
 import { classifyAndFilter } from "./gig-classifier.js";
 import { notifyUsersOfNewGigs } from "./lib/email-notifier.js";
+import { preFilterPost, isValidLength } from "./lib/social-pre-filter.js";
+import { readFile } from "node:fs/promises";
 
 const MAX_AGE_DAYS = parseInt(process.env.FB_MAX_AGE_DAYS || "2", 10);
 const MAX_AGE_MS = MAX_AGE_DAYS * 86400 * 1000;
 
-// ── Dynamic query generation — role × signal matrix ─────────────────────────
-// Instead of exact phrases like "hiring video editor" (misses "Video Editor
-// Wanted", "We're Hiring: Video Editor"), we search for the ROLE as an exact
-// phrase plus a SIGNAL word anywhere on the page. Each run picks 2 random
-// signals per role so results vary across runs.
+// ── Load seed queries from JSON ──────────────────────────────────────────────
 
-const ROLES = [
-  // ── Design & Creative ──
-  "graphic designer",
-  "UI UX designer",
-  "illustrator",
-  "video editor",
-  "motion graphics",
-  "animator",
-  "logo designer",
-  "thumbnail designer",
-  "brand designer",
-  // ── Development & Tech ──
-  "web developer",
-  "frontend developer",
-  "backend developer",
-  "mobile app developer",
-  "software engineer",
-  "AI developer",
-  "game developer",
-  "blockchain developer",
-  "Shopify developer",
-  "React developer",
-  "Python developer",
-  "WordPress developer",
-  "flutter developer",
-  "iOS developer",
-  "Android developer",
-  "DevOps engineer",
-  "full stack developer",
-  "Webflow developer",
-  "no-code developer",
-  // ── Writing & Content ──
-  "copywriter",
-  "content writer",
-  "technical writer",
-  "ghostwriter",
-  "editor proofreader",
-  "SEO writer",
-  "scriptwriter",
-  "content creator",
-  "blogger",
-  // ── Marketing & Sales ──
-  "social media manager",
-  "SEO specialist",
-  "digital marketer",
-  "growth hacker",
-  "email marketer",
-  "PPC specialist",
-  "Google Ads expert",
-  "Facebook Ads freelancer",
-  "community manager",
-  // ── Business & Admin ──
-  "virtual assistant",
-  "data entry",
-  "project manager",
-  "customer support",
-  "executive assistant",
-  "bookkeeper",
-  "accountant freelance",
-  // ── Video & Audio ──
-  "podcast editor",
-  "voiceover artist",
-  "voice actor",
-  "music producer",
-  "audio engineer",
-  "sound designer",
-  "YouTube editor",
-  // ── Data & AI ──
-  "data analyst",
-  "data scientist",
-  "automation expert",
-  "chatbot developer",
-  // ── Specialized Niches ──
-  "translator",
-  "photographer",
-  "3D artist",
-  "transcriptionist",
-  "CAD designer",
-  "Blender artist",
-  "tutor online",
-];
-
-const SIGNALS = [
-  "hiring",
-  "wanted",
-  "needed",
-  "looking for",
-  "seeking",
-  "freelance",
-  "remote",
-];
-
-function buildSearchQueries() {
-  const queries = [];
-  for (const role of ROLES) {
-    const shuffled = [...SIGNALS].sort(() => Math.random() - 0.5);
-    for (const signal of shuffled.slice(0, 2)) {
-      queries.push({ display: `${role} + ${signal}`, search: `"${role}" ${signal}` });
-    }
-  }
-  return queries.sort(() => Math.random() - 0.5);
+const raw = await readFile(
+  new URL("./facebook-seeds.json", import.meta.url),
+  "utf-8",
+);
+const SEEDS = JSON.parse(raw || "[]");
+if (!Array.isArray(SEEDS) || SEEDS.length === 0) {
+  console.error("No seeds configured. Edit scripts/facebook-seeds.json.");
+  process.exit(1);
 }
-
 // ── Upstash Redis helpers ───────────────────────────────────────────────────
 
 function getUpstashCredentials() {
@@ -199,7 +103,9 @@ const TEXT_BROWSER_USER_AGENTS = [
   "Links (2.29; Linux x86_64; GNU C; text)",
 ];
 
-function randomFrom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function randomFrom(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
 
 function getHttpHeaders(ua) {
   return {
@@ -211,7 +117,9 @@ function getHttpHeaders(ua) {
 
 function decodeHtmlEntities(str) {
   return str
-    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) =>
+      String.fromCodePoint(parseInt(hex, 16)),
+    )
     .replace(/&#(\d+);/g, (_, dec) => String.fromCodePoint(parseInt(dec, 10)))
     .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
@@ -247,7 +155,9 @@ function extractSnippets(html) {
 
     // Unwrap DDG redirect
     if (url.includes("uddg=")) {
-      try { url = decodeURIComponent(url.split("uddg=")[1].split("&")[0]); } catch {}
+      try {
+        url = decodeURIComponent(url.split("uddg=")[1].split("&")[0]);
+      } catch {}
     }
     // Unwrap Google redirect
     if (url.includes("/url?")) {
@@ -268,24 +178,31 @@ function extractSnippets(html) {
     const end = Math.min(html.length, match.index + 1500);
     const context = html.slice(start, end);
 
-    const text = cleanSearchText(decodeHtmlEntities(
-      context
-        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
-        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
-        .replace(/<[^>]+>/g, " ")
-    ));
+    const text = cleanSearchText(
+      decodeHtmlEntities(
+        context
+          .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+          .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+          .replace(/<[^>]+>/g, " "),
+      ),
+    );
 
     if (text.length < 20) continue;
 
     // Try to extract a date
     let dateText = null;
-    const relMatch = text.match(/\b(\d+)\s*(h|hr|hrs|d|day|days|w|wk|wks|min|m)\b/i);
+    const relMatch = text.match(
+      /\b(\d+)\s*(h|hr|hrs|d|day|days|w|wk|wks|min|m)\b/i,
+    );
     if (relMatch) {
       const num = relMatch[1];
       const unit = relMatch[2].toLowerCase();
-      if (unit === "h" || unit === "hr" || unit === "hrs") dateText = `${num} hours ago`;
-      else if (unit === "d" || unit === "day" || unit === "days") dateText = `${num} days ago`;
-      else if (unit === "w" || unit === "wk" || unit === "wks") dateText = `${num} weeks ago`;
+      if (unit === "h" || unit === "hr" || unit === "hrs")
+        dateText = `${num} hours ago`;
+      else if (unit === "d" || unit === "day" || unit === "days")
+        dateText = `${num} days ago`;
+      else if (unit === "w" || unit === "wk" || unit === "wks")
+        dateText = `${num} weeks ago`;
       else if (unit === "min" || unit === "m") dateText = `${num} minutes ago`;
     } else {
       const dateMatch = text.match(/(\w+ \d+, \d{4})/);
@@ -308,7 +225,10 @@ async function searchBing(keyword) {
   const url = `https://www.bing.com/search?q=${encoded}&freshness=Week&count=20`;
 
   try {
-    const resp = await fetch(url, { headers: getHttpHeaders(), redirect: "follow" });
+    const resp = await fetch(url, {
+      headers: getHttpHeaders(),
+      redirect: "follow",
+    });
     if (!resp.ok) {
       console.log(`  [debug] Bing returned ${resp.status}`);
       return null;
@@ -363,7 +283,11 @@ async function searchGoogle(keyword) {
     }
     const html = await resp.text();
 
-    if (html.includes("/sorry/") || html.includes("captcha") || html.includes("unusual traffic")) {
+    if (
+      html.includes("/sorry/") ||
+      html.includes("captcha") ||
+      html.includes("unusual traffic")
+    ) {
       console.log("  [debug] Google CAPTCHA detected");
       return null;
     }
@@ -438,9 +362,12 @@ async function main() {
     const seenSet = new Set(seenRaw || []);
     console.log(`Seen set: ${seenSet.size} previously seen posts`);
 
-    // ── 2. Build search queries (role × signal matrix, randomized each run) ──
-    const searchQueries = buildSearchQueries();
-    console.log(`Generated ${searchQueries.length} search queries (${ROLES.length} roles × 2 signals)`);
+    // ── 2. Build search queries from seed file ──
+    const shuffled = [...SEEDS].sort(() => Math.random() - 0.5);
+    const searchQueries = shuffled.map((q) => ({ display: q, search: q }));
+    console.log(
+      `Loaded ${searchQueries.length} seed queries from facebook-seeds.json`,
+    );
 
     // Engine order: cycle DDG → Google → Bing to spread load
     const engines = [
@@ -464,7 +391,9 @@ async function main() {
         if (results === null) {
           // null = engine blocked (CAPTCHA / rate limit)
           blocked.add(eng.name);
-          console.log(`  ${eng.name} blocked — ${engines.length - blocked.size} engines remaining`);
+          console.log(
+            `  ${eng.name} blocked — ${engines.length - blocked.size} engines remaining`,
+          );
           continue;
         }
         usedEngine = eng.name;
@@ -481,7 +410,9 @@ async function main() {
         allPosts.push({ ...r, searchQuery: display });
       }
 
-      console.log(`[${i + 1}/${searchQueries.length}] ${display} → ${results.length} [${usedEngine}]`);
+      console.log(
+        `[${i + 1}/${searchQueries.length}] ${display} → ${results.length} [${usedEngine}]`,
+      );
 
       // If all engines are blocked, stop early
       if (blocked.size >= engines.length) {
@@ -551,24 +482,57 @@ async function main() {
         newPosts.push(p);
       }
     }
-    console.log(`New: ${newPosts.length}, Previously seen: ${existingPosts.length}`);
+    console.log(
+      `New: ${newPosts.length}, Previously seen: ${existingPosts.length}`,
+    );
 
-    // ── 8. AI classify new posts ──
+    // ── 8. Pre-filter + AI classify new posts ──
     let classifiedNew = newPosts;
     if (newPosts.length > 0) {
-      const forClassifier = newPosts.map((p) => ({
-        id: p.id,
-        name: p.id,
-        title: (p.text || "").slice(0, 120),
-        selftext: (p.text || "").slice(0, 2000),
-        author: p.author || "unknown",
-      }));
+      // Pre-filter: length + regex before AI
+      const autoKept = [];
+      const autoRejected = [];
+      const toClassify = [];
 
-      const classified = await classifyAndFilter(forClassifier);
-      const classifiedIds = new Set(classified.map((c) => c.id));
-      classifiedNew = newPosts.filter((p) => classifiedIds.has(p.id));
+      for (const p of newPosts) {
+        const text = p.text || "";
+        if (!isValidLength(text)) {
+          autoRejected.push(p);
+          continue;
+        }
+        const verdict = preFilterPost(text);
+        if (verdict === "keep") autoKept.push(p);
+        else if (verdict === "reject") autoRejected.push(p);
+        else toClassify.push(p);
+      }
 
-      console.log(`AI filter: kept ${classifiedNew.length}/${newPosts.length} new posts`);
+      console.log(
+        `Pre-filter: ${autoKept.length} auto-kept, ${autoRejected.length} auto-rejected, ${toClassify.length} to AI`,
+      );
+
+      // AI classify only ambiguous posts (with social prompt)
+      let aiKept = [];
+      if (toClassify.length > 0) {
+        const forClassifier = toClassify.map((p) => ({
+          id: p.id,
+          name: p.id,
+          title: (p.text || "").slice(0, 120),
+          selftext: (p.text || "").slice(0, 2000),
+          author: p.author || "unknown",
+        }));
+
+        const classified = await classifyAndFilter(forClassifier, "social");
+        const classifiedIds = new Set(classified.map((c) => c.id));
+        aiKept = toClassify.filter((p) => classifiedIds.has(p.id));
+      }
+
+      classifiedNew = [...autoKept, ...aiKept];
+      console.log(
+        `AI filter: kept ${aiKept.length}/${toClassify.length} posts sent to AI`,
+      );
+      console.log(
+        `Total kept: ${classifiedNew.length}/${newPosts.length} new posts`,
+      );
 
       if (newPosts.length > 0) {
         const ids = newPosts.map((p) => p.id);
@@ -623,21 +587,40 @@ async function main() {
         });
       }
     } catch (err) {
-      console.warn("[fb-crawler] Email notification error (non-fatal):", err.message);
+      console.warn(
+        "[fb-crawler] Email notification error (non-fatal):",
+        err.message,
+      );
     }
 
     // ── 11. Terminal metrics ──
     console.log("\n╔══════════════════════════════════════════════╗");
     console.log("║         FACEBOOK CRAWLER RESULTS             ║");
     console.log("╠══════════════════════════════════════════════╣");
-    console.log(`║ Queries searched      │ ${searchQueries.length.toString().padStart(6)}`);
-    console.log(`║ Raw results found     │ ${totalExtracted.toString().padStart(6)}`);
-    console.log(`║ After dedup           │ ${uniquePosts.length.toString().padStart(6)}`);
-    console.log(`║ Valid post URLs       │ ${validPosts.length.toString().padStart(6)}`);
-    console.log(`║ After freshness       │ ${freshPosts.length.toString().padStart(6)}`);
-    console.log(`║ New (AI classified)   │ ${classifiedNew.length.toString().padStart(6)}`);
-    console.log(`║ Previously seen       │ ${existingPosts.length.toString().padStart(6)}`);
-    console.log(`║ Final stored          │ ${Math.min(finalPosts.length, 300).toString().padStart(6)}`);
+    console.log(
+      `║ Queries searched      │ ${searchQueries.length.toString().padStart(6)}`,
+    );
+    console.log(
+      `║ Raw results found     │ ${totalExtracted.toString().padStart(6)}`,
+    );
+    console.log(
+      `║ After dedup           │ ${uniquePosts.length.toString().padStart(6)}`,
+    );
+    console.log(
+      `║ Valid post URLs       │ ${validPosts.length.toString().padStart(6)}`,
+    );
+    console.log(
+      `║ After freshness       │ ${freshPosts.length.toString().padStart(6)}`,
+    );
+    console.log(
+      `║ New (AI classified)   │ ${classifiedNew.length.toString().padStart(6)}`,
+    );
+    console.log(
+      `║ Previously seen       │ ${existingPosts.length.toString().padStart(6)}`,
+    );
+    console.log(
+      `║ Final stored          │ ${Math.min(finalPosts.length, 300).toString().padStart(6)}`,
+    );
     console.log("╚══════════════════════════════════════════════╝");
 
     const sorted = Object.entries(keywordStats)
@@ -657,7 +640,9 @@ async function main() {
           p.created_utc > 0
             ? `${Math.round((Date.now() / 1000 - p.created_utc) / 3600)}h ago`
             : "unknown";
-        console.log(`  [${age}] ${p.title.slice(0, 80)} — ${p.permalink.slice(0, 50)}`);
+        console.log(
+          `  [${age}] ${p.title.slice(0, 80)} — ${p.permalink.slice(0, 50)}`,
+        );
       }
     }
   } catch (err) {
