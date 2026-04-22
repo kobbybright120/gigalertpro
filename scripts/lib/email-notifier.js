@@ -372,12 +372,21 @@ export async function notifyUsersOfNewGigs(
       }
 
       // 3e. Score gigs against this user's keywords
+      const kwsLower = keywords.map((k) => k.toLowerCase());
       const scored = normalizedGigs
         .map((gig) => {
           const result = scoreGoldLead(gig, keywords);
           return { ...gig, ...result };
         })
-        .filter((g) => g.quality_score >= SCORE_THRESHOLD);
+        .filter((g) => {
+          if (g.quality_score < SCORE_THRESHOLD) return false;
+          // Hard requirement: at least one user keyword must appear in title or body
+          const title = (g.title || "").toLowerCase();
+          const body = (g.body_preview || "").toLowerCase();
+          return kwsLower.some(
+            (kw) => kw && (title.includes(kw) || body.includes(kw)),
+          );
+        });
 
       if (scored.length === 0) {
         console.debug(
