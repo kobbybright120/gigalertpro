@@ -14,6 +14,7 @@
 
 import { createHmac } from "crypto";
 import { scoreGoldLead } from "../../src/lib/goldLeadScorer.js";
+import { gigMatchesUserKeywords } from "../../src/lib/keywordMatcher.js";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
@@ -372,7 +373,6 @@ export async function notifyUsersOfNewGigs(
       }
 
       // 3e. Score gigs against this user's keywords
-      const kwsLower = keywords.map((k) => k.toLowerCase());
       const scored = normalizedGigs
         .map((gig) => {
           const result = scoreGoldLead(gig, keywords);
@@ -380,12 +380,12 @@ export async function notifyUsersOfNewGigs(
         })
         .filter((g) => {
           if (g.quality_score < SCORE_THRESHOLD) return false;
-          // Hard requirement: at least one user keyword must appear in title or body
-          const title = (g.title || "").toLowerCase();
-          const body = (g.body_preview || "").toLowerCase();
-          return kwsLower.some(
-            (kw) => kw && (title.includes(kw) || body.includes(kw)),
-          );
+          // Hard requirement: at least one user keyword must STRICTLY match
+          // (word boundaries on short/ambiguous tokens, exact phrase for
+          // multi-word). Same matcher as the main gig feed — see
+          // src/lib/keywordMatcher.js. Without this, "ui" matches "build",
+          // "ux" matches "luxury", etc., and unrelated gigs leak into emails.
+          return gigMatchesUserKeywords(g, keywords);
         });
 
       if (scored.length === 0) {

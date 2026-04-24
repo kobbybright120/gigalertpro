@@ -310,7 +310,7 @@ async function sendPaymentFailedEmail(email, name, planLabel, errorMessage) {
         <tr><td style="padding:6px 0;color:#94a3b8;font-size:14px;line-height:1.6;vertical-align:top;"><span style="color:#00F0B5;font-weight:700;margin-right:8px;">3.</span> <strong style="color:#fff;">Use a different card.</strong> Credit cards usually work better than debit or prepaid cards for international subscriptions.</td></tr>
       </table>
       <div style="text-align:center;margin:28px 0 8px;">
-        <a href="${APP_URL}/pricing" style="display:inline-block;background:#00F0B5;color:#020617;font-weight:700;font-size:14px;padding:12px 28px;border-radius:8px;text-decoration:none;">Try again →</a>
+        <a href="${APP_URL}/#pricing" style="display:inline-block;background:#00F0B5;color:#020617;font-weight:700;font-size:14px;padding:12px 28px;border-radius:8px;text-decoration:none;">Try again →</a>
       </div>
       <p style="color:#64748b;font-size:13px;line-height:1.6;margin:24px 0 0;text-align:center;">Stuck? Just reply to this email and I'll help you sort it out personally.</p>
       <p style="color:#fff;font-size:14px;font-weight:600;margin:18px 0 0;">Kobby</p>
