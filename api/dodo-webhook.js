@@ -280,6 +280,79 @@ async function sendWelcomeEmail(email, name) {
   }
 }
 
+async function sendPaymentFailedEmail(email, name, planLabel, errorMessage) {
+  if (!RESEND_API_KEY || !email) return;
+  const displayName = name || "there";
+  const safeError = (errorMessage || "Your card was declined.").replace(
+    /[<>]/g,
+    "",
+  );
+  const planText = planLabel || "GigAlertPro";
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#020617;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <div style="max-width:600px;margin:0 auto;padding:32px 16px;">
+    <div style="text-align:center;margin-bottom:28px;">
+      <h1 style="margin:0;color:#00F0B5;font-size:24px;font-weight:800;letter-spacing:-0.5px;">GigAlertPro</h1>
+    </div>
+    <div style="background:#0B1120;border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:28px;">
+      <p style="color:#fff;font-size:16px;font-weight:700;margin:0 0 12px;">Hey ${displayName},</p>
+      <p style="color:#94a3b8;font-size:14px;line-height:1.7;margin:0 0 16px;">We tried to process your payment for <strong style="color:#fff;">${planText}</strong> but your bank declined the charge. <strong style="color:#fff;">You haven't been billed</strong> — your spot is still open.</p>
+      <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.18);border-radius:10px;padding:14px 16px;margin:0 0 20px;">
+        <p style="color:#fca5a5;font-size:13px;font-weight:600;margin:0 0 4px;">Reason from your bank</p>
+        <p style="color:#94a3b8;font-size:13px;line-height:1.6;margin:0;">${safeError}</p>
+      </div>
+      <p style="color:#fff;font-size:14px;font-weight:600;margin:0 0 10px;">A few things that usually fix this:</p>
+      <table style="width:100%;border-collapse:collapse;">
+        <tr><td style="padding:6px 0;color:#94a3b8;font-size:14px;line-height:1.6;vertical-align:top;"><span style="color:#00F0B5;font-weight:700;margin-right:8px;">1.</span> <strong style="color:#fff;">Enable international purchases on your card.</strong> Most banks (especially in Brazil, India, and South America) block them by default. Open your bank's app, find "international purchases" or "compras internacionais", and toggle it on. Usually takes 30 seconds.</td></tr>
+        <tr><td style="padding:6px 0;color:#94a3b8;font-size:14px;line-height:1.6;vertical-align:top;"><span style="color:#00F0B5;font-weight:700;margin-right:8px;">2.</span> <strong style="color:#fff;">Try Google Pay</strong> at checkout if you have it — it can route through a different card than the one on the form.</td></tr>
+        <tr><td style="padding:6px 0;color:#94a3b8;font-size:14px;line-height:1.6;vertical-align:top;"><span style="color:#00F0B5;font-weight:700;margin-right:8px;">3.</span> <strong style="color:#fff;">Use a different card.</strong> Credit cards usually work better than debit or prepaid cards for international subscriptions.</td></tr>
+      </table>
+      <div style="text-align:center;margin:28px 0 8px;">
+        <a href="${APP_URL}/pricing" style="display:inline-block;background:#00F0B5;color:#020617;font-weight:700;font-size:14px;padding:12px 28px;border-radius:8px;text-decoration:none;">Try again →</a>
+      </div>
+      <p style="color:#64748b;font-size:13px;line-height:1.6;margin:24px 0 0;text-align:center;">Stuck? Just reply to this email and I'll help you sort it out personally.</p>
+      <p style="color:#fff;font-size:14px;font-weight:600;margin:18px 0 0;">Kobby</p>
+      <p style="color:#64748b;font-size:12px;margin:2px 0 0;">Founder, GigAlertPro</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: FROM_EMAIL,
+        to: [email],
+        subject: "Your GigAlertPro payment didn't go through — let's fix it",
+        html,
+        reply_to: "support@gigalertpro.com",
+      }),
+    });
+    if (res.ok) {
+      console.info(`[dodo-webhook] Payment-failed recovery email sent to ${email}`);
+    } else {
+      const err = await res.text().catch(() => "unknown");
+      console.warn(`[dodo-webhook] Recovery email failed (${res.status}): ${err}`);
+    }
+  } catch (err) {
+    console.warn("[dodo-webhook] Recovery email error:", err.message);
+  }
+}
+
+const PLAN_LABELS = {
+  basic: "GigAlertPro Basic",
+  basic_annual: "GigAlertPro Basic (Annual)",
+  pro: "GigAlertPro Pro",
+  pro_annual: "GigAlertPro Pro (Annual)",
+};
+
 async function fetchUserName(email) {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY || !email) return null;
   try {
@@ -451,6 +524,37 @@ export default async function handler(req, res) {
         { subscriptionId, customerId },
       );
       console.warn(`[dodo-webhook] Payment failed for ${email}`);
+
+      // Send recovery email so the customer knows what happened and can retry.
+      // Prefer the customer email Dodo collected at checkout — that's the one
+      // attached to the card attempt and the most likely active inbox.
+      const recoveryEmail = data?.customer?.email || email;
+      if (recoveryEmail) {
+        try {
+          const customerName =
+            data?.customer?.name ||
+            (await fetchUserName(recoveryEmail)) ||
+            null;
+          const plan = resolvePlan(data);
+          const planLabel = PLAN_LABELS[plan] || "GigAlertPro";
+          const errorMessage =
+            data?.error_message ||
+            data?.failure_reason ||
+            data?.last_payment_error?.message ||
+            null;
+          await sendPaymentFailedEmail(
+            recoveryEmail,
+            customerName,
+            planLabel,
+            errorMessage,
+          );
+        } catch (err) {
+          console.warn(
+            "[dodo-webhook] Recovery email failed (non-fatal):",
+            err.message,
+          );
+        }
+      }
     }
 
     // ── subscription.expired ────────────────────────────────────────────────
