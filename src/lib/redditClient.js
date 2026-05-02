@@ -270,14 +270,6 @@ const KEYWORD_EXPANSIONS = {
     "graphic design",
     "creative design",
   ],
-  "blog writer": [
-    "blog post",
-    "blog writing",
-    "content writing",
-    "article writing",
-    "seo writing",
-    "blogger",
-  ],
   dropshipping: [
     "dropship",
     "print on demand",
@@ -306,7 +298,6 @@ const KEYWORD_EXPANSIONS = {
     "laravel",
     "wordpress",
     "symfony",
-    "php developer",
     "backend php",
   ],
   ghostwriter: [
@@ -343,13 +334,7 @@ const KEYWORD_EXPANSIONS = {
     "book writing",
     "memoir",
     "ghost writer",
-  ],
-  ghostwriter: [
-    "ghostwriting",
-    "ebook",
-    "book writing",
-    "memoir",
-    "ghost writer",
+    "ghost writing",
   ],
   "seo writing": ["seo", "content writing", "blog", "article"],
 
@@ -366,7 +351,7 @@ const KEYWORD_EXPANSIONS = {
   "social media": ["social media marketing", "smm"],
   "social media marketing": ["social media", "smm", "content creation"],
   ppc: ["google ads", "facebook ads", "advertising", "paid ads", "sem"],
-  "google ads": ["ppc", "sem", "adwords", "paid search"],
+  "google ads": ["ppc", "sem", "adwords", "paid search", "google adwords"],
   "facebook ads": ["meta ads", "instagram ads", "social media ads", "ppc"],
   "email marketing": [
     "email campaign",
@@ -552,7 +537,6 @@ const KEYWORD_EXPANSIONS = {
   teaching: ["tutor", "tutoring", "teacher", "instructor", "course"],
   tutor: ["tutoring", "teaching", "online tutor", "instructor", "teacher"],
 
-  // Photography
   photographer: [
     "photography",
     "photo shoot",
@@ -560,13 +544,6 @@ const KEYWORD_EXPANSIONS = {
     "product photo",
     "portrait",
   ],
-  photography: [
-    "photographer",
-    "photo shoot",
-    "product photography",
-    "headshot",
-  ],
-  retouching: ["photo retouching", "photo editing", "lightroom", "photoshop"],
 
   // Copywriting / Writing specialties
   copywriter: [
@@ -594,12 +571,13 @@ const KEYWORD_EXPANSIONS = {
     "blog post",
     "article writing",
     "content writing",
+    "seo writing",
+    "blogger",
   ],
 
   // Developer specialties
   "shopify developer": ["shopify", "liquid", "ecommerce", "woocommerce"],
   "wordpress developer": ["wordpress", "wp", "woocommerce", "elementor", "php"],
-  "php developer": ["php", "laravel", "wordpress", "symfony"],
   "android developer": ["android", "kotlin", "java", "mobile app"],
   "ios developer": ["ios", "swift", "swiftui", "xcode"],
   "flutter developer": ["flutter", "dart", "mobile app", "cross-platform"],
@@ -629,8 +607,6 @@ const KEYWORD_EXPANSIONS = {
   "node developer": ["nodejs", "node.js", "express", "backend"],
 
   // Marketing specialties
-  "google ads": ["ppc", "sem", "adwords", "paid search", "google adwords"],
-  "facebook ads": ["meta ads", "instagram ads", "social media ads", "ppc"],
   "tiktok marketing": [
     "tiktok",
     "tiktok ads",
@@ -690,12 +666,6 @@ const KEYWORD_EXPANSIONS = {
   ],
 
   // Business/Admin
-  "customer service": [
-    "customer support",
-    "support agent",
-    "helpdesk",
-    "live chat",
-  ],
   "customer support": [
     "customer service",
     "support agent",
@@ -757,6 +727,9 @@ const KEYWORD_EXPANSIONS = {
     "content creator",
     "tiktok",
     "brand content",
+    "brand ambassador",
+    "product creator",
+    "authentic content",
   ],
   transcriptionist: [
     "transcription",
@@ -779,6 +752,201 @@ const KEYWORD_EXPANSIONS = {
   coaching: ["coach", "mentor", "career coaching", "business coaching"],
   "no-code": ["nocode", "no code", "bubble", "webflow", "airtable"],
   "low-code": ["lowcode", "no-code", "automation"],
+
+  // E-commerce & automation
+  ecommerce: [
+    "e-commerce",
+    "online store",
+    "shopify store",
+    "woocommerce store",
+    "product listing",
+    "amazon store",
+  ],
+  "e-commerce": [
+    "ecommerce",
+    "online store",
+    "shopify store",
+    "woocommerce",
+    "product listing",
+  ],
+  "e-commerce automation": [
+    "ecommerce automation",
+    "store automation",
+    "shopify automation",
+    "order automation",
+    "inventory automation",
+  ],
+  "automation specialist": [
+    "workflow automation",
+    "process automation",
+    "crm automation",
+    "make.com",
+    "power automate",
+    "zapier specialist",
+    "n8n specialist",
+  ],
+  "workflow automation": [
+    "automate workflows",
+    "business automation",
+    "process automation",
+    "make.com",
+    "zapier",
+    "n8n",
+  ],
+
+  // Social media & content
+  "social media manager": [
+    "smm",
+    "social media management",
+    "instagram manager",
+    "tiktok manager",
+    "facebook manager",
+    "content scheduling",
+    "social media strategy",
+  ],
+  "content creator": [
+    "ugc creator",
+    "content creation",
+    "social media content",
+    "brand content",
+    "digital content",
+  ],
+  "newsletter writer": [
+    "email newsletter",
+    "substack writer",
+    "newsletter content",
+    "email content writer",
+  ],
+
+  // Product & SaaS
+  "product manager": [
+    "product management",
+    "pm",
+    "product owner",
+    "scrum master",
+    "agile",
+    "roadmap",
+  ],
+  saas: ["software as a service", "saas product", "b2b saas", "saas development"],
+
+  // Finance & accounting
+  accountant: [
+    "accounting",
+    "tax preparation",
+    "financial reporting",
+    "cpa",
+    "tax accountant",
+  ],
+  "financial advisor": [
+    "financial planning",
+    "investment advice",
+    "wealth management",
+    "financial consultant",
+  ],
+  "fractional cfo": [
+    "part time cfo",
+    "outsourced cfo",
+    "financial leadership",
+    "startup finance",
+  ],
+
+  // Tech specialties
+  "qa engineer": [
+    "quality assurance",
+    "software testing",
+    "test automation",
+    "qa testing",
+    "bug testing",
+  ],
+  cybersecurity: [
+    "security engineer",
+    "pentester",
+    "penetration testing",
+    "infosec",
+    "ethical hacker",
+  ],
+  "data engineer": [
+    "data pipeline",
+    "etl",
+    "data warehouse",
+    "data infrastructure",
+    "analytics engineer",
+  ],
+  "salesforce developer": [
+    "salesforce",
+    "crm developer",
+    "salesforce admin",
+    "apex developer",
+  ],
+  hubspot: [
+    "hubspot developer",
+    "crm setup",
+    "hubspot automation",
+    "hubspot admin",
+  ],
+
+  // Quant / trading
+  "trading infrastructure": [
+    "algo trading",
+    "quantitative",
+    "trading systems",
+    "hft",
+    "high frequency trading",
+    "trading bot",
+    "algorithmic trading",
+  ],
+  "quantitative developer": [
+    "quant developer",
+    "algo trading developer",
+    "trading infrastructure",
+    "quant finance",
+    "hft developer",
+  ],
+  "algorithmic trading": [
+    "algo trading",
+    "quant trading",
+    "automated trading",
+    "trading bot",
+    "trading algorithm",
+  ],
+
+  // Creative
+  "interior designer": [
+    "interior design",
+    "home design",
+    "space design",
+    "room design",
+    "decor",
+  ],
+  "fashion designer": [
+    "fashion design",
+    "clothing design",
+    "apparel design",
+    "garment design",
+  ],
+  "brand strategist": [
+    "brand strategy",
+    "brand positioning",
+    "brand identity strategy",
+    "branding consultant",
+  ],
+
+  // Content platforms
+  "pinterest manager": [
+    "pinterest marketing",
+    "pinterest strategy",
+    "pinterest content",
+  ],
+  "linkedin manager": [
+    "linkedin marketing",
+    "linkedin content",
+    "linkedin strategy",
+  ],
+  "substack writer": [
+    "newsletter writer",
+    "substack content",
+    "email newsletter",
+  ],
 };
 
 /**
@@ -788,18 +956,22 @@ const KEYWORD_EXPANSIONS = {
 function expandKeywords(keywords) {
   const expanded = new Set(keywords);
   for (const kw of keywords) {
-    // Direct lookup: exact keyword match in expansion map
+    // Pass A — direct lookup: exact keyword match in expansion map
     const synonyms = KEYWORD_EXPANSIONS[kw];
     if (synonyms) {
       for (const s of synonyms) expanded.add(s);
     }
-    // Check if user keyword is a multi-word phrase containing an expansion key
-    // e.g., "react developer" contains "react" → expand "react" synonyms
-    // Only match whole words to avoid "logo" matching "go"
+    // Pass B — for multi-word user phrases, only expand if the entire phrase
+    // matches a single-word expansion key as a standalone concept.
+    // Prevents "e-commerce automation" from pulling in every "automation"
+    // synonym (zapier, n8n, scripting, …) and matching unrelated posts.
     if (kw.includes(" ")) {
       for (const [key, synonyms2] of Object.entries(KEYWORD_EXPANSIONS)) {
         const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        if (new RegExp(`\\b${escaped}\\b`, "i").test(kw)) {
+        if (
+          !key.includes(" ") &&
+          new RegExp(`^${escaped}$`, "i").test(kw.trim())
+        ) {
           for (const s of synonyms2) expanded.add(s);
         }
       }
@@ -833,6 +1005,33 @@ const EXACT_MATCH_REQUIRED = new Set([
   "copywriting",
   "copywriter",
   "mobile",
+]);
+
+// ── Stem-match keys ─────────────────────────────────────────────────────────
+// Single-word keywords that opt in to prefix-only matching so that
+// "develop" matches "developer"/"development", "design" matches "designer",
+// etc. Any keyword whose root is in this set (or that starts with one of
+// these stems) gets stem matching; everything else uses exact word
+// boundaries on both sides. Keeps "automate" from matching "automation",
+// "java" from matching "javascript", "react" from matching "reaction", etc.
+const STEM_MATCH_KEYS = new Set([
+  "develop",
+  "design",
+  "market",
+  "write",
+  "edit",
+  "manage",
+  "consult",
+  "create",
+  "build",
+  "code",
+  "program",
+  "animate",
+  "illustrat",
+  "photograph",
+  "translat",
+  "transcrib",
+  "automat",
 ]);
 
 // ── Self-Promotion Detection (freelancer ads — we REJECT these) ──────────────
@@ -1868,23 +2067,18 @@ function matchAndScore(posts, lowerKws) {
         if (inTitle) titleHits++;
         return inTitle || inBody;
       } else {
-        // Single word: word boundary + stem matching
+        // Single word: stem matching is opt-in via STEM_MATCH_KEYS.
+        // Only keywords whose root is a known stem ("develop", "design",
+        // "manage", …) get prefix-only word boundaries. Everything else
+        // requires exact \bword\b on both sides — prevents "automate" from
+        // matching "automation", "java" from matching "javascript", etc.
         const escaped = kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        // Short keywords (≤3 chars) AND explicitly ambiguous keywords need exact word
-        // boundaries on both sides to prevent false positives:
-        //   "ai"    → must not match "aim", "aid", "airline"
-        //   "java"  → must not match "javascript"
-        //   "react" → must not match "reaction", "reacts"
-        //   "bot"   → must not match "bottle", "bottom"
-        //   "agent" → must not match real-estate / insurance contexts
-        // Longer unambiguous keywords use stem matching so "develop" matches
-        // "developer", "development", etc.
-        const needsExactBoundary =
-          kw.length <= 3 || EXACT_MATCH_REQUIRED.has(kw);
-        const rx = new RegExp(
-          `\\b${escaped}${needsExactBoundary ? "\\b" : ""}`,
-          "i",
-        );
+        const needsStemMatch =
+          STEM_MATCH_KEYS.has(kw) ||
+          [...STEM_MATCH_KEYS].some((stem) => kw.startsWith(stem));
+        const rx = needsStemMatch
+          ? new RegExp(`\\b${escaped}`, "i")
+          : new RegExp(`\\b${escaped}\\b`, "i");
         const inTitle = rx.test(titleLower);
         if (inTitle) {
           titleHits++;
@@ -1995,13 +2189,16 @@ function matchAndScore(posts, lowerKws) {
     // ── Expansion-only match gate ──
     // If NONE of the user's original keyword words appear in the matched terms,
     // all matches came from distant synonyms (e.g. "logo designer" → "branding").
-    // Require a much higher score to pass — these are almost always noise.
+    // Multi-word user keywords are precise intents — a loose expansion-only
+    // match there is far more likely to be noise, so they get a stricter bar.
     const originalWords = new Set(lowerKws.flatMap((kw) => kw.split(/\s+/)));
     const hasCloseMatch = matched.some((m) => {
       if (originalSet.has(m)) return true;
       return m.split(/\s+/).some((w) => originalWords.has(w));
     });
-    if (!hasCloseMatch && score < 40) continue;
+    const isMultiWordKeyword = lowerKws.some((kw) => kw.includes(" "));
+    const gateThreshold = isMultiWordKeyword ? 55 : 40;
+    if (!hasCloseMatch && score < gateThreshold) continue;
 
     // ── Body-only single expansion match → require stronger hiring signal ──
     // If the keyword only surfaced via an expansion synonym (not the user's own word)
