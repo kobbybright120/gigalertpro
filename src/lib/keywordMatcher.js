@@ -1,36 +1,38 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // GigAlertPro — Strict Keyword Matcher
 //
-// Mirrors the matching rules in redditClient.js (matchAndScore, ~L1860-1898)
-// so the email notifier and the main gig feed agree on what "matches a user
-// keyword" means.
+// Mirrors the matching rules in redditClient.js (matchAndScore) so the email
+// notifier and the main gig feed agree on what "matches a user keyword" means.
 //
 // Rules:
-//   • Multi-word keyword  → exact phrase substring (already specific enough)
+//   • Multi-word keyword → exact phrase substring (already specific enough)
 //   • Single-word keyword → word-boundary regex
-//       ─ ≤3 chars OR in EXACT_MATCH_REQUIRED → \bword\b (both boundaries,
-//         whole-word only). Prevents "ui" from matching "build", "ux" from
-//         matching "luxury", "java" from matching "javascript", etc.
-//       ─ longer unambiguous tokens → \bword (leading boundary only) so
-//         stems still match: "develop" → "developer", "development".
+//       ─ Stem roots (develop, design, market, write, edit, manage, …) use
+//         leading boundary only so "develop" matches "developer"/"development".
+//       ─ Everything else uses \bword\b (both boundaries). Prevents "automate"
+//         from matching "automation", "java" from matching "javascript", etc.
+//
+// Keep in sync with: redditClient.js STEM_MATCH_KEYS
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Keep this set in sync with redditClient.js EXACT_MATCH_REQUIRED.
-const EXACT_MATCH_REQUIRED = new Set([
-  "java",
-  "react",
-  "rust",
-  "ruby",
-  "node",
-  "agent",
-  "bot",
-  "ion",
-  "sol",
-  "hub",
-  "copy",
-  "copywriting",
-  "copywriter",
-  "mobile",
+const STEM_MATCH_KEYS = new Set([
+  "develop",
+  "design",
+  "market",
+  "write",
+  "edit",
+  "manage",
+  "consult",
+  "create",
+  "build",
+  "code",
+  "program",
+  "animate",
+  "illustrat",
+  "photograph",
+  "translat",
+  "transcrib",
+  "automat",
 ]);
 
 function escapeRegex(s) {
@@ -51,12 +53,12 @@ export function keywordMatchesText(keyword, lowerText) {
   }
 
   const escaped = escapeRegex(kw);
-  const needsBothBoundaries =
-    kw.length <= 3 || EXACT_MATCH_REQUIRED.has(kw);
-  const rx = new RegExp(
-    `\\b${escaped}${needsBothBoundaries ? "\\b" : ""}`,
-    "i",
-  );
+  const needsStemMatch =
+    STEM_MATCH_KEYS.has(kw) ||
+    [...STEM_MATCH_KEYS].some((stem) => kw.startsWith(stem));
+  const rx = needsStemMatch
+    ? new RegExp(`\\b${escaped}`, "i")
+    : new RegExp(`\\b${escaped}\\b`, "i");
   return rx.test(lowerText);
 }
 
